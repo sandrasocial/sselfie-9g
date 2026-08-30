@@ -4,6 +4,7 @@ export type BrowserAnalyticsIdentity = {
   distinctId: string | null
   resetPostHog: boolean
   resetPostHogNonce: string | null
+  rotationEpoch: string
 }
 
 let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
@@ -132,8 +133,13 @@ export function invalidateAnalyticsBrowserIdentity(): void {
 async function requestAnalyticsIdentity(
   rotateAnonymous: boolean
 ): Promise<BrowserAnalyticsIdentity> {
+  let rotationEpoch = ""
   try {
     const generation = analyticsBrowserGeneration()
+    // Bind the response to the shared logout/account-deletion epoch that was
+    // current when this request began. Consumers must reject the identity if
+    // that epoch changes while the request or SDK initialization is in flight.
+    rotationEpoch = analyticsBrowserRotationEpoch()
     const response = await fetch(
       `/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`,
       {
@@ -144,7 +150,7 @@ async function requestAnalyticsIdentity(
       }
     )
     if (!response.ok) {
-      return { distinctId: null, resetPostHog: false, resetPostHogNonce: null }
+      return { distinctId: null, resetPostHog: false, resetPostHogNonce: null, rotationEpoch }
     }
     const data = await response.json()
     const resetPostHogNonce =
@@ -156,9 +162,10 @@ async function requestAnalyticsIdentity(
       distinctId: typeof data?.distinctId === "string" ? data.distinctId : null,
       resetPostHog: data?.resetPostHog === true && resetPostHogNonce !== null,
       resetPostHogNonce,
+      rotationEpoch,
     }
   } catch {
-    return { distinctId: null, resetPostHog: false, resetPostHogNonce: null }
+    return { distinctId: null, resetPostHog: false, resetPostHogNonce: null, rotationEpoch }
   }
 }
 
@@ -170,7 +177,12 @@ export function ensureAnalyticsBrowserIdentity(
     identityRequest = requestAnalyticsIdentity(options.rotateAnonymous === true)
   } else if (shouldRefresh) {
     identityRequest = identityRequest
-      .catch(() => ({ distinctId: null, resetPostHog: false, resetPostHogNonce: null }))
+      .catch(() => ({
+        distinctId: null,
+        resetPostHog: false,
+        resetPostHogNonce: null,
+        rotationEpoch: "",
+      }))
       .then(() => requestAnalyticsIdentity(options.rotateAnonymous === true))
   }
   const request = identityRequest

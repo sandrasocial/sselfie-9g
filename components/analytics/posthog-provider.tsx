@@ -11,7 +11,6 @@ import {
 } from "@/lib/analytics/posthog-browser"
 import {
   acknowledgePostHogReset,
-  analyticsBrowserRotationEpoch,
   ensureAnalyticsBrowserIdentity,
   invalidateAnalyticsBrowserIdentity,
   isAnalyticsRotationEpochCurrent,
@@ -108,7 +107,13 @@ function PostHogPageviews({
       try {
         const identity = await readIdentity(false, identifiedAs.current !== null || attempt > 0)
         let distinctId = identity.distinctId
+        let identifiedRotationEpoch = identity.rotationEpoch
         if (!isCurrentGeneration() || generation !== refreshGeneration || !window.posthog) return
+        if (!isAnalyticsRotationEpochCurrent(identifiedRotationEpoch)) {
+          invalidateAnalyticsBrowserIdentity()
+          scheduleIdentityRetry(attempt, generation, capturePageview)
+          return
+        }
         if (!distinctId) {
           scheduleIdentityRetry(attempt, generation, capturePageview)
           return
@@ -121,19 +126,29 @@ function PostHogPageviews({
         } else if (shouldResetPostHogIdentity(previousId, distinctId)) {
           if (distinctId.startsWith("anon:")) {
             const rotatedIdentity = await readIdentity(true)
-            if (!rotatedIdentity.distinctId) {
+            if (
+              !rotatedIdentity.distinctId ||
+              !isAnalyticsRotationEpochCurrent(rotatedIdentity.rotationEpoch)
+            ) {
+              invalidateAnalyticsBrowserIdentity()
               scheduleIdentityRetry(attempt, generation, capturePageview)
               return
             }
             distinctId = rotatedIdentity.distinctId
+            identifiedRotationEpoch = rotatedIdentity.rotationEpoch
           }
           if (!isCurrentGeneration() || generation !== refreshGeneration || !window.posthog) return
           window.posthog.reset()
         }
 
         if (!isCurrentGeneration() || generation !== refreshGeneration || !window.posthog) return
+        if (!isAnalyticsRotationEpochCurrent(identifiedRotationEpoch)) {
+          invalidateAnalyticsBrowserIdentity()
+          scheduleIdentityRetry(attempt, generation, capturePageview)
+          return
+        }
         window.posthog.identify(distinctId)
-        postHogIdentifiedRotationEpoch = analyticsBrowserRotationEpoch()
+        postHogIdentifiedRotationEpoch = identifiedRotationEpoch
         identifiedAs.current = distinctId
         if (capturePageview) {
           window.posthog.capture("$pageview", {
@@ -248,6 +263,12 @@ export function PostHogProvider({
     const bootstrapIdentity = async (attempt: number) => {
       const result = await ensureAnalyticsBrowserIdentity({ refresh: attempt > 0 })
       if (!active || generation !== identityGenerationRef.current) return
+      if (!isAnalyticsRotationEpochCurrent(result.rotationEpoch)) {
+        invalidateAnalyticsBrowserIdentity()
+        const nextDelay = identityRetryDelay(attempt + 1)
+        retryTimer = setTimeout(() => void bootstrapIdentity(attempt + 1), nextDelay)
+        return
+      }
       if (result.distinctId) {
         setIdentity(result)
         return
@@ -270,6 +291,14 @@ export function PostHogProvider({
     const generation = identityGeneration
     const initializeLoadedClient = async (client: PostHogBrowserClient) => {
       if (!active || generation !== identityGenerationRef.current) return
+      if (!isAnalyticsRotationEpochCurrent(identity.rotationEpoch)) {
+        invalidateAnalyticsBrowserIdentity()
+        setPostHogCaptureEnabled(false, client)
+        identityGenerationRef.current += 1
+        setIdentityGeneration(identityGenerationRef.current)
+        setIdentity(null)
+        return
+      }
       const persistedDistinctId = client.get_distinct_id?.() ?? null
       if (
         identity.resetPostHog ||
@@ -282,7 +311,7 @@ export function PostHogProvider({
       }
       if (!active || generation !== identityGenerationRef.current) return
       client.identify(identity.distinctId as string)
-      postHogIdentifiedRotationEpoch = analyticsBrowserRotationEpoch()
+      postHogIdentifiedRotationEpoch = identity.rotationEpoch
       setPostHogCaptureEnabled(true, client)
       setReady(true)
     }

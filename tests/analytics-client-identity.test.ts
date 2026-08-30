@@ -35,6 +35,7 @@ describe("browser analytics identity bootstrap", () => {
       distinctId: "anon:shared-first-visit",
       resetPostHog: false,
       resetPostHogNonce: null,
+      rotationEpoch: "",
     })
     await tracking
 
@@ -220,6 +221,49 @@ describe("browser analytics identity bootstrap", () => {
     )
   })
 
+  it("binds an in-flight identity response to the epoch that requested it", async () => {
+    let resolveIdentity!: (response: Response) => void
+    const identityResponse = new Promise<Response>(resolve => {
+      resolveIdentity = resolve
+    })
+    const stored = new Map<string, string>([
+      ["sselfie_analytics_tab_generation", "33333333-3333-4333-8333-333333333333"],
+      ["sselfie_analytics_tab_rotation", "55555555-5555-4555-8555-555555555555"],
+    ])
+    let cookie =
+      "sselfie_analytics_generation=33333333-3333-4333-8333-333333333333; " +
+      "sselfie_analytics_rotation=55555555-5555-4555-8555-555555555555"
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockImplementationOnce(() => identityResponse))
+    vi.stubGlobal("window", {
+      location: { protocol: "https:" },
+      sessionStorage: {
+        getItem: (key: string) => stored.get(key) ?? null,
+        setItem: (key: string, value: string) => stored.set(key, value),
+      },
+    })
+    vi.stubGlobal("document", {
+      get cookie() {
+        return cookie
+      },
+      set cookie(value: string) {
+        cookie = value
+      },
+    })
+
+    const { ensureAnalyticsBrowserIdentity, isAnalyticsRotationEpochCurrent } =
+      await import("@/lib/analytics/client")
+    const pending = ensureAnalyticsBrowserIdentity()
+
+    cookie =
+      "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444; " +
+      "sselfie_analytics_rotation=66666666-6666-4666-8666-666666666666"
+    resolveIdentity(Response.json({ distinctId: "user:before-rotation", resetPostHog: false }))
+
+    const identity = await pending
+    expect(identity.rotationEpoch).toBe("55555555-5555-4555-8555-555555555555")
+    expect(isAnalyticsRotationEpochCurrent(identity.rotationEpoch)).toBe(false)
+  })
+
   it("publishes a rotated generation before exposing its new epoch", async () => {
     const cookieWrites: string[] = []
     const randomUUID = vi
@@ -264,11 +308,13 @@ describe("browser analytics identity bootstrap", () => {
       distinctId: null,
       resetPostHog: false,
       resetPostHogNonce: null,
+      rotationEpoch: "",
     })
     await expect(ensureAnalyticsBrowserIdentity()).resolves.toEqual({
       distinctId: "user:recovered",
       resetPostHog: false,
       resetPostHogNonce: null,
+      rotationEpoch: "",
     })
     expect(request).toHaveBeenCalledTimes(2)
   })
@@ -303,6 +349,7 @@ describe("browser analytics identity bootstrap", () => {
       distinctId: "anon:after-logout",
       resetPostHog: true,
       resetPostHogNonce: RESET_NONCE,
+      rotationEpoch: "",
     })
     await expect(ensureAnalyticsBrowserIdentity()).resolves.toMatchObject({
       distinctId: "anon:after-logout",
