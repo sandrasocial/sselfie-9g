@@ -111,11 +111,13 @@ const creativeUseCaseSchema = z.enum([
 // boundary so semantic repair and validation always receive the canonical CreativeUseCase type.
 const graphicContentTypeSchema = z.union([
   creativeUseCaseSchema,
-  z.enum(["story", "behind-the-scenes", "product-vault"]).transform(value => {
-    if (value === "behind-the-scenes") return "behind_the_scenes" as const
-    if (value === "product-vault") return "vault_product" as const
-    return "educational" as const
-  }),
+  z
+    .enum(["story", "behind-the-scenes", "product-vault"])
+    .transform(value => {
+      if (value === "behind-the-scenes") return "behind_the_scenes" as const
+      if (value === "product-vault") return "vault_product" as const
+      return "educational" as const
+    }),
 ])
 
 const textSafeAreaSchema = z.enum([
