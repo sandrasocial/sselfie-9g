@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { autoSyncUserToResend } from "@/lib/resend/auto-sync-user"
+import { after } from "next/server"
 
 export interface NeonUser {
   id: string
@@ -122,14 +123,17 @@ export async function getOrCreateNeonUser(
 
     const newUser = newUsers[0] as NeonUser
 
-    // Auto-sync new user to Resend (non-blocking)
-    try {
-      await autoSyncUserToResend(newUser.email, newUser.display_name, {
-        source: "app_signup",
-      })
-    } catch (syncErr) {
-      console.warn("[USER-MAPPING] Resend sync error (non-blocking):", syncErr)
-    }
+    // Keep non-critical provider calls off account creation and auth redirects.
+    // `after` keeps the work alive after the response without blocking access.
+    after(async () => {
+      try {
+        await autoSyncUserToResend(newUser.email, newUser.display_name, {
+          source: "app_signup",
+        })
+      } catch (syncErr) {
+        console.warn("[USER-MAPPING] Resend sync error (non-blocking):", syncErr)
+      }
+    })
 
     return newUser
   } catch (error) {
