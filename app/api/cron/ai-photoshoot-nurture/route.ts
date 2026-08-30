@@ -84,7 +84,8 @@ interface NurtureTouchTask {
   getCandidates: (limit: number) => Promise<NurtureCandidate[]>
   sendCandidate: (
     candidate: NurtureCandidate,
-    signal: AbortSignal
+    signal: AbortSignal,
+    onAccepted: () => void
   ) => Promise<{ success: boolean; error?: string }>
 }
 
@@ -346,7 +347,8 @@ function generatePromptVaultEmail(
 async function sendAiPromptsTouch(
   emailType: AiPromptsEmailType,
   candidate: AiPromptsCandidate,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onAccepted: () => void
 ) {
   const email = generateAiPromptsEmail(emailType, candidate)
   // The SUITE trial touch requires a claim token; subscribers without one are skipped, not failed.
@@ -363,13 +365,15 @@ async function sendAiPromptsTouch(
     marketing: true,
     idempotencyKey: nurtureIdempotencyKey(emailType, candidate.email),
     signal,
+    onAccepted,
   })
 }
 
 async function sendPromptVaultTouch(
   emailType: PromptVaultEmailType,
   candidate: PromptVaultCandidate,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onAccepted: () => void
 ) {
   const email = generatePromptVaultEmail(emailType, candidate)
   return sendEmail({
@@ -384,6 +388,7 @@ async function sendPromptVaultTouch(
     marketing: true,
     idempotencyKey: nurtureIdempotencyKey(emailType, candidate.email),
     signal,
+    onAccepted,
   })
 }
 
@@ -418,7 +423,8 @@ function createTouchTask<Candidate extends NurtureCandidate>(input: {
   getCandidates: (limit: number) => Promise<Candidate[]>
   sendCandidate: (
     candidate: Candidate,
-    signal: AbortSignal
+    signal: AbortSignal,
+    onAccepted: () => void
   ) => Promise<{ success: boolean; error?: string }>
 }): NurtureTouchTask {
   return {
@@ -426,7 +432,8 @@ function createTouchTask<Candidate extends NurtureCandidate>(input: {
     getCandidates: input.getCandidates,
     // Candidates are produced and consumed by the same task. This type erasure lets the
     // two nurture sequences share one ordered execution loop without mixing candidate shapes.
-    sendCandidate: (candidate, signal) => input.sendCandidate(candidate as Candidate, signal),
+    sendCandidate: (candidate, signal, onAccepted) =>
+      input.sendCandidate(candidate as Candidate, signal, onAccepted),
   }
 }
 
@@ -480,12 +487,20 @@ async function runTouch({
   }
 
   for (const candidate of candidates) {
+    let providerAccepted = false
     const delivery = await runWithRuntimeBudget({
       budget: runtimeBudget,
       minimumRemainingMs: MIN_SEND_BUDGET_MS,
-      operation: signal => sendCandidate(candidate, signal),
+      operation: signal =>
+        sendCandidate(candidate, signal, () => {
+          providerAccepted = true
+        }),
     })
     if (!delivery.completed) {
+      if (providerAccepted) {
+        result.sent += 1
+        result.processed += 1
+      }
       result.stoppedForBudget = true
       result.timedOut = delivery.timedOut
       break
@@ -592,8 +607,8 @@ export async function GET(request: Request) {
                   minTouchGapHours,
                   limit,
                 }),
-              sendCandidate: (candidate, signal) =>
-                sendPromptVaultTouch(touch.emailType, candidate, signal),
+              sendCandidate: (candidate, signal, onAccepted) =>
+                sendPromptVaultTouch(touch.emailType, candidate, signal, onAccepted),
             })
           )
         : []),
@@ -610,8 +625,8 @@ export async function GET(request: Request) {
                   minTouchGapHours,
                   limit,
                 }),
-              sendCandidate: (candidate, signal) =>
-                sendAiPromptsTouch(touch.emailType, candidate, signal),
+              sendCandidate: (candidate, signal, onAccepted) =>
+                sendAiPromptsTouch(touch.emailType, candidate, signal, onAccepted),
             })
           )
         : []),
