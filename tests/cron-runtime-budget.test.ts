@@ -1,8 +1,29 @@
 import { describe, expect, it } from "vitest"
 
-import { createRuntimeBudget, processWithRuntimeBudget } from "@/lib/cron/runtime-budget"
+import {
+  createRuntimeBudget,
+  processWithRuntimeBudget,
+  runWithRuntimeBudget,
+} from "@/lib/cron/runtime-budget"
 
 describe("cron runtime budget", () => {
+  it("bounds a never-resolving operation before returning control", async () => {
+    const budget = createRuntimeBudget(20)
+    let receivedSignal: AbortSignal | undefined
+
+    const result = await runWithRuntimeBudget({
+      budget,
+      minimumRemainingMs: 0,
+      operation: async signal => {
+        receivedSignal = signal
+        await new Promise(() => {})
+      },
+    })
+
+    expect(result).toEqual({ completed: false, stoppedForBudget: true, timedOut: true })
+    expect(receivedSignal?.aborted).toBe(true)
+  })
+
   it("stops before starting work that cannot fit in the remaining budget", async () => {
     let now = 0
     const processed: number[] = []
