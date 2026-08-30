@@ -8,6 +8,7 @@ import { groundingSystemPrompt } from "@/lib/content/grounding"
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-5"
 const ANTHROPIC_MODEL = "claude-sonnet-5"
 const MAX_TOKENS = 12000
+const OPENROUTER_VISION_TIMEOUT_MS = 90_000
 // Sonnet 5 runs ADAPTIVE THINKING when the thinking param is omitted (silent default change
 // from Sonnet 4.5/4.6 — the 2026-07-09 model bump broke this pipeline). Thinking spends the
 // max_tokens budget BEFORE any text, so big shoot prompts returned thinking-only responses
@@ -82,10 +83,17 @@ export async function callContentKitVision(
 ): Promise<string> {
   const openrouterKey = process.env.OPENROUTER_API_KEY
   if (openrouterKey) {
+    const openrouterController = new AbortController()
+    const abortOpenRouter = () => openrouterController.abort(options.signal?.reason)
+    const openrouterTimeout = setTimeout(
+      () => openrouterController.abort(new Error("OpenRouter vision request timed out")),
+      OPENROUTER_VISION_TIMEOUT_MS
+    )
+    options.signal?.addEventListener("abort", abortOpenRouter, { once: true })
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
-        signal: options.signal,
+        signal: openrouterController.signal,
         headers: {
           Authorization: `Bearer ${openrouterKey}`,
           "Content-Type": "application/json",
@@ -120,6 +128,9 @@ export async function callContentKitVision(
     } catch (error) {
       if (options.signal?.aborted) throw error
       console.error("[content-kit] OpenRouter vision error, falling back to Anthropic:", error)
+    } finally {
+      clearTimeout(openrouterTimeout)
+      options.signal?.removeEventListener("abort", abortOpenRouter)
     }
   }
 

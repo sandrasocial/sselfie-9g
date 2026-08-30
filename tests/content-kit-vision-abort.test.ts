@@ -26,6 +26,7 @@ describe("content-kit vision aborts", () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
@@ -68,6 +69,38 @@ describe("content-kit vision aborts", () => {
       })
     ).resolves.toBe("planned")
 
+    expect(mocks.messagesCreate).toHaveBeenCalledWith(expect.any(Object), {
+      signal: controller.signal,
+      maxRetries: 0,
+    })
+  })
+
+  it("reserves shared-budget time for Anthropic when OpenRouter stalls", async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(new Error("provider timed out")), {
+              once: true,
+            })
+          })
+      )
+    )
+    mocks.messagesCreate.mockResolvedValue({
+      content: [{ type: "text", text: "fallback plan" }],
+      stop_reason: "end_turn",
+    })
+    const { callContentKitVision } = await import("@/lib/content-kit/llm")
+    const controller = new AbortController()
+
+    const pending = callContentKitVision("plan", ["https://example.com/image.png"], undefined, {
+      signal: controller.signal,
+    })
+    await vi.advanceTimersByTimeAsync(90_000)
+
+    await expect(pending).resolves.toBe("fallback plan")
     expect(mocks.messagesCreate).toHaveBeenCalledWith(expect.any(Object), {
       signal: controller.signal,
       maxRetries: 0,
