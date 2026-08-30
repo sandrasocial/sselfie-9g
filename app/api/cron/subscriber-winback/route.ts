@@ -12,7 +12,7 @@ import { sql } from "@/lib/db/client"
 import { envFlag } from "@/lib/env-flags"
 import { getFirstNameForEmail } from "@/lib/email/recipient-name"
 import { sendEmail } from "@/lib/email/send-email"
-import { createUnsubscribeToken, recordEmailUnsubscribe } from "@/lib/email/unsubscribe"
+import { emailUnsubscribeHash } from "@/lib/email/unsubscribe"
 import { updateContactTags } from "@/lib/resend/manage-contact"
 import {
   generateWinback1Email,
@@ -304,6 +304,42 @@ async function hasCurrentCustomerOrMembershipAccess(email: string): Promise<bool
   return purchase.length > 0 || membership.length > 0
 }
 
+async function recordSunsetUnsubscribe(email: string) {
+  const metadata = JSON.stringify({
+    email_hash: emailUnsubscribeHash(email),
+    source: "winback_sunset",
+    user_agent: null,
+    processed_at: new Date().toISOString(),
+  })
+
+  // The suppression event and eligibility marker are one database transaction.
+  // If the route deadline wins while Neon is still working, both statements
+  // commit together or neither does, so a later run cannot repeat half-applied
+  // sunset work.
+  await sql.transaction(tx => [
+    tx`
+      INSERT INTO email_events (
+        event_type,
+        email_type,
+        status,
+        metadata,
+        created_at
+      )
+      VALUES (
+        'email.unsubscribed',
+        'unsubscribe',
+        'processed',
+        ${metadata}::jsonb,
+        NOW()
+      )
+    `,
+    tx`
+      INSERT INTO email_logs (user_email, email_type, status, sent_at, created_at)
+      VALUES (${email}, 'subscriber-winback-sunset-applied', 'sent', NOW(), NOW())
+    `,
+  ])
+}
+
 /**
  * Sunset: 7+ days after win-back email 4 with still zero click engagement -> app-level
  * unsubscribe (every marketing send respects it) + a winback_sunset tag in Resend so broadcasts
@@ -383,17 +419,14 @@ async function runSunset(apply: boolean, limit: number, runtimeBudget: RuntimeBu
       }
 
       signal.throwIfAborted()
-      await recordEmailUnsubscribe(createUnsubscribeToken(candidate.email), "winback_sunset")
-      signal.throwIfAborted()
+      // The provider tag is safe to retry. Keep it before the atomic database
+      // suppression so a timeout cannot leave an applied marker with an
+      // untagged contact that later runs will skip.
       await updateContactTags(candidate.email, { winback_sunset: "true" }).catch(error => {
         console.error("[subscriber-winback] Failed to tag sunset contact in Resend:", error)
       })
       signal.throwIfAborted()
-      // Marker row so a subscriber is only sunset once (and the count stays auditable).
-      await sql`
-        INSERT INTO email_logs (user_email, email_type, status, sent_at, created_at)
-        VALUES (${candidate.email}, 'subscriber-winback-sunset-applied', 'sent', NOW(), NOW())
-      `
+      await recordSunsetUnsubscribe(candidate.email)
       results.suppressed += 1
     },
   })
