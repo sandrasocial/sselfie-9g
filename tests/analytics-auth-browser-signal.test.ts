@@ -116,6 +116,17 @@ describe("analytics logout browser signal", () => {
     )
   })
 
+  it("preserves the generation installed by a successful deletion response", () => {
+    notifyAnalyticsLogout({
+      preserveSupabaseSessionGeneration: false,
+      rotateAnalyticsGeneration: false,
+    })
+
+    expect(document.cookie).toContain(
+      "sselfie_analytics_generation=11111111-1111-4111-8111-111111111111"
+    )
+  })
+
   it("broadcasts account deletion only after the server confirms success", () => {
     const source = readFileSync(
       join(process.cwd(), "components/sselfie/account-screen.tsx"),
@@ -123,13 +134,12 @@ describe("analytics logout browser signal", () => {
     )
     const deleteRequest = source.indexOf('fetch("/api/user/delete"')
     const successCheck = source.indexOf("if (response.ok)", deleteRequest)
-    const signal = source.indexOf(
-      "notifyAnalyticsLogout({ preserveSupabaseSessionGeneration: false })",
-      deleteRequest
-    )
+    const signal = source.indexOf("notifyAnalyticsLogout({", deleteRequest)
+    const preserveResponseIdentity = source.indexOf("rotateAnalyticsGeneration: false", signal)
 
     expect(deleteRequest).toBeGreaterThan(-1)
     expect(successCheck).toBeGreaterThan(deleteRequest)
     expect(signal).toBeGreaterThan(successCheck)
+    expect(preserveResponseIdentity).toBeGreaterThan(signal)
   })
 })

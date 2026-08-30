@@ -206,13 +206,14 @@ export function PostHogProvider({
   const [ready, setReady] = useState(false)
   const [identity, setIdentity] = useState<BrowserAnalyticsIdentity | null>(null)
   const [loadedCallbackReady, setLoadedCallbackReady] = useState(false)
-  const identityGeneration = 0
+  const [identityGeneration, setIdentityGeneration] = useState(0)
   const identityGenerationRef = useRef(0)
 
   useEffect(
     () =>
       subscribeToAnalyticsLogout(() => {
         identityGenerationRef.current += 1
+        setIdentityGeneration(identityGenerationRef.current)
         invalidateAnalyticsBrowserIdentity()
         setPostHogCaptureEnabled(false)
         setReady(false)

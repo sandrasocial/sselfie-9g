@@ -419,7 +419,13 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
         credentials: "include",
       })
       if (response.ok) {
-        notifyAnalyticsLogout({ preserveSupabaseSessionGeneration: false })
+        notifyAnalyticsLogout({
+          preserveSupabaseSessionGeneration: false,
+          // The deletion response already installed a new generation and its
+          // matching anonymous identity. Preserve that pair while notifying
+          // this tab and other tabs that the authenticated identity is gone.
+          rotateAnalyticsGeneration: false,
+        })
         router.push("/auth/login")
       } else {
         const data = await response.json().catch(() => ({}))

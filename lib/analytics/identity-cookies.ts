@@ -11,6 +11,14 @@ const analyticsCookieOptions = {
   path: "/",
 }
 
+const analyticsGenerationCookieOptions = {
+  httpOnly: false,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+}
+
 export function analyticsGenerationFromRequest(req?: NextRequest): string | null {
   const generation =
     req?.headers.get("x-sselfie-analytics-generation") ||
@@ -33,6 +41,13 @@ export function clearStaleAnonymousAnalyticsCookies(
 ) {
   const activeCookieName = analyticsAnonCookieName(generation)
 
+  if (generation && req?.cookies.get("sselfie_anon_id")) {
+    response.cookies.set("sselfie_anon_id", "", {
+      ...analyticsCookieOptions,
+      maxAge: 0,
+    })
+  }
+
   for (const cookie of req?.cookies.getAll() ?? []) {
     if (VERSIONED_ANON_COOKIE_PATTERN.test(cookie.name) && cookie.name !== activeCookieName) {
       response.cookies.set(cookie.name, "", {
@@ -41,6 +56,14 @@ export function clearStaleAnonymousAnalyticsCookies(
       })
     }
   }
+}
+
+export function rotateAnalyticsGenerationCookie(response: NextResponse): string {
+  const generation = globalThis.crypto.randomUUID()
+  response.cookies.set("sselfie_analytics_generation", generation, {
+    ...analyticsGenerationCookieOptions,
+  })
+  return generation
 }
 
 export function rotateAnonymousAnalyticsIdentity(

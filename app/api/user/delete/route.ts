@@ -6,7 +6,7 @@ import { getStripe } from "@/lib/stripe"
 import { sql } from "@/lib/db/client"
 import { NextResponse, type NextRequest } from "next/server"
 import {
-  analyticsGenerationFromRequest,
+  rotateAnalyticsGenerationCookie,
   rotateAnonymousAnalyticsIdentity,
 } from "@/lib/analytics/identity-cookies"
 import {
@@ -142,7 +142,8 @@ export async function DELETE(req?: NextRequest) {
     // analytics before the browser can bootstrap against the stale auth user.
     clearSupabaseSessionCookies(response, req)
     clearSupabaseSessionGeneration(response)
-    rotateAnonymousAnalyticsIdentity(response, analyticsGenerationFromRequest(req), req)
+    const anonymousGeneration = rotateAnalyticsGenerationCookie(response)
+    rotateAnonymousAnalyticsIdentity(response, anonymousGeneration, req)
     return response
   } catch (error) {
     console.error("[delete-account] Unexpected error:", error)

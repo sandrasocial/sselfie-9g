@@ -65,18 +65,26 @@ describe("DELETE /api/user/delete", () => {
     const response = await DELETE(
       new NextRequest("https://sselfie.ai/api/user/delete", {
         method: "DELETE",
-        headers: { "x-sselfie-analytics-generation": generation },
+        headers: {
+          "x-sselfie-analytics-generation": generation,
+          cookie: "sselfie_anon_id=legacy-pre-deletion-id",
+        },
       })
     )
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({ success: true })
     expect(mocks.deleteUser).toHaveBeenCalledWith("auth-qa-user")
-    expect(response.headers.get("set-cookie")).toContain(
-      "sselfie_anon_id_44444444444444448444444444444444="
-    )
-    expect(response.headers.get("set-cookie")).toContain("sselfie_posthog_reset=1")
-    expect(response.headers.get("set-cookie")).toContain("sselfie_supabase_session_generation=;")
+    const responseCookies = response.headers.get("set-cookie") || ""
+    const rotatedGeneration = responseCookies.match(
+      /sselfie_analytics_generation=([0-9a-f-]{36})/
+    )?.[1]
+    expect(rotatedGeneration).toBeTruthy()
+    expect(rotatedGeneration).not.toBe(generation)
+    expect(responseCookies).toContain(`sselfie_anon_id_${rotatedGeneration?.replaceAll("-", "")}=`)
+    expect(responseCookies).toContain("sselfie_anon_id=;")
+    expect(responseCookies).toContain("sselfie_posthog_reset=1")
+    expect(responseCookies).toContain("sselfie_supabase_session_generation=;")
     expect(mocks.queries).toContainEqual(
       expect.objectContaining({
         text: expect.stringContaining("DELETE FROM freebie_brand_strategies WHERE email"),
@@ -100,7 +108,7 @@ describe("DELETE /api/user/delete", () => {
     const cookies = response.headers.get("set-cookie") || ""
     expect(cookies).toContain("sb-project-ref-auth-token=")
     expect(cookies).toContain("Max-Age=0")
-    expect(cookies).toContain("sselfie_anon_id=")
+    expect(cookies).toMatch(/sselfie_anon_id_[0-9a-f]{32}=/)
     expect(cookies).toContain("sselfie_posthog_reset=1")
   })
 })
