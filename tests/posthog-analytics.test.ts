@@ -485,11 +485,16 @@ describe("PostHog analytics boundary", () => {
     expect(sanitizePostHogPathname("/api/app-v3/maya/chats/customer-chat-id")).toBe(
       "/api/app-v3/maya/chats/[id]"
     )
-    expect(sanitizePostHogPathname("/api/feed/customer-feed-id/generate-images")).toBe(
+    expect(sanitizePostHogPathname("/api/feed/123456/generate-images")).toBe(
       "/api/feed/[id]/generate-images"
     )
-    expect(sanitizePostHogPathname("/api/feed/post/customer-post-id/cancel")).toBe(
+    expect(sanitizePostHogPathname("/api/feed/post/987654/cancel")).toBe(
       "/api/feed/post/[id]/cancel"
+    )
+    expect(sanitizePostHogPathname("/api/feed/latest")).toBe("/api/feed/latest")
+    expect(sanitizePostHogPathname("/api/feed/list")).toBe("/api/feed/list")
+    expect(sanitizePostHogPathname("/api/feed/create-manual")).toBe(
+      "/api/feed/create-manual"
     )
     expect(sanitizePostHogPathname("/api/maya/personal-pages/customer-page-id/regenerate")).toBe(
       "/api/maya/personal-pages/[id]/regenerate"
@@ -520,8 +525,9 @@ describe("PostHog analytics boundary", () => {
             generatedAsset:
               "/api/maya/generated-assets/customer-specific-id/html?token=private",
             chat: "/api/app-v3/maya/chats/customer-chat-id?token=private",
-            feed: "https://preview.test/api/feed/customer-feed-id/progress?token=private",
-            post: "/api/feed/post/customer-post-id/cancel",
+            feed: "https://preview.test/api/feed/123456/progress?token=private",
+            post: "/api/feed/post/987654/cancel",
+            feedList: "/api/feed/list?token=private",
             personalPage: "/api/maya/personal-pages/customer-page-id/regenerate",
             generation: "/api/studio/generation/customer-job-id",
           },
@@ -539,6 +545,7 @@ describe("PostHog analytics boundary", () => {
           chat: "/api/app-v3/maya/chats/[id]",
           feed: "https://preview.test/api/feed/[id]/progress",
           post: "/api/feed/post/[id]/cancel",
+          feedList: "/api/feed/list",
           personalPage: "/api/maya/personal-pages/[id]/regenerate",
           generation: "/api/studio/generation/[id]",
         },
