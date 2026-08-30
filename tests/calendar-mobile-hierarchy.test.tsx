@@ -19,7 +19,8 @@ describe("Calendar mobile hierarchy", () => {
 
     expect(plannerView).not.toContain("CalendarExplainer")
     expect(plannerView).not.toContain("calendar:onboarding:v1")
-    expect(plannerView).toContain("<FeedPlannerClient />")
+    expect(plannerView).toContain("<SuiteCalendar />")
+    expect(plannerView).not.toContain("<FeedPlannerClient />")
   })
 
   it("names undated posts honestly and gives every row a useful label", () => {
