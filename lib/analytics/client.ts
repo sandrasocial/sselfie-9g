@@ -8,13 +8,34 @@ export type BrowserAnalyticsIdentity = {
 
 let identityRequest: Promise<BrowserAnalyticsIdentity> | null = null
 const ANALYTICS_GENERATION_COOKIE = "sselfie_analytics_generation"
+const NAVIGATION_GENERATION_SESSION_KEY = "sselfie_analytics_navigation_generation"
 const POSTHOG_RESET_ACK_TIMEOUT_MS = 2_000
-const POSTHOG_RESET_NONCE_PATTERN =
+const ANALYTICS_UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function writeAnalyticsGeneration(generation: string): void {
   const secure = window.location.protocol === "https:" ? "; Secure" : ""
   document.cookie = `${ANALYTICS_GENERATION_COOKIE}=${generation}; Path=/; SameSite=Lax; Max-Age=31536000${secure}`
+}
+
+function rememberNavigationGeneration(generation: string): void {
+  try {
+    window.sessionStorage?.setItem(NAVIGATION_GENERATION_SESSION_KEY, generation)
+  } catch {
+    // The shared cookie remains the fallback when storage is unavailable.
+  }
+}
+
+function consumeNavigationGeneration(): string | null {
+  try {
+    const generation = window.sessionStorage?.getItem(NAVIGATION_GENERATION_SESSION_KEY)
+    if (!generation || !ANALYTICS_UUID_PATTERN.test(generation)) return null
+    window.sessionStorage.removeItem(NAVIGATION_GENERATION_SESSION_KEY)
+    writeAnalyticsGeneration(generation)
+    return generation
+  } catch {
+    return null
+  }
 }
 
 export function rotateAnalyticsBrowserGeneration(): string | null {
@@ -31,7 +52,10 @@ export function analyticsBrowserGeneration(): string | null {
     .map(value => value.trim())
     .find(value => value.startsWith(`${ANALYTICS_GENERATION_COOKIE}=`))
     ?.slice(ANALYTICS_GENERATION_COOKIE.length + 1)
-  if (existing) return existing
+  if (existing && ANALYTICS_UUID_PATTERN.test(existing)) {
+    writeAnalyticsGeneration(existing)
+    return existing
+  }
   return rotateAnalyticsBrowserGeneration()
 }
 
@@ -43,7 +67,9 @@ async function requestAnalyticsIdentity(
   rotateAnonymous: boolean
 ): Promise<BrowserAnalyticsIdentity> {
   try {
-    const generation = analyticsBrowserGeneration()
+    // Carry a navigation click's chosen generation through this tab so another
+    // first-visit tab cannot replace it before the destination bootstrap.
+    const generation = consumeNavigationGeneration() ?? analyticsBrowserGeneration()
     const response = await fetch(
       `/api/analytics/event${rotateAnonymous ? "?rotate_anonymous=1" : ""}`,
       {
@@ -59,7 +85,7 @@ async function requestAnalyticsIdentity(
     const data = await response.json()
     const resetPostHogNonce =
       typeof data?.resetPostHogNonce === "string" &&
-      POSTHOG_RESET_NONCE_PATTERN.test(data.resetPostHogNonce)
+      ANALYTICS_UUID_PATTERN.test(data.resetPostHogNonce)
         ? data.resetPostHogNonce
         : null
     return {
@@ -93,7 +119,7 @@ export function ensureAnalyticsBrowserIdentity(
 }
 
 export async function acknowledgePostHogReset(resetNonce: string | null): Promise<boolean> {
-  if (!resetNonce || !POSTHOG_RESET_NONCE_PATTERN.test(resetNonce)) return false
+  if (!resetNonce || !ANALYTICS_UUID_PATTERN.test(resetNonce)) return false
   const controller = new AbortController()
   const timeout = globalThis.setTimeout(() => controller.abort(), POSTHOG_RESET_ACK_TIMEOUT_MS)
   try {
@@ -119,8 +145,12 @@ export async function trackAnalyticsEvent(input: {
   navigationSafe?: boolean
 }) {
   try {
+    const navigationGeneration =
+      input.navigationSafe === true ? analyticsBrowserGeneration() : null
+    if (navigationGeneration) rememberNavigationGeneration(navigationGeneration)
     const payload = {
       event: input.event,
+      ...(navigationGeneration ? { analytics_generation: navigationGeneration } : {}),
       properties: input.properties || {},
       path:
         typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
@@ -156,7 +186,6 @@ export async function trackAnalyticsEvent(input: {
     ) {
       // Install the browser generation synchronously so the beacon and the
       // destination page's identity GET derive the same first-visit anon ID.
-      analyticsBrowserGeneration()
       const blob = new Blob([JSON.stringify(payload)], { type: "application/json" })
       navigator.sendBeacon("/api/analytics/event", blob)
       return

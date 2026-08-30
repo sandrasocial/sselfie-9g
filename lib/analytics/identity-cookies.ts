@@ -19,8 +19,12 @@ const analyticsGenerationCookieOptions = {
   maxAge: 60 * 60 * 24 * 365,
 }
 
-export function analyticsGenerationFromRequest(req?: NextRequest): string | null {
+export function analyticsGenerationFromRequest(
+  req?: NextRequest,
+  explicitGeneration?: string | null
+): string | null {
   const generation =
+    explicitGeneration ||
     req?.headers.get("x-sselfie-analytics-generation") ||
     req?.cookies.get("sselfie_analytics_generation")?.value ||
     null

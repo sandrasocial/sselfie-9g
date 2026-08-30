@@ -44,13 +44,32 @@ describe("browser analytics identity bootstrap", () => {
   })
 
   it("seeds identity and sends a navigation-safe beacon before bootstrap starts", async () => {
-    const request = vi.fn<typeof fetch>()
+    const request = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        distinctId: "anon:33333333-3333-4333-8333-333333333333",
+        resetPostHog: false,
+      })
+    )
     const sendBeacon = vi.fn().mockReturnValue(true)
+    const setItem = vi.fn()
+    const removeItem = vi.fn()
+    let navigationGeneration: string | null = null
     let cookie = ""
     vi.stubGlobal("fetch", request)
     vi.stubGlobal("navigator", { sendBeacon })
     vi.stubGlobal("window", {
       crypto: { randomUUID: () => "33333333-3333-4333-8333-333333333333" },
+      sessionStorage: {
+        getItem: () => navigationGeneration,
+        setItem: (key: string, value: string) => {
+          navigationGeneration = value
+          setItem(key, value)
+        },
+        removeItem: (key: string) => {
+          navigationGeneration = null
+          removeItem(key)
+        },
+      },
       location: {
         pathname: "/vault-maya",
         search: "?utm_source=email",
@@ -78,8 +97,33 @@ describe("browser analytics identity bootstrap", () => {
       "sselfie_analytics_generation=33333333-3333-4333-8333-333333333333"
     )
     expect(cookie).toContain("Secure")
+    expect(setItem).toHaveBeenCalledWith(
+      "sselfie_analytics_navigation_generation",
+      "33333333-3333-4333-8333-333333333333"
+    )
     expect(sendBeacon).toHaveBeenCalledTimes(1)
     expect(sendBeacon).toHaveBeenCalledWith("/api/analytics/event", expect.any(Blob))
+    const beacon = sendBeacon.mock.calls[0][1] as Blob
+    await expect(beacon.text()).resolves.toContain(
+      '"analytics_generation":"33333333-3333-4333-8333-333333333333"'
+    )
+
+    cookie = "sselfie_analytics_generation=44444444-4444-4444-8444-444444444444"
+    const { ensureAnalyticsBrowserIdentity } = await import("@/lib/analytics/client")
+    await ensureAnalyticsBrowserIdentity()
+
+    expect(request).toHaveBeenCalledWith(
+      "/api/analytics/event",
+      expect.objectContaining({
+        headers: {
+          "x-sselfie-analytics-generation": "33333333-3333-4333-8333-333333333333",
+        },
+      })
+    )
+    expect(cookie).toContain(
+      "sselfie_analytics_generation=33333333-3333-4333-8333-333333333333"
+    )
+    expect(removeItem).toHaveBeenCalledWith("sselfie_analytics_navigation_generation")
   })
 
   it("does not cache a transient null identity", async () => {

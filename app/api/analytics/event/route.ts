@@ -19,6 +19,7 @@ type AnalyticsIdentity = {
   shouldSetAnonCookie: boolean
   anonId: string
   neonUserId: string | null
+  generation: string | null
 }
 
 const SERVER_ONLY_ANALYTICS_EVENTS = new Set([
@@ -37,6 +38,7 @@ const POSTHOG_RESET_NONCE_PATTERN =
 
 type AnalyticsRequestInput = {
   eventName: string
+  analyticsGeneration: string | null
   properties: Record<string, unknown>
   path: string | null
   referrer: string | null
@@ -63,6 +65,7 @@ function analyticsRequestInput(req: NextRequest, value: unknown): AnalyticsReque
   const parameter = (key: string) => stringValue(body, key) ?? url.searchParams.get(key)
   return {
     eventName: stringValue(body, "event") ?? "",
+    analyticsGeneration: stringValue(body, "analytics_generation"),
     properties: objectValue(body.properties),
     path:
       stringValue(body, "path") ??
@@ -90,9 +93,10 @@ function readIp(req: NextRequest) {
 
 async function resolveAnalyticsIdentity(
   req: NextRequest,
-  rotateAnonymous = false
+  rotateAnonymous = false,
+  explicitGeneration: string | null = null
 ): Promise<AnalyticsIdentity | null> {
-  const generation = analyticsGenerationFromRequest(req)
+  const generation = analyticsGenerationFromRequest(req, explicitGeneration)
   const anonCookieName = analyticsAnonCookieName(generation)
   const versionedAnonCookie = rotateAnonymous ? undefined : req.cookies.get(anonCookieName)?.value
   const legacyAnonCookie =
@@ -129,11 +133,12 @@ async function resolveAnalyticsIdentity(
     shouldSetAnonCookie: rotateAnonymous || !versionedAnonCookie,
     anonId,
     neonUserId,
+    generation,
   }
 }
 
 function setAnonCookie(response: NextResponse, identity: AnalyticsIdentity, req: NextRequest) {
-  clearStaleAnonymousAnalyticsCookies(response, req, analyticsGenerationFromRequest(req))
+  clearStaleAnonymousAnalyticsCookies(response, req, identity.generation)
   if (!identity.shouldSetAnonCookie) return
   response.cookies.set(identity.anonCookieName, identity.anonId, {
     httpOnly: true,
@@ -228,7 +233,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, accepted: false, reason: "Unsupported event" })
     }
 
-    const identity = await resolveAnalyticsIdentity(req)
+    const identity = await resolveAnalyticsIdentity(req, false, input.analyticsGeneration)
     if (!identity) {
       return NextResponse.json({ ok: true, accepted: false, reason: "Identity unavailable" })
     }

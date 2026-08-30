@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   checkRateLimit: vi.fn(),
   createServerClient: vi.fn(),
   getUserByAuthId: vi.fn(),
+  logAnalyticsEvent: vi.fn(),
 }))
 
 vi.mock("server-only", () => ({}))
@@ -20,6 +21,7 @@ vi.mock("@/lib/db/client", () => ({ getDb: mocks.getDb }))
 vi.mock("@/lib/rate-limit-api", () => ({ checkRateLimit: mocks.checkRateLimit }))
 vi.mock("@/lib/supabase/server", () => ({ createServerClient: mocks.createServerClient }))
 vi.mock("@/lib/user-mapping", () => ({ getUserByAuthId: mocks.getUserByAuthId }))
+vi.mock("@/lib/analytics/events", () => ({ logAnalyticsEvent: mocks.logAnalyticsEvent }))
 
 const RESET_NONCE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 const STALE_RESET_NONCE = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
@@ -28,6 +30,7 @@ describe("public analytics route server-only event boundary", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.checkRateLimit.mockResolvedValue({ success: true })
+    mocks.logAnalyticsEvent.mockResolvedValue({ ok: true })
     mocks.createServerClient.mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
     })
@@ -62,6 +65,37 @@ describe("public analytics route server-only event boundary", () => {
     )
     expect(second.headers.get("set-cookie")).toContain(
       `sselfie_anon_id_33333333333343338333333333333333=${generation}`
+    )
+  })
+
+  it("uses the tab-selected generation carried by a navigation beacon", async () => {
+    const selectedGeneration = "33333333-3333-4333-8333-333333333333"
+    const otherTabGeneration = "44444444-4444-4444-8444-444444444444"
+    const { POST } = await import("@/app/api/analytics/event/route")
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/event", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `sselfie_analytics_generation=${otherTabGeneration}`,
+        },
+        body: JSON.stringify({
+          event: "activation_selfie_uploaded",
+          analytics_generation: selectedGeneration,
+        }),
+      })
+    )
+
+    await expect(response.json()).resolves.toEqual({ ok: true, accepted: true })
+    expect(mocks.logAnalyticsEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ anonId: selectedGeneration })
+    )
+    expect(response.headers.get("set-cookie")).toContain(
+      `sselfie_anon_id_33333333333343338333333333333333=${selectedGeneration}`
+    )
+    expect(response.headers.get("set-cookie")).not.toContain(
+      "sselfie_anon_id_44444444444444448444444444444444="
     )
   })
 
