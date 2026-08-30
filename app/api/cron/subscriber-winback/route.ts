@@ -168,7 +168,18 @@ async function getStageCandidates(
           AND el.status IN ('sent', 'delivered', 'suppressed')
           AND el.sent_at > NOW() - INTERVAL '120 days'
       )
-    ORDER BY r.email ASC
+    -- Never-attempted recipients go first. A failed recipient moves behind the
+    -- rest of the stage, then becomes eligible again in oldest-failure order,
+    -- so terminal bounces or transient provider failures cannot monopolize a
+    -- small daily batch while retries still make eventual progress.
+    ORDER BY (
+      SELECT MAX(failed.sent_at)
+      FROM email_logs failed
+      WHERE LOWER(BTRIM(failed.user_email)) = r.email
+        AND failed.email_type = ${stage.emailType}
+        AND failed.status IN ('failed', 'error')
+    ) ASC NULLS FIRST,
+    r.email ASC
     LIMIT ${limit}
   `) as Array<{ email: string }>
 }
