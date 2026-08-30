@@ -5,7 +5,18 @@ describe("email cron runtime budgets", () => {
   it("keeps the AI photoshoot nurture batch inside its Vercel runtime", () => {
     const route = readFileSync("app/api/cron/ai-photoshoot-nurture/route.ts", "utf8")
 
-    expect(route).toContain("const MAX_TOTAL_PER_RUN_DEFAULT = 100")
+    expect(route).toContain("const RUNTIME_BUDGET_MS = 240_000")
+    expect(route).toContain("const MAX_TOTAL_PER_RUN_DEFAULT = 50")
+    expect(route).toContain("const MAX_PER_TOUCH_DEFAULT = 12")
+    expect(route).toContain("processWithRuntimeBudget")
+    expect(route).toContain("runWithRuntimeBudget")
+    expect(route).toContain("fairTouchLimit")
+    expect(route).toContain("remainingSends -= processing.processed")
+    expect(route).toContain("signal,")
+    expect(route).toContain("logWithinRuntimeBudget")
+    expect(route).not.toContain("await cronLogger.start()")
+    expect(route).not.toContain("await cronLogger.success(")
+    expect(route).not.toContain("await cronLogger.error(")
     expect(route).toContain("idempotencyKey:")
   })
 
