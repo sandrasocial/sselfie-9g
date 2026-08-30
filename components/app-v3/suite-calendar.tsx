@@ -173,7 +173,15 @@ function PostEditor({
   const [isPosted, setIsPosted] = useState(Boolean(post.is_posted))
   const [isSaving, setIsSaving] = useState(false)
   const [isRemoving, setIsRemoving] = useState(false)
+  const [isRemoveArmed, setIsRemoveArmed] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
+  const draftPostIdRef = useRef(post.id)
+  const captionDraftRef = useRef(post.caption || "")
+  const captionSyncedRef = useRef(post.caption || "")
+  const scheduledAtDraftRef = useRef(dateValue(post.scheduled_at))
+  const scheduledAtSyncedRef = useRef(dateValue(post.scheduled_at))
+  const postedDraftRef = useRef(Boolean(post.is_posted))
+  const postedSyncedRef = useRef(Boolean(post.is_posted))
   const { dialogRef, initialFocusRef } = useAccessibleModal(!showGallery, onClose)
   const imageUrl = imageUrlForPost(post)
   const currentIndex = posts.findIndex(item => Number(item.id) === Number(post.id))
@@ -182,10 +190,47 @@ function PostEditor({
   const derivedState = isPosted ? "Posted" : imageUrl && caption.trim() ? "Ready" : "Draft"
 
   useEffect(() => {
-    setCaption(post.caption || "")
-    setScheduledAt(dateValue(post.scheduled_at))
-    setIsPosted(Boolean(post.is_posted))
-  }, [post])
+    const nextCaption = post.caption || ""
+    const nextScheduledAt = dateValue(post.scheduled_at)
+    const nextIsPosted = Boolean(post.is_posted)
+
+    if (draftPostIdRef.current !== post.id) {
+      draftPostIdRef.current = post.id
+      captionDraftRef.current = nextCaption
+      captionSyncedRef.current = nextCaption
+      scheduledAtDraftRef.current = nextScheduledAt
+      scheduledAtSyncedRef.current = nextScheduledAt
+      postedDraftRef.current = nextIsPosted
+      postedSyncedRef.current = nextIsPosted
+      setCaption(nextCaption)
+      setScheduledAt(nextScheduledAt)
+      setIsPosted(nextIsPosted)
+      setIsRemoveArmed(false)
+      return
+    }
+
+    if (captionDraftRef.current === captionSyncedRef.current) {
+      captionDraftRef.current = nextCaption
+      setCaption(nextCaption)
+    }
+    if (scheduledAtDraftRef.current === scheduledAtSyncedRef.current) {
+      scheduledAtDraftRef.current = nextScheduledAt
+      setScheduledAt(nextScheduledAt)
+    }
+    if (postedDraftRef.current === postedSyncedRef.current) {
+      postedDraftRef.current = nextIsPosted
+      setIsPosted(nextIsPosted)
+    }
+    captionSyncedRef.current = nextCaption
+    scheduledAtSyncedRef.current = nextScheduledAt
+    postedSyncedRef.current = nextIsPosted
+  }, [post.caption, post.id, post.is_posted, post.scheduled_at])
+
+  useEffect(() => {
+    if (!isRemoveArmed) return
+    const timeout = window.setTimeout(() => setIsRemoveArmed(false), 4_000)
+    return () => window.clearTimeout(timeout)
+  }, [isRemoveArmed])
 
   const save = async () => {
     if (caption.length > 2200) {
@@ -248,6 +293,7 @@ function PostEditor({
 
   const removePhoto = async () => {
     if (!imageUrl || isRemoving) return
+    setIsRemoveArmed(false)
     setIsRemoving(true)
     try {
       const response = await fetch(`/api/feed/${feed.id}/remove-post-image`, {
@@ -269,6 +315,15 @@ function PostEditor({
     } finally {
       setIsRemoving(false)
     }
+  }
+
+  const requestRemovePhoto = () => {
+    if (!imageUrl || isRemoving) return
+    if (!isRemoveArmed) {
+      setIsRemoveArmed(true)
+      return
+    }
+    void removePhoto()
   }
 
   return (
@@ -336,7 +391,7 @@ function PostEditor({
                   </button>
                   <button
                     type="button"
-                    onClick={() => void removePhoto()}
+                    onClick={requestRemovePhoto}
                     disabled={!imageUrl || isRemoving}
                     className="flex min-h-12 items-center justify-center gap-2 px-3 text-[10px] uppercase tracking-[0.15em] hover:bg-white disabled:opacity-35"
                   >
@@ -345,7 +400,7 @@ function PostEditor({
                     ) : (
                       <Trash2 className="h-3.5 w-3.5" />
                     )}
-                    Remove
+                    {isRemoveArmed ? "Confirm remove" : "Remove"}
                   </button>
                 </div>
               </div>
@@ -357,7 +412,10 @@ function PostEditor({
                   </span>
                   <textarea
                     value={caption}
-                    onChange={event => setCaption(event.target.value)}
+                    onChange={event => {
+                      captionDraftRef.current = event.target.value
+                      setCaption(event.target.value)
+                    }}
                     rows={7}
                     maxLength={2200}
                     placeholder="Write what you want to say…"
@@ -375,7 +433,10 @@ function PostEditor({
                   <input
                     type="date"
                     value={scheduledAt}
-                    onChange={event => setScheduledAt(event.target.value)}
+                    onChange={event => {
+                      scheduledAtDraftRef.current = event.target.value
+                      setScheduledAt(event.target.value)
+                    }}
                     className="min-h-11 w-full rounded-[3px] border border-[color:var(--suite-steel)] bg-white px-3 text-[14px] outline-none focus:border-[color:var(--suite-night)] focus:ring-1 focus:ring-[color:var(--suite-night)]"
                   />
                 </label>
@@ -391,7 +452,14 @@ function PostEditor({
                         <button
                           key={status}
                           type="button"
-                          onClick={() => status === "Posted" && setIsPosted(value => !value)}
+                          onClick={() => {
+                            if (status !== "Posted") return
+                            setIsPosted(value => {
+                              const nextValue = !value
+                              postedDraftRef.current = nextValue
+                              return nextValue
+                            })
+                          }}
                           disabled={status !== "Posted"}
                           aria-pressed={selected}
                           className={`min-h-11 border-r border-[color:var(--suite-steel)] last:border-r-0 ${
@@ -483,6 +551,7 @@ export function SuiteCalendar() {
   const [isApplying, setIsApplying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const hasTrackedWorkspace = useRef(false)
+  const feedRequestRef = useRef(0)
 
   const loadPlans = useCallback(async () => {
     const response = await fetch("/api/feed/list", { credentials: "include", cache: "no-store" })
@@ -496,11 +565,13 @@ export function SuiteCalendar() {
   }, [])
 
   const loadFeed = useCallback(async () => {
+    const requestId = ++feedRequestRef.current
     setIsLoading(true)
     setError(null)
     try {
       const endpoint = selectedFeedId ? `/api/feed/${selectedFeedId}` : "/api/feed/latest"
       const response = await fetch(endpoint, { credentials: "include", cache: "no-store" })
+      if (requestId !== feedRequestRef.current) return
       if (!response.ok) {
         if (selectedFeedId && response.status === 404) {
           feedNav?.navigateToFeed(null)
@@ -509,6 +580,7 @@ export function SuiteCalendar() {
         throw await responseError(response, "Your calendar could not be loaded.")
       }
       const result = (await response.json()) as CalendarFeedResponse
+      if (requestId !== feedRequestRef.current) return
       if (result.exists === false || !result.feed) {
         setFeed(null)
         setPosts([])
@@ -525,11 +597,13 @@ export function SuiteCalendar() {
         void trackAnalyticsEvent({ event: "calendar_workspace_opened" })
       }
     } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : "Your calendar could not be loaded."
-      )
+      if (requestId === feedRequestRef.current) {
+        setError(
+          loadError instanceof Error ? loadError.message : "Your calendar could not be loaded."
+        )
+      }
     } finally {
-      setIsLoading(false)
+      if (requestId === feedRequestRef.current) setIsLoading(false)
     }
   }, [feedNav, selectedFeedId])
 
