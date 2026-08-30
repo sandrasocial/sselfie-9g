@@ -5,6 +5,7 @@ import { createCronLogger } from "@/lib/cron-logger"
 import {
   createRuntimeBudget,
   processWithRuntimeBudget,
+  runWithRuntimeBudget,
   type RuntimeBudget,
 } from "@/lib/cron/runtime-budget"
 import { sql } from "@/lib/db/client"
@@ -192,15 +193,34 @@ async function runStage(
   stage: WinbackStage,
   limit: number,
   dryRun: boolean,
-  runtimeBudget: RuntimeBudget,
+  runtimeBudget: RuntimeBudget
 ) {
-  const candidates = await getStageCandidates(stage, limit)
+  const selection = await runWithRuntimeBudget({
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_SEND_BUDGET_MS,
+    operation: () => getStageCandidates(stage, limit),
+  })
+
+  if (!selection.completed) {
+    return {
+      found: 0,
+      sent: 0,
+      failed: 0,
+      processed: 0,
+      stoppedForBudget: true,
+      timedOut: selection.timedOut,
+      dryRun,
+    }
+  }
+
+  const candidates = selection.value
   const results = {
     found: candidates.length,
     sent: 0,
     failed: 0,
     processed: 0,
     stoppedForBudget: false,
+    timedOut: false,
     dryRun,
   }
 
@@ -237,6 +257,7 @@ async function runStage(
 
   results.processed = processing.processed
   results.stoppedForBudget = processing.stoppedForBudget
+  results.timedOut = processing.timedOut
 
   return results
 }
@@ -289,36 +310,55 @@ async function hasCurrentCustomerOrMembershipAccess(email: string): Promise<bool
  * can exclude them. Counted in dry-run mode whenever the sunset env is off.
  */
 async function runSunset(apply: boolean, limit: number, runtimeBudget: RuntimeBudget) {
-  const candidates = (await sql`
-    WITH recipients AS (
-      SELECT
-        LOWER(BTRIM(user_email)) AS email,
-        MAX(clicked_at) AS last_click
-      FROM email_logs
-      WHERE user_email IS NOT NULL AND BTRIM(user_email) <> ''
-      GROUP BY 1
-    )
-    SELECT r.email
-    FROM recipients r
-    WHERE (r.last_click IS NULL OR r.last_click <= NOW() - INTERVAL '60 days')
-      AND EXISTS (
-        SELECT 1
-        FROM email_logs el
-        WHERE LOWER(BTRIM(el.user_email)) = r.email
-          AND el.email_type = ${SUBSCRIBER_WINBACK_EMAIL_TYPES.sunset}
-          AND el.status IN ('sent', 'delivered')
-          AND el.sent_at <= NOW() - INTERVAL '7 days'
-          AND el.sent_at > NOW() - INTERVAL '60 days'
-      )
-      AND NOT EXISTS (
-        SELECT 1
-        FROM email_logs done
-        WHERE LOWER(BTRIM(done.user_email)) = r.email
-          AND done.email_type = 'subscriber-winback-sunset-applied'
-      )
-    ORDER BY r.email ASC
-    LIMIT ${limit}
-  `) as Array<{ email: string }>
+  const selection = await runWithRuntimeBudget({
+    budget: runtimeBudget,
+    minimumRemainingMs: MIN_SUNSET_BUDGET_MS,
+    operation: async () =>
+      (await sql`
+        WITH recipients AS (
+          SELECT
+            LOWER(BTRIM(user_email)) AS email,
+            MAX(clicked_at) AS last_click
+          FROM email_logs
+          WHERE user_email IS NOT NULL AND BTRIM(user_email) <> ''
+          GROUP BY 1
+        )
+        SELECT r.email
+        FROM recipients r
+        WHERE (r.last_click IS NULL OR r.last_click <= NOW() - INTERVAL '60 days')
+          AND EXISTS (
+            SELECT 1
+            FROM email_logs el
+            WHERE LOWER(BTRIM(el.user_email)) = r.email
+              AND el.email_type = ${SUBSCRIBER_WINBACK_EMAIL_TYPES.sunset}
+              AND el.status IN ('sent', 'delivered')
+              AND el.sent_at <= NOW() - INTERVAL '7 days'
+              AND el.sent_at > NOW() - INTERVAL '60 days'
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM email_logs done
+            WHERE LOWER(BTRIM(done.user_email)) = r.email
+              AND done.email_type = 'subscriber-winback-sunset-applied'
+          )
+        ORDER BY r.email ASC
+        LIMIT ${limit}
+      `) as Array<{ email: string }>,
+  })
+
+  if (!selection.completed) {
+    return {
+      eligible: 0,
+      suppressed: 0,
+      skippedCustomers: 0,
+      processed: 0,
+      stoppedForBudget: true,
+      timedOut: selection.timedOut,
+      dryRun: !apply,
+    }
+  }
+
+  const candidates = selection.value
 
   const results = {
     eligible: candidates.length,
@@ -326,6 +366,7 @@ async function runSunset(apply: boolean, limit: number, runtimeBudget: RuntimeBu
     skippedCustomers: 0,
     processed: 0,
     stoppedForBudget: false,
+    timedOut: false,
     dryRun: !apply,
   }
   if (!apply) return results
@@ -359,6 +400,7 @@ async function runSunset(apply: boolean, limit: number, runtimeBudget: RuntimeBu
 
   results.processed = processing.processed
   results.stoppedForBudget = processing.stoppedForBudget
+  results.timedOut = processing.timedOut
 
   return results
 }
@@ -406,7 +448,7 @@ export async function GET(request: Request) {
     results.sunset = await runSunset(
       !dryRun && envFlag("SUBSCRIBER_WINBACK_SUNSET_ENABLED"),
       SUNSET_LIMIT,
-      runtimeBudget,
+      runtimeBudget
     )
 
     let remainingSends = MAX_EMAILS_PER_RUN
@@ -425,7 +467,7 @@ export async function GET(request: Request) {
         stage,
         Math.min(BATCH_LIMIT, remainingSends),
         dryRun,
-        runtimeBudget,
+        runtimeBudget
       )
       results[stage.emailType] = stageResult
       remainingSends -= stageResult.processed
