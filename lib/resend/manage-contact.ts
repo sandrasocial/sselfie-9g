@@ -7,9 +7,16 @@ import { acquireKvLock, releaseKvLock } from "@/lib/cache"
 import { requireResendClient } from "@/lib/resend/client"
 import { hasResendApiKey } from "@/lib/resend/api-key"
 
+const PRODUCTION_MAIN_SEGMENT_ID = "3cd6c5e3-fdf9-4744-b7f3-fda7c8cdf6cd"
+
 function getMainSegmentId(): string {
   // Vercel/dashboard copies can include invisible whitespace. Segment endpoints require a UUID.
-  return (process.env.RESEND_AUDIENCE_ID || "").replace(/\r|\n|\t/g, "").trim()
+  const configured = (process.env.RESEND_AUDIENCE_ID || "").replace(/\r|\n|\t/g, "").trim()
+  if (configured) return configured
+
+  // Preserve the former signup-sync fallback in production so temporary env
+  // drift cannot silently create global contacts outside the nurture segment.
+  return process.env.VERCEL_ENV === "production" ? PRODUCTION_MAIN_SEGMENT_ID : ""
 }
 
 const TEST_EMAIL_DOMAINS = new Set([
