@@ -802,7 +802,9 @@ async function appendCalendarSystemContext(
     `
     const openSlots = await sql`
       SELECT position, post_type, scheduled_at, content_pillar FROM feed_posts
-      WHERE feed_layout_id = ${planLayout.id} AND image_url IS NULL AND scheduled_at >= CURRENT_DATE
+      WHERE feed_layout_id = ${planLayout.id}
+        AND COALESCE(image_url, preview_image_url) IS NULL
+        AND scheduled_at >= CURRENT_DATE
       ORDER BY scheduled_at ASC
       LIMIT 6
     `
