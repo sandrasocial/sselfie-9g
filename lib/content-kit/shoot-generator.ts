@@ -46,7 +46,8 @@ const PORTRAIT_SIZE = normalizeOpenAIImageSize(process.env.SHOOT_STUDIO_PORTRAIT
 // content (the suite stays medium for member cost control), but admin was hardcoded to medium.
 // Safe here because admin renders one shot per request (fits the 300s ceiling; ~191s vs ~82s).
 const DEFAULT_RENDER_QUALITY: ImgQuality =
-  process.env.SHOOT_STUDIO_IMAGE_QUALITY === "medium" || process.env.SHOOT_STUDIO_IMAGE_QUALITY === "low"
+  process.env.SHOOT_STUDIO_IMAGE_QUALITY === "medium" ||
+  process.env.SHOOT_STUDIO_IMAGE_QUALITY === "low"
     ? (process.env.SHOOT_STUDIO_IMAGE_QUALITY as ImgQuality)
     : "high"
 
@@ -69,6 +70,10 @@ async function getAdminLikenessBlock(): Promise<string> {
   }
 }
 const DEFAULT_SHOTS_PER_SHOOT = 6
+const INSPIRATION_PREFLIGHT_TIMEOUT_MS = 20_000
+const INSPIRATION_PREFLIGHT_REQUEST_TIMEOUT_MS = 7_000
+const INSPIRATION_PREFLIGHT_CONCURRENCY = 3
+const SHOOT_PLANNING_TIMEOUT_MS = 150_000
 const SHOT_ROLE_SEQUENCE: ShootShotRole[] = [
   "establishing-full-body",
   "movement-lifestyle-action",
@@ -521,6 +526,21 @@ export class InspirationModerationError extends Error {
   }
 }
 
+export class ShootPlanningError extends Error {
+  readonly code: "inspiration_preflight_unavailable" | "shoot_planning_timed_out"
+  readonly status = 503
+  readonly retryable = true
+
+  constructor(
+    code: "inspiration_preflight_unavailable" | "shoot_planning_timed_out",
+    message: string
+  ) {
+    super(message)
+    this.name = "ShootPlanningError"
+    this.code = code
+  }
+}
+
 export class ShootRenderError extends Error {
   readonly status: number
   readonly code: "moderation_blocked" | "generation_failed"
@@ -542,29 +562,91 @@ export class ShootRenderError extends Error {
   }
 }
 
+async function runWithTimeout<T>(
+  timeoutMs: number,
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeoutError: () => Error
+): Promise<T> {
+  const controller = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
+  try {
+    return await operation(controller.signal)
+  } catch (error) {
+    if (timedOut) throw timeoutError()
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function assertSafeInspirationImages(inspirationUrls: string[]): Promise<void> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey || inspirationUrls.length === 0) return
   const openai = new OpenAI({ apiKey })
-  const checks = await Promise.all(
-    inspirationUrls.map(async (url, index) => {
-      try {
-        const response = await openai.moderations.create({
-          model: "omni-moderation-latest",
-          input: [{ type: "image_url", image_url: { url } }],
-        })
-        return response.results.some(result => result.flagged) ? index + 1 : null
-      } catch (error) {
-        // Moderation is an early warning, not a second availability dependency. The image
-        // endpoint still enforces policy, and regenerateShot persists that result per card.
-        console.warn(
-          `[shoot-studio] inspiration preflight unavailable for image ${index + 1}: ${getGenerationFailureSummary(error)}`
+  const checks = await runWithTimeout(
+    INSPIRATION_PREFLIGHT_TIMEOUT_MS,
+    async signal => {
+      const results: Array<{ index: number; blocked: boolean; unavailable: boolean }> = []
+      for (
+        let start = 0;
+        start < inspirationUrls.length;
+        start += INSPIRATION_PREFLIGHT_CONCURRENCY
+      ) {
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
+        const chunk = inspirationUrls.slice(start, start + INSPIRATION_PREFLIGHT_CONCURRENCY)
+        results.push(
+          ...(await Promise.all(
+            chunk.map(async (url, offset) => {
+              const index = start + offset + 1
+              try {
+                const response = await openai.moderations.create(
+                  {
+                    model: "omni-moderation-latest",
+                    input: [{ type: "image_url", image_url: { url } }],
+                  },
+                  {
+                    signal,
+                    maxRetries: 0,
+                    timeout: INSPIRATION_PREFLIGHT_REQUEST_TIMEOUT_MS,
+                  }
+                )
+                return {
+                  index,
+                  blocked: response.results.some(result => result.flagged),
+                  unavailable: false,
+                }
+              } catch (error) {
+                if (signal.aborted) throw error
+                console.warn(
+                  `[shoot-studio] inspiration preflight unavailable for image ${index}: ${getGenerationFailureSummary(error)}`
+                )
+                return { index, blocked: false, unavailable: true }
+              }
+            })
+          ))
         )
-        return null
+        if (results.some(result => result.unavailable)) break
       }
-    })
+      return results
+    },
+    () =>
+      new ShootPlanningError(
+        "inspiration_preflight_unavailable",
+        "Inspiration safety checks took too long. Try creating the shoot again."
+      )
   )
-  const blocked = checks.filter((index): index is number => index !== null)
+  const unavailable = checks.filter(check => check.unavailable)
+  if (unavailable.length > 0) {
+    throw new ShootPlanningError(
+      "inspiration_preflight_unavailable",
+      "Inspiration safety checks are temporarily unavailable. Try creating the shoot again."
+    )
+  }
+  const blocked = checks.filter(check => check.blocked).map(check => check.index)
   if (blocked.length === 0) return
   const label = blocked.length === 1 ? `image ${blocked[0]}` : `images ${blocked.join(", ")}`
   throw new InspirationModerationError(
@@ -843,6 +925,7 @@ export async function createShootDraft(input: {
   let parsed: any = null
   let drafts: Omit<ShootShot, "id" | "status">[] = []
   let lastPlanError: unknown = null
+  const planningStartedAt = Date.now()
   for (let attempt = 0; attempt < 2; attempt++) {
     const retryNote =
       attempt === 0
@@ -853,9 +936,27 @@ export async function createShootDraft(input: {
           ]
             .filter(Boolean)
             .join("\n")
-    const raw = await callContentKitVision(
-      buildCreatePrompt(retryNote, { story, vibe, shotCount }),
-      inspirationUrls
+    const remainingPlanningMs = SHOOT_PLANNING_TIMEOUT_MS - (Date.now() - planningStartedAt)
+    if (remainingPlanningMs <= 0) {
+      throw new ShootPlanningError(
+        "shoot_planning_timed_out",
+        "Shoot planning took too long. No shoot was created. Try again."
+      )
+    }
+    const raw = await runWithTimeout(
+      remainingPlanningMs,
+      signal =>
+        callContentKitVision(
+          buildCreatePrompt(retryNote, { story, vibe, shotCount }),
+          inspirationUrls,
+          undefined,
+          { signal }
+        ),
+      () =>
+        new ShootPlanningError(
+          "shoot_planning_timed_out",
+          "Shoot planning took too long. No shoot was created. Try again."
+        )
     )
     try {
       parsed = extractJsonObject(raw)

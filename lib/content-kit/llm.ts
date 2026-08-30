@@ -8,6 +8,7 @@ import { groundingSystemPrompt } from "@/lib/content/grounding"
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-5"
 const ANTHROPIC_MODEL = "claude-sonnet-5"
 const MAX_TOKENS = 12000
+const OPENROUTER_VISION_TIMEOUT_MS = 90_000
 // Sonnet 5 runs ADAPTIVE THINKING when the thinking param is omitted (silent default change
 // from Sonnet 4.5/4.6 — the 2026-07-09 model bump broke this pipeline). Thinking spends the
 // max_tokens budget BEFORE any text, so big shoot prompts returned thinking-only responses
@@ -64,7 +65,9 @@ export async function callContentKitLlm(
   })
   const block = message.content.find(item => item.type === "text")
   if (!block || block.type !== "text")
-    throw new Error(`Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`)
+    throw new Error(
+      `Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`
+    )
   return block.text
 }
 
@@ -75,13 +78,22 @@ export async function callContentKitLlm(
 export async function callContentKitVision(
   prompt: string,
   imageUrls: string[],
-  systemPrompt = groundingSystemPrompt()
+  systemPrompt = groundingSystemPrompt(),
+  options: { signal?: AbortSignal } = {}
 ): Promise<string> {
   const openrouterKey = process.env.OPENROUTER_API_KEY
   if (openrouterKey) {
+    const openrouterController = new AbortController()
+    const abortOpenRouter = () => openrouterController.abort(options.signal?.reason)
+    const openrouterTimeout = setTimeout(
+      () => openrouterController.abort(new Error("OpenRouter vision request timed out")),
+      OPENROUTER_VISION_TIMEOUT_MS
+    )
+    options.signal?.addEventListener("abort", abortOpenRouter, { once: true })
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
+        signal: openrouterController.signal,
         headers: {
           Authorization: `Bearer ${openrouterKey}`,
           "Content-Type": "application/json",
@@ -114,7 +126,11 @@ export async function callContentKitVision(
         )
       }
     } catch (error) {
+      if (options.signal?.aborted) throw error
       console.error("[content-kit] OpenRouter vision error, falling back to Anthropic:", error)
+    } finally {
+      clearTimeout(openrouterTimeout)
+      options.signal?.removeEventListener("abort", abortOpenRouter)
     }
   }
 
@@ -122,27 +138,32 @@ export async function callContentKitVision(
   if (!anthropicKey)
     throw new Error("No LLM available: OPENROUTER_API_KEY failed and ANTHROPIC_API_KEY is not set")
   const client = new Anthropic({ apiKey: anthropicKey })
-  const message = await client.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: MAX_TOKENS,
-    thinking: ANTHROPIC_THINKING,
-    system: systemPrompt,
-    messages: [
-      {
-        role: "user",
-        content: [
-          ...imageUrls.map(url => ({
-            type: "image" as const,
-            source: { type: "url" as const, url },
-          })),
-          { type: "text" as const, text: prompt },
-        ],
-      },
-    ],
-  })
+  const message = await client.messages.create(
+    {
+      model: ANTHROPIC_MODEL,
+      max_tokens: MAX_TOKENS,
+      thinking: ANTHROPIC_THINKING,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: [
+            ...imageUrls.map(url => ({
+              type: "image" as const,
+              source: { type: "url" as const, url },
+            })),
+            { type: "text" as const, text: prompt },
+          ],
+        },
+      ],
+    },
+    options.signal ? { signal: options.signal, maxRetries: 0 } : undefined
+  )
   const block = message.content.find(item => item.type === "text")
   if (!block || block.type !== "text")
-    throw new Error(`Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`)
+    throw new Error(
+      `Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`
+    )
   return block.text
 }
 

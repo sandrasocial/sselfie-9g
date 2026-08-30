@@ -86,9 +86,7 @@ describe("Shoot Studio planning retry", () => {
 
   it("retries when the first planning response contains malformed JSON", async () => {
     mocks.callContentKitVision
-      .mockResolvedValueOnce(
-        '{"title":"Broken","shots":[{"prompt":"first"} {"prompt":"second"}]}'
-      )
+      .mockResolvedValueOnce('{"title":"Broken","shots":[{"prompt":"first"} {"prompt":"second"}]}')
       .mockResolvedValueOnce(JSON.stringify(validPlan()))
 
     const { createShootDraft } = await import("@/lib/content-kit/shoot-generator")
@@ -113,5 +111,72 @@ describe("Shoot Studio planning retry", () => {
       })
     ).rejects.toThrow("Replace inspiration image 1")
     expect(mocks.callContentKitVision).not.toHaveBeenCalled()
+  })
+
+  it("fails fast with a retryable response when inspiration preflight is unavailable", async () => {
+    mocks.moderate.mockRejectedValue(
+      Object.assign(new Error("403 Forbidden"), {
+        status: 403,
+        type: "invalid_request_error",
+      })
+    )
+    const { createShootDraft } = await import("@/lib/content-kit/shoot-generator")
+
+    await expect(
+      createShootDraft({
+        inspirationUrls: [`${baseUrl}/inspiration.png`],
+        selfieUrls: [`${baseUrl}/selfie.png`],
+      })
+    ).rejects.toMatchObject({
+      code: "inspiration_preflight_unavailable",
+      status: 503,
+      retryable: true,
+    })
+
+    expect(mocks.moderate).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ maxRetries: 0, timeout: 7_000, signal: expect.any(AbortSignal) })
+    )
+    expect(mocks.callContentKitVision).not.toHaveBeenCalled()
+  })
+
+  it("aborts slow planning before the route ceiling without starting duplicate work", async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.callContentKitVision.mockImplementation(
+        (
+          _prompt: string,
+          _urls: string[],
+          _system: string | undefined,
+          options?: { signal?: AbortSignal }
+        ) =>
+          new Promise((_resolve, reject) => {
+            options?.signal?.addEventListener("abort", () => reject(new Error("aborted")), {
+              once: true,
+            })
+          })
+      )
+      const { createShootDraft } = await import("@/lib/content-kit/shoot-generator")
+
+      const pending = createShootDraft({
+        inspirationUrls: [`${baseUrl}/inspiration.png`],
+        selfieUrls: [`${baseUrl}/selfie.png`],
+      })
+      const rejection = expect(pending).rejects.toMatchObject({
+        code: "shoot_planning_timed_out",
+        status: 503,
+        retryable: true,
+      })
+
+      await vi.advanceTimersByTimeAsync(150_000)
+      await rejection
+
+      expect(mocks.callContentKitVision).toHaveBeenCalledTimes(1)
+      expect(mocks.sql).not.toHaveBeenCalledWith(
+        expect.arrayContaining([expect.stringContaining("INSERT INTO content_shoots")])
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

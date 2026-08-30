@@ -9,15 +9,13 @@ import {
   listShoots,
   refineShoot,
   regenerateShot,
+  ShootPlanningError,
   ShootRenderError,
   setShootStatus,
   setShotStatus,
 } from "@/lib/content-kit/shoot-generator"
 import { publishShootToVault } from "@/lib/content-kit/shoot-publisher"
-import {
-  areAdminIdentityReferences,
-  listAdminSelfies,
-} from "@/lib/content-kit/demo-generator"
+import { areAdminIdentityReferences, listAdminSelfies } from "@/lib/content-kit/demo-generator"
 import { addAdminMemoryNote } from "@/lib/app-v3/maya/admin-memory-store"
 
 export const dynamic = "force-dynamic"
@@ -52,7 +50,9 @@ async function requireAdmin(request?: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   if (cronSecret && bearer === `Bearer ${cronSecret}`) return true
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   return user?.email === ADMIN_EMAIL
 }
 
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       if (!(await areAdminIdentityReferences(selfieUrls))) {
         return NextResponse.json(
           { error: "Choose only Sandra's verified admin selfies" },
-          { status: 400 },
+          { status: 400 }
         )
       }
       // Plan + save the shoot only. Images are rendered by the CLIENT, one regenerate call per
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         sourceId: result.shoot.id,
         sourceTitle: result.shoot.title,
         metadata: { vaultSlug: result.collection.slug },
-      }).catch((error) => console.error("[shoot-studio] publish memory skipped:", error))
+      }).catch(error => console.error("[shoot-studio] publish memory skipped:", error))
       return NextResponse.json({ success: true, ...result })
     }
 
@@ -139,19 +139,30 @@ export async function POST(request: NextRequest) {
           retryable: error.retryable,
           shoot: error.shoot,
         },
-        { status: error.status },
+        { status: error.status }
       )
     }
     if (error instanceof InspirationModerationError) {
       return NextResponse.json(
         { success: false, error: error.message, code: error.code, retryable: false },
-        { status: error.status },
+        { status: error.status }
+      )
+    }
+    if (error instanceof ShootPlanningError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+          code: error.code,
+          retryable: error.retryable,
+        },
+        { status: error.status }
       )
     }
     console.error("[shoot-studio] action failed:", error)
     return NextResponse.json(
       { success: false, error: error?.message || "Something broke. Try again." },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
@@ -166,7 +177,7 @@ export async function PATCH(request: NextRequest) {
 
   if (typeof body.shotId === "string" && typeof body.shotStatus === "string") {
     const before = await getShoot(id)
-    const shot = before?.shots.find((candidate) => candidate.id === body.shotId)
+    const shot = before?.shots.find(candidate => candidate.id === body.shotId)
     await setShotStatus(id, body.shotId, body.shotStatus)
     if (body.shotStatus === "approved" || body.shotStatus === "killed") {
       await rememberShootDecision({
@@ -198,7 +209,7 @@ export async function PATCH(request: NextRequest) {
         sourceType: "shoot",
         sourceId: id,
         sourceTitle: before?.title ?? null,
-      }).catch((error) => console.error("[shoot-studio] shoot approval memory skipped:", error))
+      }).catch(error => console.error("[shoot-studio] shoot approval memory skipped:", error))
     }
     return NextResponse.json({ success: true })
   }
