@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   addSegment: vi.fn(),
   removeSegment: vi.fn(),
+  acquireKvLock: vi.fn(),
+  releaseKvLock: vi.fn(),
 }))
 
 vi.mock("@/lib/email/unsubscribe", () => ({
@@ -18,6 +20,11 @@ vi.mock("@/lib/email/unsubscribe", () => ({
 
 vi.mock("@/lib/resend/api-key", () => ({
   hasResendApiKey: mocks.hasResendApiKey,
+}))
+
+vi.mock("@/lib/cache", () => ({
+  acquireKvLock: mocks.acquireKvLock,
+  releaseKvLock: mocks.releaseKvLock,
 }))
 
 vi.mock("@/lib/resend/client", () => ({
@@ -55,6 +62,12 @@ describe("Resend lifecycle contact properties", () => {
     mocks.create.mockResolvedValue({ data: { id: "contact_1" }, error: null })
     mocks.addSegment.mockResolvedValue({ data: {}, error: null })
     mocks.removeSegment.mockResolvedValue({ data: {}, error: null })
+    mocks.acquireKvLock.mockResolvedValue({
+      acquired: true,
+      value: "resend-slot",
+      locked: true,
+    })
+    mocks.releaseKvLock.mockResolvedValue(undefined)
   })
 
   afterAll(() => {
@@ -231,9 +244,17 @@ describe("Resend lifecycle contact properties", () => {
     expect(mocks.get).toHaveBeenCalledTimes(1)
     expect(mocks.update).toHaveBeenCalledTimes(1)
     expect(mocks.addSegment).toHaveBeenCalledTimes(1)
-    expect(timeoutSpy).toHaveBeenCalledTimes(2)
+    expect(mocks.acquireKvLock).toHaveBeenCalledTimes(3)
+    expect(mocks.acquireKvLock).toHaveBeenCalledWith({
+      key: "rate-limit:resend:provider-request",
+      ttlMs: 15_000,
+      requireLockWhenNoRedis: false,
+    })
+    expect(mocks.releaseKvLock).toHaveBeenCalledTimes(3)
+    expect(timeoutSpy).toHaveBeenCalledTimes(3)
     expect(timeoutSpy).toHaveBeenNthCalledWith(1, expect.any(Function), 500)
     expect(timeoutSpy).toHaveBeenNthCalledWith(2, expect.any(Function), 500)
+    expect(timeoutSpy).toHaveBeenNthCalledWith(3, expect.any(Function), 500)
     expect(vi.getTimerCount()).toBe(0)
     timeoutSpy.mockRestore()
     vi.useRealTimers()
