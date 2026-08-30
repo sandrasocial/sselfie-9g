@@ -30,6 +30,27 @@ export interface ResendSyncOptions {
   subscriptionProduct?: string
 }
 
+type ResendSyncResult = { success: boolean; contactId?: string; error?: string }
+
+function buildCanonicalContactProperties({
+  source,
+  isStudioMember,
+  subscriptionProduct,
+}: Required<Pick<ResendSyncOptions, "source" | "isStudioMember">> &
+  Pick<ResendSyncOptions, "subscriptionProduct">): Record<string, string> {
+  const properties: Record<string, string> = {
+    acquisition_path: source,
+    lifecycle_stage: isStudioMember ? "customer" : "lead",
+    membership_status: isStudioMember ? "studio_member_active" : "active",
+  }
+
+  if (subscriptionProduct) {
+    properties.last_product = subscriptionProduct
+  }
+
+  return properties
+}
+
 /**
  * Automatically sync a new app user to Resend audience.
  * Non-blocking: failures won't block user signup.
@@ -43,7 +64,16 @@ export async function autoSyncUserToResend(
   email: string,
   firstName: string | null | undefined,
   options: ResendSyncOptions = {}
-): Promise<{ success: boolean; contactId?: string; error?: string }> {
+): Promise<ResendSyncResult> {
+  return syncUserToResend(email, firstName, options, true)
+}
+
+async function syncUserToResend(
+  email: string,
+  firstName: string | null | undefined,
+  options: ResendSyncOptions,
+  queueOnFailure: boolean
+): Promise<ResendSyncResult> {
   const resend = getResendClient()
 
   if (!resend) {
@@ -65,25 +95,20 @@ export async function autoSyncUserToResend(
 
   const { source = "app_signup", isStudioMember = false, subscriptionProduct } = options
 
-  const tags: Array<{ name: string; value: string }> = [{ name: "source", value: source }]
-
-  if (isStudioMember) {
-    tags.push({ name: "product", value: "studio_member_active" })
-    if (subscriptionProduct) {
-      tags.push({ name: "subscription_product", value: subscriptionProduct })
-    }
-  } else {
-    tags.push({ name: "status", value: "active" })
-  }
-
-  const properties = Object.fromEntries(tags.map((tag) => [tag.name, tag.value]))
+  const properties = buildCanonicalContactProperties({
+    source,
+    isStudioMember,
+    subscriptionProduct,
+  })
 
   const MAX_ATTEMPTS = 3
   const BACKOFF_MS = [500, 1000, 2000]
 
   let lastError: string = "unknown"
+  let attemptsMade = 0
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    attemptsMade = attempt
     try {
       const { data, error } = await resend.contacts.create({
         email,
@@ -94,18 +119,27 @@ export async function autoSyncUserToResend(
 
       if (error) {
         lastError = error.message
-        const isRetryable = error.message?.includes("rate") || error.message?.includes("429") || error.message?.includes("timeout")
+        const isRetryable =
+          error.message?.includes("rate") ||
+          error.message?.includes("429") ||
+          error.message?.includes("timeout")
         if (isRetryable && attempt < MAX_ATTEMPTS) {
-          console.warn(`[RESEND-SYNC] Attempt ${attempt} failed for ${email} (retryable): ${error.message}`)
-          await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]))
+          console.warn(
+            `[RESEND-SYNC] Attempt ${attempt} failed for ${email} (retryable): ${error.message}`
+          )
+          await new Promise(r => setTimeout(r, BACKOFF_MS[attempt - 1]))
           continue
         }
-        console.error(`[RESEND-SYNC] Failed to sync ${email} (attempt ${attempt}): ${error.message}`)
-        return { success: false, error: error.message }
+        console.error(
+          `[RESEND-SYNC] Failed to sync ${email} (attempt ${attempt}): ${error.message}`
+        )
+        break
       }
 
       if (attempt > 1) {
-        console.log(`[RESEND-SYNC] ✓ Synced ${email} to Resend (${source}) after ${attempt} attempts`)
+        console.log(
+          `[RESEND-SYNC] ✓ Synced ${email} to Resend (${source}) after ${attempt} attempts`
+        )
       } else {
         console.log(`[RESEND-SYNC] ✓ Synced ${email} to Resend (${source})`)
       }
@@ -114,36 +148,43 @@ export async function autoSyncUserToResend(
       lastError = String(err)
       if (attempt < MAX_ATTEMPTS) {
         console.warn(`[RESEND-SYNC] Attempt ${attempt} threw for ${email}: ${lastError}`)
-        await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]))
+        await new Promise(r => setTimeout(r, BACKOFF_MS[attempt - 1]))
       } else {
-        console.error(`[RESEND-SYNC] All ${MAX_ATTEMPTS} attempts failed for ${email}: ${lastError}`)
+        console.error(
+          `[RESEND-SYNC] All ${MAX_ATTEMPTS} attempts failed for ${email}: ${lastError}`
+        )
       }
     }
   }
 
-  // All retries exhausted — write to persistent queue so the weekly
-  // sync-audience-segments cron can retry this user automatically.
-  try {
-    await sql`
-      INSERT INTO resend_sync_queue (email, first_name, source, is_studio_member, subscription_product, attempts, last_attempted_at, status)
-      VALUES (
-        ${email},
-        ${firstName || null},
-        ${source},
-        ${isStudioMember},
-        ${subscriptionProduct || null},
-        ${MAX_ATTEMPTS},
-        NOW(),
-        'pending'
+  // Persist both transient exhaustion and non-transient provider failures. A
+  // schema/configuration failure must stay visible and recoverable, but the
+  // bounded queue drain below prevents an invalid payload from retrying forever.
+  if (queueOnFailure) {
+    try {
+      await sql`
+        INSERT INTO resend_sync_queue (email, first_name, source, is_studio_member, subscription_product, attempts, last_attempted_at, status)
+        VALUES (
+          ${email},
+          ${firstName || null},
+          ${source},
+          ${isStudioMember},
+          ${subscriptionProduct || null},
+          ${attemptsMade},
+          NOW(),
+          'pending'
+        )
+        ON CONFLICT (email, status) DO UPDATE SET
+          attempts = resend_sync_queue.attempts + 1,
+          last_attempted_at = NOW()
+        WHERE resend_sync_queue.status = 'pending'
+      `
+      console.warn(
+        `[RESEND-SYNC] Queued ${email} for retry after ${attemptsMade} failed attempt(s)`
       )
-      ON CONFLICT (email, status) DO UPDATE SET
-        attempts = resend_sync_queue.attempts + 1,
-        last_attempted_at = NOW()
-      WHERE resend_sync_queue.status = 'pending'
-    `
-    console.warn(`[RESEND-SYNC] Queued ${email} for retry after ${MAX_ATTEMPTS} failed attempts`)
-  } catch (queueErr) {
-    console.error(`[RESEND-SYNC] Failed to queue ${email} for retry:`, queueErr)
+    } catch (queueErr) {
+      console.error(`[RESEND-SYNC] Failed to queue ${email} for retry:`, queueErr)
+    }
   }
 
   return { success: false, error: lastError }
@@ -153,7 +194,11 @@ export async function autoSyncUserToResend(
  * Drain the persistent retry queue — called by the weekly sync-audience-segments cron.
  * Retries all pending entries up to a maximum of 10 total attempts before giving up.
  */
-export async function drainResendSyncQueue(): Promise<{ retried: number; resolved: number; abandoned: number }> {
+export async function drainResendSyncQueue(): Promise<{
+  retried: number
+  resolved: number
+  abandoned: number
+}> {
   const result = { retried: 0, resolved: 0, abandoned: 0 }
 
   try {
@@ -171,11 +216,16 @@ export async function drainResendSyncQueue(): Promise<{ retried: number; resolve
 
     for (const row of pending) {
       result.retried++
-      const syncResult = await autoSyncUserToResend(row.email, row.first_name, {
-        source: row.source as "app_signup" | "app_update" | "admin_create",
-        isStudioMember: row.is_studio_member,
-        subscriptionProduct: row.subscription_product,
-      })
+      const syncResult = await syncUserToResend(
+        row.email,
+        row.first_name,
+        {
+          source: row.source as "app_signup" | "app_update" | "admin_create",
+          isStudioMember: row.is_studio_member,
+          subscriptionProduct: row.subscription_product,
+        },
+        false
+      )
 
       if (syncResult.success) {
         await sql`
@@ -192,7 +242,7 @@ export async function drainResendSyncQueue(): Promise<{ retried: number; resolve
         `
       }
 
-      await new Promise((r) => setTimeout(r, 600))
+      await new Promise(r => setTimeout(r, 600))
     }
 
     // Mark entries that exceeded 10 attempts as abandoned
