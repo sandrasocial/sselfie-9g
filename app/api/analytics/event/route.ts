@@ -100,7 +100,10 @@ async function resolveAnalyticsIdentity(
       ? req.cookies.get("sselfie_anon_id")?.value
       : undefined
   const anonCookie = versionedAnonCookie || legacyAnonCookie
-  const anonId = anonCookie || randomUUID()
+  // A first-page identity GET and a navigation beacon can arrive concurrently
+  // before either response installs the HTTP-only cookie. The public per-tab
+  // generation gives both requests the same anonymous identity without a race.
+  const anonId = anonCookie || (!rotateAnonymous && generation ? generation : randomUUID())
   let neonUserId: string | null = null
 
   try {

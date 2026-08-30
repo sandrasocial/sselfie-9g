@@ -116,13 +116,9 @@ export async function acknowledgePostHogReset(resetNonce: string | null): Promis
 export async function trackAnalyticsEvent(input: {
   event: string
   properties?: Record<string, unknown>
+  navigationSafe?: boolean
 }) {
   try {
-    // Establish the HTTP-only anonymous identity before POSTing. The provider
-    // shares this in-flight request, preventing concurrent GET/POST requests
-    // from minting different first-visit identities.
-    await ensureAnalyticsBrowserIdentity()
-
     const payload = {
       event: input.event,
       properties: input.properties || {},
@@ -149,6 +145,24 @@ export async function trackAnalyticsEvent(input: {
           ? new URLSearchParams(window.location.search).get("utm_term")
           : null,
     }
+
+    // Navigation clicks cannot wait for a cold identity bootstrap: the page may
+    // unload before the beacon is created. The event endpoint resolves and sets
+    // the same server-side identity, so send these explicitly marked events now.
+    if (
+      input.navigationSafe === true &&
+      typeof navigator !== "undefined" &&
+      typeof navigator.sendBeacon === "function"
+    ) {
+      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" })
+      navigator.sendBeacon("/api/analytics/event", blob)
+      return
+    }
+
+    // Establish the HTTP-only anonymous identity before POSTing. The provider
+    // shares this in-flight request, preventing concurrent GET/POST requests
+    // from minting different first-visit identities.
+    await ensureAnalyticsBrowserIdentity()
 
     // Prefer sendBeacon when available (non-blocking, survives navigation).
     if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {

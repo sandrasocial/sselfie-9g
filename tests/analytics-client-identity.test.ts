@@ -43,6 +43,33 @@ describe("browser analytics identity bootstrap", () => {
     expect(request.mock.calls[1][1]).toMatchObject({ method: "POST" })
   })
 
+  it("sends a navigation-safe beacon without waiting for identity bootstrap", async () => {
+    const identityResponse = new Promise<Response>(() => {})
+    const request = vi.fn<typeof fetch>().mockImplementation(() => identityResponse)
+    const sendBeacon = vi.fn().mockReturnValue(true)
+    vi.stubGlobal("fetch", request)
+    vi.stubGlobal("navigator", { sendBeacon })
+    vi.stubGlobal("window", {
+      location: { pathname: "/vault-maya", search: "?utm_source=email" },
+    })
+    vi.stubGlobal("document", {
+      cookie: "sselfie_analytics_generation=test-generation",
+    })
+
+    const { ensureAnalyticsBrowserIdentity, trackAnalyticsEvent } =
+      await import("@/lib/analytics/client")
+    void ensureAnalyticsBrowserIdentity()
+
+    await trackAnalyticsEvent({
+      event: "vault_maya_landing_cta_clicked",
+      navigationSafe: true,
+    })
+
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(sendBeacon).toHaveBeenCalledTimes(1)
+    expect(sendBeacon).toHaveBeenCalledWith("/api/analytics/event", expect.any(Blob))
+  })
+
   it("does not cache a transient null identity", async () => {
     const request = vi
       .fn<typeof fetch>()

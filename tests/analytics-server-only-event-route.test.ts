@@ -45,6 +45,26 @@ describe("public analytics route server-only event boundary", () => {
     expect(response.headers.get("set-cookie")).toContain("HttpOnly")
   })
 
+  it("uses one first-page identity for concurrent requests in the same browser generation", async () => {
+    const generation = "33333333-3333-4333-8333-333333333333"
+    const { GET } = await import("@/app/api/analytics/event/route")
+    const request = () =>
+      new NextRequest("http://localhost/api/analytics/event", {
+        headers: { cookie: `sselfie_analytics_generation=${generation}` },
+      })
+
+    const [first, second] = await Promise.all([GET(request()), GET(request())])
+
+    await expect(first.json()).resolves.toMatchObject({ distinctId: `anon:${generation}` })
+    await expect(second.json()).resolves.toMatchObject({ distinctId: `anon:${generation}` })
+    expect(first.headers.get("set-cookie")).toContain(
+      `sselfie_anon_id_33333333333343338333333333333333=${generation}`
+    )
+    expect(second.headers.get("set-cookie")).toContain(
+      `sselfie_anon_id_33333333333343338333333333333333=${generation}`
+    )
+  })
+
   it("treats Supabase's expected missing-session result as an anonymous visitor", async () => {
     mocks.checkRateLimit.mockResolvedValue({ success: false })
     mocks.createServerClient.mockResolvedValue({

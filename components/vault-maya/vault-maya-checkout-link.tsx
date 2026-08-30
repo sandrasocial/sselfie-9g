@@ -57,6 +57,7 @@ function CheckoutLinkInner({ label, surface }: { label: string; surface: "dark" 
             destination: "vault_maya_checkout",
             label,
           },
+          navigationSafe: true,
         })
       }}
       style={{
