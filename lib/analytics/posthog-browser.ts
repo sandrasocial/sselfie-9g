@@ -108,9 +108,12 @@ export const POSTHOG_APPROVED_UTM_CAMPAIGNS = [
 
 const TOKENIZED_PATH = new RegExp(`^${POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE}`)
 const TOKENIZED_PATH_IN_PAYLOAD = new RegExp(POSTHOG_TOKENIZED_PATH_PATTERN_SOURCE, "g")
-const CUSTOMER_OBJECT_PATH = /^(\/(?:maya\/asset|api\/maya\/generated-assets)\/)[^/"?#]+/
-const CUSTOMER_OBJECT_PATH_IN_PAYLOAD =
-  /(\/(?:maya\/asset|api\/maya\/generated-assets)\/)[^/"?#]+/g
+const CUSTOMER_OBJECT_PATH_PATTERN_SOURCE = String.raw`(\/(?:maya\/asset|api\/(?:app-v3\/maya\/chats|feed(?:\/post)?|maya\/(?:generated-assets|personal-pages)|studio\/generation))\/)[^\/"?#]+`
+const CUSTOMER_OBJECT_PATH = new RegExp(`^${CUSTOMER_OBJECT_PATH_PATTERN_SOURCE}`)
+const CUSTOMER_OBJECT_PATH_IN_PAYLOAD = new RegExp(
+  CUSTOMER_OBJECT_PATH_PATTERN_SOURCE,
+  "g"
+)
 const POSTHOG_BROWSER_ATTRIBUTION_ALLOWLISTS: Readonly<Record<string, readonly string[]>> = {
   utm_source: POSTHOG_APPROVED_UTM_SOURCES,
   utm_medium: POSTHOG_APPROVED_UTM_MEDIUMS,

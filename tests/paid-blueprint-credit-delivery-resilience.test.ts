@@ -183,6 +183,29 @@ describe("paid blueprint credit/access/delivery resilience", () => {
     )
   })
 
+  it("keeps the internal purchase observation for test mode without fulfillment", async () => {
+    const testContext = {
+      ...context,
+      event: { ...context.event, livemode: false },
+    }
+    const { handlePaidBlueprintCheckout } = await import("@/lib/payments/handlers/paid-blueprint")
+
+    await expect(handlePaidBlueprintCheckout(testContext)).resolves.toEqual({
+      referralPurchaseUserId: "user_1",
+    })
+    expect(mocks.logAnalytics).toHaveBeenCalledOnce()
+    expect(mocks.logAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "purchase",
+        userId: "user_1",
+        idempotencyKey: "purchase:pi_paid_blueprint",
+        properties: expect.objectContaining({ is_test_mode: true }),
+      })
+    )
+    expect(mocks.grantCredits).not.toHaveBeenCalled()
+    expect(mocks.sendEmail).not.toHaveBeenCalled()
+  })
+
   it("throws access persistence failures so Stripe can replay", async () => {
     mocks.sql.mockImplementation((strings: TemplateStringsArray) => {
       const query = strings.join(" ")

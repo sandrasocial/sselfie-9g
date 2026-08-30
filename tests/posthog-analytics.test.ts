@@ -482,6 +482,21 @@ describe("PostHog analytics boundary", () => {
     expect(sanitizePostHogPathname("/api/maya/generated-assets/customer-specific-id/html")).toBe(
       "/api/maya/generated-assets/[id]/html"
     )
+    expect(sanitizePostHogPathname("/api/app-v3/maya/chats/customer-chat-id")).toBe(
+      "/api/app-v3/maya/chats/[id]"
+    )
+    expect(sanitizePostHogPathname("/api/feed/customer-feed-id/generate-images")).toBe(
+      "/api/feed/[id]/generate-images"
+    )
+    expect(sanitizePostHogPathname("/api/feed/post/customer-post-id/cancel")).toBe(
+      "/api/feed/post/[id]/cancel"
+    )
+    expect(sanitizePostHogPathname("/api/maya/personal-pages/customer-page-id/regenerate")).toBe(
+      "/api/maya/personal-pages/[id]/regenerate"
+    )
+    expect(sanitizePostHogPathname("/api/studio/generation/customer-job-id")).toBe(
+      "/api/studio/generation/[id]"
+    )
     expect(
       buildPostHogProperties({
         eventName: "trial_claimed",
@@ -504,6 +519,11 @@ describe("PostHog analytics boundary", () => {
               "https://preview.test/maya/asset/customer-specific-id?email=private@example.com",
             generatedAsset:
               "/api/maya/generated-assets/customer-specific-id/html?token=private",
+            chat: "/api/app-v3/maya/chats/customer-chat-id?token=private",
+            feed: "https://preview.test/api/feed/customer-feed-id/progress?token=private",
+            post: "/api/feed/post/customer-post-id/cancel",
+            personalPage: "/api/maya/personal-pages/customer-page-id/regenerate",
+            generation: "/api/studio/generation/customer-job-id",
           },
         },
       })
@@ -516,6 +536,11 @@ describe("PostHog analytics boundary", () => {
           href: "https://preview.test/checkout/membership",
           asset: "https://preview.test/maya/asset/[id]",
           generatedAsset: "/api/maya/generated-assets/[id]/html",
+          chat: "/api/app-v3/maya/chats/[id]",
+          feed: "https://preview.test/api/feed/[id]/progress",
+          post: "/api/feed/post/[id]/cancel",
+          personalPage: "/api/maya/personal-pages/[id]/regenerate",
+          generation: "/api/studio/generation/[id]",
         },
       },
     })
@@ -927,14 +952,15 @@ describe("PostHog analytics boundary", () => {
       "utf8"
     )
     const lookup = handler.indexOf("Resolved user_id from email")
-    const purchaseSchedule = handler.indexOf("schedulePurchaseObservation({")
+    const purchaseSchedule = handler.indexOf(
+      "schedulePaidBlueprintObservation(userId ? String(userId) : null)",
+      lookup
+    )
     const fulfillment = handler.indexOf("grantPaidBlueprintCredits", purchaseSchedule)
 
     expect(purchaseSchedule).toBeGreaterThan(lookup)
     expect(purchaseSchedule).toBeLessThan(fulfillment)
-    expect(handler.slice(purchaseSchedule, purchaseSchedule + 300)).toContain(
-      "userId: userId ? String(userId) : null"
-    )
+    expect(handler).toContain("userId: observedUserId")
   })
 
   it("emits guided completion only after receiving a real image URL", () => {
