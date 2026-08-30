@@ -64,7 +64,9 @@ export async function callContentKitLlm(
   })
   const block = message.content.find(item => item.type === "text")
   if (!block || block.type !== "text")
-    throw new Error(`Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`)
+    throw new Error(
+      `Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`
+    )
   return block.text
 }
 
@@ -75,13 +77,15 @@ export async function callContentKitLlm(
 export async function callContentKitVision(
   prompt: string,
   imageUrls: string[],
-  systemPrompt = groundingSystemPrompt()
+  systemPrompt = groundingSystemPrompt(),
+  options: { signal?: AbortSignal } = {}
 ): Promise<string> {
   const openrouterKey = process.env.OPENROUTER_API_KEY
   if (openrouterKey) {
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
+        signal: options.signal,
         headers: {
           Authorization: `Bearer ${openrouterKey}`,
           "Content-Type": "application/json",
@@ -114,6 +118,7 @@ export async function callContentKitVision(
         )
       }
     } catch (error) {
+      if (options.signal?.aborted) throw error
       console.error("[content-kit] OpenRouter vision error, falling back to Anthropic:", error)
     }
   }
@@ -122,27 +127,32 @@ export async function callContentKitVision(
   if (!anthropicKey)
     throw new Error("No LLM available: OPENROUTER_API_KEY failed and ANTHROPIC_API_KEY is not set")
   const client = new Anthropic({ apiKey: anthropicKey })
-  const message = await client.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: MAX_TOKENS,
-    thinking: ANTHROPIC_THINKING,
-    system: systemPrompt,
-    messages: [
-      {
-        role: "user",
-        content: [
-          ...imageUrls.map(url => ({
-            type: "image" as const,
-            source: { type: "url" as const, url },
-          })),
-          { type: "text" as const, text: prompt },
-        ],
-      },
-    ],
-  })
+  const message = await client.messages.create(
+    {
+      model: ANTHROPIC_MODEL,
+      max_tokens: MAX_TOKENS,
+      thinking: ANTHROPIC_THINKING,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: [
+            ...imageUrls.map(url => ({
+              type: "image" as const,
+              source: { type: "url" as const, url },
+            })),
+            { type: "text" as const, text: prompt },
+          ],
+        },
+      ],
+    },
+    options.signal ? { signal: options.signal, maxRetries: 0 } : undefined
+  )
   const block = message.content.find(item => item.type === "text")
   if (!block || block.type !== "text")
-    throw new Error(`Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`)
+    throw new Error(
+      `Anthropic returned no text (stop_reason=${message.stop_reason}, blocks=${message.content.map(b => b.type).join(",") || "none"})`
+    )
   return block.text
 }
 
