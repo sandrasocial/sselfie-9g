@@ -12,6 +12,7 @@ export async function sendSkoolSetupEmail(input: {
   email: string
   recoveryLink: string
   membershipKey: string
+  billingPeriodKey: string
 }): Promise<{ messageId: string | null }> {
   const recoveryLink = input.recoveryLink.trim()
   if (!recoveryLink.startsWith("https://")) {
@@ -46,7 +47,10 @@ export async function sendSkoolSetupEmail(input: {
       html,
       replyTo: "hello@sselfie.ai",
     },
-    { idempotencyKey: `skool-setup:${input.membershipKey}` },
+    {
+      idempotencyKey:
+        `skool-setup:${input.membershipKey}:${input.billingPeriodKey}`,
+    },
   )
 
   if (error) {
