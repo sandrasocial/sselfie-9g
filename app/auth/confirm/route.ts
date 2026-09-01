@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
 
   const safeNext = normalizeLegacyStudioRedirect(sanitizeRedirect(next, LIVE_MEMBER_APP_PATH))
 
-  console.log("[v0] Auth confirm - Full URL:", request.url)
-  console.log("[v0] Auth confirm - token_hash:", token_hash ? "present" : "missing")
+  // Never log request.url or authentication token values. Recovery links are
+  // bearer credentials until redeemed.
+  console.log("[v0] Auth confirm - token:", token_hash ? "present" : "missing")
   console.log("[v0] Auth confirm - type:", type)
   console.log("[v0] Auth confirm - validated next:", safeNext)
 
