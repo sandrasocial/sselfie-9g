@@ -55,28 +55,17 @@ describe("Skool paid-member ingress", () => {
     process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET = SECRET
     delete process.env.SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET
     process.env.NEXT_PUBLIC_SITE_URL = "https://sselfie.ai"
-    delete process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED
     Object.values(mocks).forEach(mock => mock.mockReset())
     mocks.sendSetupEmail.mockResolvedValue({ messageId: "email_1" })
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    delete process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED
+    delete process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET
     delete process.env.SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET
   })
 
-  it("is inert until the release gate is explicitly enabled", async () => {
-    const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
-    const response = await POST(await signedRequest(body()))
-    expect(response.status).toBe(503)
-    expect(mocks.ensureAccount).not.toHaveBeenCalled()
-    expect(mocks.grantMembership).not.toHaveBeenCalled()
-    expect(mocks.sendSetupEmail).not.toHaveBeenCalled()
-  })
-
-  it("fails closed when provisioning is enabled but the signing secret is absent", async () => {
-    process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
+  it("is inert until the dedicated signing secret exists", async () => {
     delete process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET
     const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
     const response = await POST(
@@ -87,10 +76,11 @@ describe("Skool paid-member ingress", () => {
     )
     expect(response.status).toBe(503)
     expect(mocks.ensureAccount).not.toHaveBeenCalled()
+    expect(mocks.grantMembership).not.toHaveBeenCalled()
+    expect(mocks.sendSetupEmail).not.toHaveBeenCalled()
   })
 
   it("rejects invalid signatures, an unapproved free plan, and future observations", async () => {
-    process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
     const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
     const unauthorized = await POST(
       new Request("https://sselfie.ai/api/orchestration/skool/paid-member", {
@@ -115,7 +105,6 @@ describe("Skool paid-member ingress", () => {
   })
 
   it("derives private audit ids, delivers a stable SSELFIE setup entry, and exposes only safe state", async () => {
-    process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
     mocks.ensureAccount.mockResolvedValue({
       userId: "user_1",
       authUserId: "auth_1",
@@ -163,7 +152,6 @@ describe("Skool paid-member ingress", () => {
   })
 
   it("fails the webhook so the delivery can retry when setup email delivery fails", async () => {
-    process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
     mocks.ensureAccount.mockResolvedValue({
       userId: "user_1",
       authUserId: "auth_1",
