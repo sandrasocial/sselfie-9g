@@ -93,7 +93,6 @@ function SetupPasswordContent() {
     e.preventDefault()
     setError("")
 
-    // Validation
     if (password.length < 8) {
       setError("Password must be at least 8 characters long")
       return
@@ -111,7 +110,6 @@ function SetupPasswordContent() {
         throw new Error("Authentication is temporarily unavailable. Please request a new setup link.")
       }
 
-      // Update the user's password
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
       })
@@ -120,16 +118,20 @@ function SetupPasswordContent() {
         throw updateError
       }
 
+      // This marker revokes the reusable Skool setup entry by making future
+      // exchanges route to normal login. It is security-critical: do not let
+      // the member leave setup until the marker is durably written.
       const completionResponse = await fetch("/api/auth/password-setup-complete", {
         method: "POST",
       })
 
       if (!completionResponse.ok) {
-        console.error("[v0] Password saved but account setup status could not be updated")
+        throw new Error(
+          "Your password was saved, but we could not finish securing your account. Please press Continue again."
+        )
       }
 
       console.log("[v0] Password set successfully, redirecting to:", nextAfterSetup)
-
       router.push(nextAfterSetup)
     } catch (err: unknown) {
       console.error("[v0] Error setting password:", err)
