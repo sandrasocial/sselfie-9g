@@ -113,13 +113,10 @@ export async function ensureSkoolMemberAccount(input: {
     userId = String(inserted[0].id)
   }
 
-  if (authUser.last_sign_in_at || localUser?.password_setup_complete === true) {
-    if (localUser?.password_setup_complete !== true && authUser.last_sign_in_at) {
-      await sql`
-        UPDATE users SET password_setup_complete = TRUE, updated_at = NOW()
-        WHERE id = ${userId}
-      `
-    }
+  // Only the durable marker written after a successful password update proves
+  // setup is complete. Supabase sets last_sign_in_at as soon as the recovery
+  // link is redeemed, before the member has chosen a password.
+  if (localUser?.password_setup_complete === true) {
     return { userId, authUserId: authUser.id, accountState: "ready" }
   }
 
