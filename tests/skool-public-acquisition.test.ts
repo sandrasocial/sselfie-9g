@@ -36,7 +36,7 @@ describe("public Skool acquisition cutover", () => {
       SKOOL_PUBLIC_MEMBERSHIP_URL,
     )
     expect(SKOOL_PUBLIC_MEMBERSHIP_URL).toBe(
-      "https://www.skool.com/sselfie-photo-club-2569/about",
+      "https://www.skool.com/sselfie/about",
     )
   })
 
