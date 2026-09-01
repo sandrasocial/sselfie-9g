@@ -13,15 +13,9 @@ export const dynamic = "force-dynamic"
 export const maxDuration = 30
 
 export async function POST(request: Request) {
-  // Deployment is inert until the release steward explicitly activates the
-  // approved issue #25 cutover after migration and E2E verification.
-  if (process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED !== "true") {
-    return NextResponse.json(
-      { error: "Skool membership provisioning is not active" },
-      { status: 503 },
-    )
-  }
-
+  // The dedicated signing secret is the provisioning activation gate. Until it
+  // exists the endpoint is inert; once configured it accepts only fresh HMAC-
+  // signed events for the exact paid Skool plan.
   const signingSecret = process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET
   if (!signingSecret) {
     return NextResponse.json(
