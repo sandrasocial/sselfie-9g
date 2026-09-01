@@ -83,6 +83,12 @@ export async function GET() {
     const recurringMembership = subscriptionRows.find(
       row => row.product_type === "sselfie_studio_membership" && row.status === "active",
     )
+    const fullStripeMembership = subscriptionRows.find(
+      row =>
+        row.product_type === "sselfie_studio_membership" &&
+        row.status === "active" &&
+        row.plan !== MAYA_ESSENTIAL_PILOT_PLAN,
+    )
     const bundlePass = subscriptionRows.find(
       row => row.product_type === "selfie_visibility_bundle_pass",
     )
@@ -95,18 +101,15 @@ export async function GET() {
       passEndsAt !== null &&
       new Date(passEndsAt).getTime() > Date.now()
 
-    if (recurringMembership) {
+    if (fullStripeMembership) {
       return NextResponse.json({
-        plan: planLabel(recurringMembership.plan ?? recurringMembership.product_type),
+        plan: planLabel(fullStripeMembership.plan ?? fullStripeMembership.product_type),
         status: "active",
-        renewsAt: toIso(recurringMembership.current_period_end),
+        renewsAt: toIso(fullStripeMembership.current_period_end),
         accessEndsAt: null,
         billingKind: "recurring",
         credits,
-        includedMonthlyCredits:
-          recurringMembership.plan === MAYA_ESSENTIAL_PILOT_PLAN
-            ? MAYA_ESSENTIAL_MONTHLY_CREDITS
-            : MONTHLY_MEMBERSHIP_CREDITS,
+        includedMonthlyCredits: MONTHLY_MEMBERSHIP_CREDITS,
         creditsUnlimited,
         email: user.email ?? null,
       })
@@ -121,6 +124,20 @@ export async function GET() {
         billingKind: null,
         credits,
         includedMonthlyCredits: MONTHLY_MEMBERSHIP_CREDITS,
+        creditsUnlimited,
+        email: user.email ?? null,
+      })
+    }
+
+    if (recurringMembership) {
+      return NextResponse.json({
+        plan: planLabel(recurringMembership.plan ?? recurringMembership.product_type),
+        status: "active",
+        renewsAt: toIso(recurringMembership.current_period_end),
+        accessEndsAt: null,
+        billingKind: "recurring",
+        credits,
+        includedMonthlyCredits: MAYA_ESSENTIAL_MONTHLY_CREDITS,
         creditsUnlimited,
         email: user.email ?? null,
       })

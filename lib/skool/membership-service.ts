@@ -38,8 +38,16 @@ export async function grantSkoolMembership(input: {
           ${input.envelope.observedAt}, NOW()
         )
         ON CONFLICT (membership_key) DO UPDATE SET
-          reconciliation_status = 'present',
-          consecutive_roster_misses = 0,
+          reconciliation_status = CASE
+            WHEN EXCLUDED.last_observed_at > skool_membership_entitlements.last_observed_at
+              THEN 'present'
+            ELSE skool_membership_entitlements.reconciliation_status
+          END,
+          consecutive_roster_misses = CASE
+            WHEN EXCLUDED.last_observed_at > skool_membership_entitlements.last_observed_at
+              THEN 0
+            ELSE skool_membership_entitlements.consecutive_roster_misses
+          END,
           last_observed_at = GREATEST(
             skool_membership_entitlements.last_observed_at,
             EXCLUDED.last_observed_at

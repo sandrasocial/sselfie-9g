@@ -123,6 +123,13 @@ describe("App v3 account billing truth", () => {
     const renewsAt = new Date(Date.now() + 300 * 86_400_000).toISOString()
     routeMocks.sql.mockResolvedValue([
       {
+        plan: "maya_essential_pilot",
+        product_type: "sselfie_studio_membership",
+        status: "active",
+        current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+        trial_ends_at: null,
+      },
+      {
         plan: "annual",
         product_type: "sselfie_studio_membership",
         status: "active",
@@ -170,6 +177,29 @@ describe("App v3 account billing truth", () => {
       billingKind: null,
       renewsAt: null,
       accessEndsAt: null,
+      includedMonthlyCredits: 100,
+    })
+  })
+
+  it("lets full Skool access outrank a simultaneous Maya Essential Stripe tier", async () => {
+    routeMocks.sql.mockResolvedValue([
+      {
+        plan: "maya_essential_pilot",
+        product_type: "sselfie_studio_membership",
+        status: "active",
+        current_period_end: "2099-01-01T00:00:00.000Z",
+        trial_ends_at: null,
+      },
+    ])
+    routeMocks.hasActiveSkoolMembership.mockResolvedValue(true)
+    const { GET } = await import("@/app/api/app-v3/account/route")
+
+    const response = await GET()
+
+    expect(await response.json()).toMatchObject({
+      plan: "SSELFIE Skool membership",
+      status: "active",
+      billingKind: null,
       includedMonthlyCredits: 100,
     })
   })

@@ -92,4 +92,17 @@ describe("Skool membership persistence", () => {
     expect(reconciliation).not.toMatch(/SET\s+access_status/i)
     expect(reconciliation).not.toMatch(/DELETE\s+FROM/i)
   })
+
+  it("does not let an idempotent present-event replay erase newer roster evidence", () => {
+    const source = readFileSync("lib/skool/membership-service.ts", "utf8")
+    const grant = source.slice(
+      source.indexOf("export async function grantSkoolMembership"),
+      source.indexOf("export async function hasActiveSkoolMembership"),
+    )
+    expect(grant).toContain(
+      "EXCLUDED.last_observed_at > skool_membership_entitlements.last_observed_at",
+    )
+    expect(grant).toContain("ELSE skool_membership_entitlements.reconciliation_status")
+    expect(grant).toContain("ELSE skool_membership_entitlements.consecutive_roster_misses")
+  })
 })
