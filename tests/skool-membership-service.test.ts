@@ -105,4 +105,12 @@ describe("Skool membership persistence", () => {
     expect(grant).toContain("ELSE skool_membership_entitlements.reconciliation_status")
     expect(grant).toContain("ELSE skool_membership_entitlements.consecutive_roster_misses")
   })
+
+  it("does not count the same roster-miss observation twice", () => {
+    const source = readFileSync("lib/skool/membership-service.ts", "utf8")
+    const reconciliation = source.slice(source.indexOf("export async function recordSkoolRosterObservation"))
+    expect(reconciliation).toContain("<= last_observed_at THEN reconciliation_status")
+    expect(reconciliation).toContain("<= last_observed_at THEN consecutive_roster_misses")
+    expect(reconciliation).toContain("> last_observed_at THEN NOW()")
+  })
 })
