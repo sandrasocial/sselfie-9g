@@ -10,7 +10,7 @@ import {
   verifySkoolIngressSignature,
 } from "@/lib/skool/membership-contract"
 
-const SECRET = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY"
+const SECRET = Buffer.alloc(32, 7).toString("base64url")
 
 function envelope(overrides: Record<string, unknown> = {}) {
   const email = "member@example.com"

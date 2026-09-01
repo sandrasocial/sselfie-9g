@@ -14,7 +14,7 @@ vi.mock("@/lib/skool/membership-service", () => ({
   grantSkoolMembership: mocks.grantMembership,
 }))
 
-const SECRET = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY"
+const SECRET = Buffer.alloc(32, 7).toString("base64url")
 const NOW_SECONDS = 1788249600
 
 function body(overrides: Record<string, unknown> = {}) {
