@@ -56,6 +56,24 @@ describe("Skool signed membership contract", () => {
     expect(normalizeSkoolMembershipEnvelope(envelope(), null)).toBeNull()
   })
 
+  it("rejects observations that are too far ahead of the authenticated ingress time", () => {
+    const ingressTime = new Date("2026-09-01T08:00:00.000Z")
+    expect(
+      normalizeSkoolMembershipEnvelope(
+        envelope({ observedAt: "2026-09-01T08:05:00.000Z" }),
+        SECRET,
+        { now: ingressTime },
+      ),
+    ).not.toBeNull()
+    expect(
+      normalizeSkoolMembershipEnvelope(
+        envelope({ observedAt: "2026-09-01T08:05:01.000Z" }),
+        SECRET,
+        { now: ingressTime },
+      ),
+    ).toBeNull()
+  })
+
   it("accepts a fresh HMAC and rejects tampering or stale delivery", () => {
     const rawBody = JSON.stringify(envelope())
     const timestamp = "1788249600"
