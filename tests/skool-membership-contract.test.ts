@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { createHmac } from "node:crypto"
 import { describe, expect, it } from "vitest"
 
 import {
@@ -13,12 +12,6 @@ import {
 const SECRET = Buffer.alloc(32, 7).toString("base64url")
 
 function envelope(overrides: Record<string, unknown> = {}) {
-  const email = "member@example.com"
-  const digest = createHmac("sha256", Buffer.from(SECRET, "base64url"))
-    .update(`${SKOOL_GROUP_ID}\0${email}`)
-    .digest("hex")
-    .slice(0, 32)
-  const membershipKey = `skool:${SKOOL_GROUP_ID}:${digest}`
   return {
     schemaVersion: 1,
     source: "skool",
@@ -26,34 +19,61 @@ function envelope(overrides: Record<string, unknown> = {}) {
     groupId: SKOOL_GROUP_ID,
     planCode: SKOOL_PLAN_CODE,
     observedAt: "2026-09-01T06:00:00+02:00",
-    membershipKey,
-    dedupeKey: `${membershipKey}:present`,
-    privateProvisioning: { email },
+    privateProvisioning: { email: "member@example.com" },
     ...overrides,
   }
 }
 
 describe("Skool signed membership contract", () => {
-  it("accepts the exact paid plan and verifies the email-bound membership key", () => {
+  it("accepts the exact paid plan and derives stable private audit identifiers", () => {
     const normalized = normalizeSkoolMembershipEnvelope(envelope(), SECRET)
     expect(normalized).toMatchObject({
       groupId: SKOOL_GROUP_ID,
       planCode: SKOOL_PLAN_CODE,
       observedAt: "2026-09-01T04:00:00.000Z",
+      billingPeriodKey: "2026-09-01",
       privateProvisioning: { email: "member@example.com" },
     })
+    expect(normalized?.membershipKey).toMatch(
+      /^skool:sselfie-photo-club-2569:[a-f0-9]{32}$/,
+    )
+    expect(normalized?.dedupeKey).toBe(
+      `${normalized?.membershipKey}:period:2026-09-01`,
+    )
   })
 
-  it("rejects a free plan, wrong group, mismatched email, or missing audit secret", () => {
+  it("rejects a free plan, wrong group, invalid email, or missing audit secret", () => {
     expect(normalizeSkoolMembershipEnvelope(envelope({ planCode: "free" }), SECRET)).toBeNull()
     expect(normalizeSkoolMembershipEnvelope(envelope({ groupId: "other" }), SECRET)).toBeNull()
     expect(
       normalizeSkoolMembershipEnvelope(
-        envelope({ privateProvisioning: { email: "different@example.com" } }),
+        envelope({ privateProvisioning: { email: "not-an-email" } }),
         SECRET,
       ),
     ).toBeNull()
     expect(normalizeSkoolMembershipEnvelope(envelope(), null)).toBeNull()
+  })
+
+  it("ignores sender-supplied membership/dedupe identifiers and derives its own", () => {
+    const normalized = normalizeSkoolMembershipEnvelope(
+      envelope({ membershipKey: "attacker-value", dedupeKey: "attacker-value" }),
+      SECRET,
+    )!
+    expect(normalized.membershipKey).not.toBe("attacker-value")
+    expect(normalized.dedupeKey).not.toBe("attacker-value")
+  })
+
+  it("creates a different period claim for a verified payment in the next month", () => {
+    const september = normalizeSkoolMembershipEnvelope(envelope(), SECRET)!
+    const october = normalizeSkoolMembershipEnvelope(
+      envelope({ observedAt: "2026-10-01T04:00:00.000Z" }),
+      SECRET,
+      { now: new Date("2026-10-01T04:00:00.000Z") },
+    )!
+
+    expect(october.membershipKey).toBe(september.membershipKey)
+    expect(october.billingPeriodKey).toBe("2026-10-01")
+    expect(october.dedupeKey).not.toBe(september.dedupeKey)
   })
 
   it("rejects observations that are too far ahead of the authenticated ingress time", () => {
