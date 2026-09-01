@@ -4,7 +4,6 @@ export const SKOOL_GROUP_ID = "sselfie-photo-club-2569"
 export const SKOOL_PLAN_CODE = "sselfie-skool-monthly"
 export const SKOOL_MEMBERSHIP_CREDITS = 100
 
-const MEMBERSHIP_KEY = /^skool:sselfie-photo-club-2569:[a-f0-9]{32}$/
 const BASE64URL_32_BYTES = /^[A-Za-z0-9_-]{43}$/
 
 export type SkoolMembershipEnvelope = {
@@ -14,6 +13,7 @@ export type SkoolMembershipEnvelope = {
   groupId: typeof SKOOL_GROUP_ID
   planCode: typeof SKOOL_PLAN_CODE
   observedAt: string
+  billingPeriodKey: string
   membershipKey: string
   dedupeKey: string
   privateProvisioning: { email: string }
@@ -48,6 +48,10 @@ function identityDigest(secret: Buffer, email: string): string {
     .slice(0, 32)
 }
 
+function billingPeriodKey(observedAtMillis: number): string {
+  return new Date(observedAtMillis).toISOString().slice(0, 10)
+}
+
 export function normalizeSkoolMembershipEnvelope(
   input: unknown,
   auditKeySecret: string | null | undefined,
@@ -61,8 +65,6 @@ export function normalizeSkoolMembershipEnvelope(
   const email = normalizeEmail((privateProvisioning as Record<string, unknown>).email)
   const secret = decodeSecret(auditKeySecret)
   const observedAtMillis = typeof value.observedAt === "string" ? Date.parse(value.observedAt) : NaN
-  const membershipKey = typeof value.membershipKey === "string" ? value.membershipKey : ""
-  const dedupeKey = typeof value.dedupeKey === "string" ? value.dedupeKey : ""
   const nowMillis = (options?.now ?? new Date()).getTime()
   const maxFutureSkewSeconds = Math.max(
     0,
@@ -79,15 +81,14 @@ export function normalizeSkoolMembershipEnvelope(
     !secret ||
     !Number.isFinite(observedAtMillis) ||
     !Number.isFinite(nowMillis) ||
-    observedAtMillis > nowMillis + maxFutureSkewSeconds * 1000 ||
-    !MEMBERSHIP_KEY.test(membershipKey) ||
-    dedupeKey !== `${membershipKey}:present`
+    observedAtMillis > nowMillis + maxFutureSkewSeconds * 1000
   ) {
     return null
   }
 
-  const expectedMembershipKey = `skool:${SKOOL_GROUP_ID}:${identityDigest(secret, email)}`
-  if (membershipKey !== expectedMembershipKey) return null
+  const membershipKey = `skool:${SKOOL_GROUP_ID}:${identityDigest(secret, email)}`
+  const periodKey = billingPeriodKey(observedAtMillis)
+  const dedupeKey = `${membershipKey}:period:${periodKey}`
 
   return {
     schemaVersion: 1,
@@ -96,6 +97,7 @@ export function normalizeSkoolMembershipEnvelope(
     groupId: SKOOL_GROUP_ID,
     planCode: SKOOL_PLAN_CODE,
     observedAt: new Date(observedAtMillis).toISOString(),
+    billingPeriodKey: periodKey,
     membershipKey,
     dedupeKey,
     privateProvisioning: { email },
