@@ -6,6 +6,7 @@ import {
   verifySkoolIngressSignature,
 } from "@/lib/skool/membership-contract"
 import { grantSkoolMembership } from "@/lib/skool/membership-service"
+import { buildSkoolSetupEntryLink } from "@/lib/skool/setup-link"
 import { sendSkoolSetupEmail } from "@/lib/skool/setup-email"
 
 export const dynamic = "force-dynamic"
@@ -22,6 +23,13 @@ export async function POST(request: Request) {
   }
 
   const signingSecret = process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET
+  if (!signingSecret) {
+    return NextResponse.json(
+      { error: "Skool membership provisioning is not configured" },
+      { status: 503 },
+    )
+  }
+
   const rawBody = await request.text()
   if (Buffer.byteLength(rawBody, "utf8") > 16_384) {
     return NextResponse.json({ error: "Invalid request" }, { status: 413 })
@@ -58,16 +66,19 @@ export async function POST(request: Request) {
   try {
     const account = await ensureSkoolMemberAccount({
       email: envelope.privateProvisioning.email,
-      productionUrl: process.env.NEXT_PUBLIC_SITE_URL,
     })
     const grant = await grantSkoolMembership({ userId: account.userId, envelope })
 
     let setupEmailSent = false
     if (account.accountState === "recovery_required") {
-      if (!account.recoveryLink) throw new Error("SKOOL_RECOVERY_LINK_FAILED")
+      const setupLink = buildSkoolSetupEntryLink({
+        membershipKey: envelope.membershipKey,
+        secret: signingSecret,
+        productionUrl: process.env.NEXT_PUBLIC_SITE_URL,
+      })
       await sendSkoolSetupEmail({
         email: envelope.privateProvisioning.email,
-        recoveryLink: account.recoveryLink,
+        setupLink,
         membershipKey: envelope.membershipKey,
         billingPeriodKey: envelope.billingPeriodKey,
       })
@@ -91,7 +102,7 @@ export async function POST(request: Request) {
       "SKOOL_IDENTITY_CONFLICT",
       "SKOOL_ENTITLEMENT_CONFLICT",
       "SKOOL_AUTH_PROVISIONING_FAILED",
-      "SKOOL_RECOVERY_LINK_FAILED",
+      "SKOOL_SETUP_LINK_FAILED",
       "SKOOL_SETUP_EMAIL_FAILED",
     ].includes(rawCode)
       ? rawCode
