@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({
   ensureAccount: vi.fn(),
   grantMembership: vi.fn(),
+  sendSetupEmail: vi.fn(),
 }))
 
 vi.mock("@/lib/skool/account-provisioning", () => ({
@@ -12,6 +13,9 @@ vi.mock("@/lib/skool/account-provisioning", () => ({
 }))
 vi.mock("@/lib/skool/membership-service", () => ({
   grantSkoolMembership: mocks.grantMembership,
+}))
+vi.mock("@/lib/skool/setup-email", () => ({
+  sendSkoolSetupEmail: mocks.sendSetupEmail,
 }))
 
 const SECRET = Buffer.alloc(32, 7).toString("base64url")
@@ -63,6 +67,7 @@ describe("Skool paid-member ingress", () => {
     process.env.NEXT_PUBLIC_SITE_URL = "https://sselfie.ai"
     delete process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED
     Object.values(mocks).forEach(mock => mock.mockReset())
+    mocks.sendSetupEmail.mockResolvedValue({ messageId: "email_1" })
   })
 
   afterEach(() => {
@@ -76,9 +81,10 @@ describe("Skool paid-member ingress", () => {
     expect(response.status).toBe(503)
     expect(mocks.ensureAccount).not.toHaveBeenCalled()
     expect(mocks.grantMembership).not.toHaveBeenCalled()
+    expect(mocks.sendSetupEmail).not.toHaveBeenCalled()
   })
 
-  it("rejects invalid signatures and an unapproved free plan", async () => {
+  it("rejects invalid signatures, an unapproved free plan, and future observations", async () => {
     process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
     const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
     const unauthorized = await POST(
@@ -95,11 +101,17 @@ describe("Skool paid-member ingress", () => {
 
     const freePlan = await POST(await signedRequest(body({ planCode: "free" })))
     expect(freePlan.status).toBe(422)
+
+    const futureObservation = await POST(
+      await signedRequest(body({ observedAt: "2026-09-01T08:05:01.000Z" })),
+    )
+    expect(futureObservation.status).toBe(422)
     expect(mocks.ensureAccount).not.toHaveBeenCalled()
   })
 
-  it("returns recovery and grant state without exposing email or recovery secrets", async () => {
+  it("delivers a private setup email and returns grant state without exposing recovery secrets", async () => {
     process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
+    const payload = body()
     mocks.ensureAccount.mockResolvedValue({
       userId: "user_1",
       authUserId: "auth_1",
@@ -113,14 +125,19 @@ describe("Skool paid-member ingress", () => {
     })
 
     const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
-    const response = await POST(await signedRequest(body()))
+    const response = await POST(await signedRequest(payload))
     const responseBody = await response.json()
 
     expect(response.status).toBe(200)
+    expect(mocks.sendSetupEmail).toHaveBeenCalledWith({
+      email: "member@example.com",
+      recoveryLink: "https://sselfie.ai/auth/confirm?token=customer-bearer-secret",
+      membershipKey: payload.membershipKey,
+    })
     expect(responseBody).toMatchObject({
       success: true,
       replay: false,
-      account: { state: "recovery_required" },
+      account: { state: "recovery_required", setupEmailSent: true },
       entitlement: { source: "skool", status: "active" },
       credits: { granted: 100, balance: 100 },
     })
@@ -129,5 +146,32 @@ describe("Skool paid-member ingress", () => {
     expect(serialized).not.toContain("recoveryLink")
     expect(serialized).not.toContain("customer-bearer-secret")
     expect(serialized).not.toContain("token=")
+  })
+
+  it("fails the webhook so the delivery can retry when setup email delivery fails", async () => {
+    process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
+    mocks.ensureAccount.mockResolvedValue({
+      userId: "user_1",
+      authUserId: "auth_1",
+      accountState: "recovery_required",
+      recoveryLink: "https://sselfie.ai/auth/confirm?token=customer-bearer-secret",
+    })
+    mocks.grantMembership.mockResolvedValue({
+      replay: false,
+      creditsGranted: 100,
+      balance: 100,
+    })
+    mocks.sendSetupEmail.mockRejectedValue(new Error("SKOOL_SETUP_EMAIL_FAILED"))
+
+    const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
+    const response = await POST(await signedRequest(body()))
+    const responseBody = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(responseBody).toEqual({
+      error: "Membership provisioning failed",
+      code: "SKOOL_SETUP_EMAIL_FAILED",
+    })
+    expect(JSON.stringify(responseBody)).not.toContain("customer-bearer-secret")
   })
 })
