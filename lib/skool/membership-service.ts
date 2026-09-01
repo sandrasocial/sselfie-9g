@@ -172,25 +172,31 @@ export async function recordSkoolRosterObservation(input: {
   consecutiveMisses: number
   accessRevoked: false
 }> {
+  const observedAt = input.observedAt.toISOString()
   const rows = await sql`
     UPDATE skool_membership_entitlements
     SET
       reconciliation_status = CASE
+        WHEN ${observedAt} <= last_observed_at THEN reconciliation_status
         WHEN ${input.present} THEN 'present'
         WHEN consecutive_roster_misses + 1 >= 2 THEN 'churn_review_required'
         ELSE 'missing_unconfirmed'
       END,
       consecutive_roster_misses = CASE
+        WHEN ${observedAt} <= last_observed_at THEN consecutive_roster_misses
         WHEN ${input.present} THEN 0
         ELSE consecutive_roster_misses + 1
       END,
-      last_observed_at = GREATEST(last_observed_at, ${input.observedAt.toISOString()}),
+      last_observed_at = GREATEST(last_observed_at, ${observedAt}),
       last_confirmed_at = CASE
-        WHEN ${input.present}
-          THEN GREATEST(last_confirmed_at, ${input.observedAt.toISOString()})
+        WHEN ${input.present} AND ${observedAt} > last_observed_at
+          THEN GREATEST(last_confirmed_at, ${observedAt})
         ELSE last_confirmed_at
       END,
-      updated_at = NOW()
+      updated_at = CASE
+        WHEN ${observedAt} > last_observed_at THEN NOW()
+        ELSE updated_at
+      END
     WHERE membership_key = ${input.membershipKey}
       AND group_id = ${SKOOL_GROUP_ID}
       AND plan_code = ${SKOOL_PLAN_CODE}
