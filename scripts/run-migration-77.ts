@@ -9,31 +9,119 @@ export function parseMigration77Statements(source: string): string[] {
   const statements: string[] = []
   let current = ""
   let dollarTag: string | null = null
+  let inSingleQuote = false
+  let inDoubleQuote = false
+  let inLineComment = false
+  let inBlockComment = false
+
+  const pushCurrent = () => {
+    const statement = current.trim()
+    if (statement && !/^(?:BEGIN|COMMIT)$/i.test(statement)) statements.push(statement)
+    current = ""
+  }
 
   for (let index = 0; index < source.length; index += 1) {
-    if (source[index] === "$" && (!dollarTag || source.startsWith(dollarTag, index))) {
+    const char = source[index]
+    const next = source[index + 1]
+
+    if (inLineComment) {
+      current += char
+      if (char === "\n") inLineComment = false
+      continue
+    }
+
+    if (inBlockComment) {
+      current += char
+      if (char === "*" && next === "/") {
+        current += next
+        index += 1
+        inBlockComment = false
+      }
+      continue
+    }
+
+    if (dollarTag) {
+      if (source.startsWith(dollarTag, index)) {
+        current += dollarTag
+        index += dollarTag.length - 1
+        dollarTag = null
+      } else {
+        current += char
+      }
+      continue
+    }
+
+    if (inSingleQuote) {
+      current += char
+      if (char === "'" && next === "'") {
+        current += next
+        index += 1
+      } else if (char === "'") {
+        inSingleQuote = false
+      }
+      continue
+    }
+
+    if (inDoubleQuote) {
+      current += char
+      if (char === '"' && next === '"') {
+        current += next
+        index += 1
+      } else if (char === '"') {
+        inDoubleQuote = false
+      }
+      continue
+    }
+
+    if (char === "-" && next === "-") {
+      current += "--"
+      index += 1
+      inLineComment = true
+      continue
+    }
+
+    if (char === "/" && next === "*") {
+      current += "/*"
+      index += 1
+      inBlockComment = true
+      continue
+    }
+
+    if (char === "'") {
+      current += char
+      inSingleQuote = true
+      continue
+    }
+
+    if (char === '"') {
+      current += char
+      inDoubleQuote = true
+      continue
+    }
+
+    if (char === "$") {
       const match = source.slice(index).match(/^\$[A-Za-z0-9_]*\$/)
       if (match) {
-        const tag = match[0]
-        if (!dollarTag) dollarTag = tag
-        else if (dollarTag === tag) dollarTag = null
-        current += tag
-        index += tag.length - 1
+        dollarTag = match[0]
+        current += dollarTag
+        index += dollarTag.length - 1
         continue
       }
     }
 
-    if (source[index] === ";" && !dollarTag) {
-      const statement = current.trim()
-      if (statement && !/^(?:BEGIN|COMMIT)$/i.test(statement)) statements.push(statement)
-      current = ""
-    } else {
-      current += source[index]
+    if (char === ";") {
+      pushCurrent()
+      continue
     }
+
+    current += char
   }
 
-  const trailing = current.trim()
-  if (trailing && !/^(?:BEGIN|COMMIT)$/i.test(trailing)) statements.push(trailing)
+  if (inSingleQuote || inDoubleQuote || inBlockComment || dollarTag) {
+    throw new Error("Migration 77 contains unterminated SQL syntax")
+  }
+
+  pushCurrent()
   return statements
 }
 
