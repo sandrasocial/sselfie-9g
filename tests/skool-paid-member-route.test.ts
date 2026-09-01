@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { createHmac } from "node:crypto"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({
@@ -22,23 +21,14 @@ const SECRET = Buffer.alloc(32, 7).toString("base64url")
 const NOW_SECONDS = 1788249600
 
 function body(overrides: Record<string, unknown> = {}) {
-  const email = "member@example.com"
-  const groupId = "sselfie-photo-club-2569"
-  const digest = createHmac("sha256", Buffer.from(SECRET, "base64url"))
-    .update(`${groupId}\0${email}`)
-    .digest("hex")
-    .slice(0, 32)
-  const membershipKey = `skool:${groupId}:${digest}`
   return {
     schemaVersion: 1,
     source: "skool",
     eventType: "membership.present",
-    groupId,
+    groupId: "sselfie-photo-club-2569",
     planCode: "sselfie-skool-monthly",
     observedAt: "2026-09-01T08:00:00.000Z",
-    membershipKey,
-    dedupeKey: `${membershipKey}:present`,
-    privateProvisioning: { email },
+    privateProvisioning: { email: "member@example.com" },
     ...overrides,
   }
 }
@@ -63,7 +53,7 @@ describe("Skool paid-member ingress", () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(NOW_SECONDS * 1000))
     process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET = SECRET
-    process.env.SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET = SECRET
+    delete process.env.SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET
     process.env.NEXT_PUBLIC_SITE_URL = "https://sselfie.ai"
     delete process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED
     Object.values(mocks).forEach(mock => mock.mockReset())
@@ -73,6 +63,7 @@ describe("Skool paid-member ingress", () => {
   afterEach(() => {
     vi.useRealTimers()
     delete process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED
+    delete process.env.SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET
   })
 
   it("is inert until the release gate is explicitly enabled", async () => {
@@ -109,9 +100,8 @@ describe("Skool paid-member ingress", () => {
     expect(mocks.ensureAccount).not.toHaveBeenCalled()
   })
 
-  it("delivers a private setup email and returns grant state without exposing recovery secrets", async () => {
+  it("derives private audit ids, delivers setup, and exposes only safe state", async () => {
     process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
-    const payload = body()
     mocks.ensureAccount.mockResolvedValue({
       userId: "user_1",
       authUserId: "auth_1",
@@ -125,18 +115,28 @@ describe("Skool paid-member ingress", () => {
     })
 
     const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
-    const response = await POST(await signedRequest(payload))
+    const response = await POST(await signedRequest(body()))
     const responseBody = await response.json()
 
     expect(response.status).toBe(200)
+    expect(mocks.grantMembership).toHaveBeenCalledWith({
+      userId: "user_1",
+      envelope: expect.objectContaining({
+        billingPeriodKey: "2026-09-01",
+        membershipKey: expect.stringMatching(/^skool:sselfie-photo-club-2569:[a-f0-9]{32}$/),
+        dedupeKey: expect.stringMatching(/:period:2026-09-01$/),
+      }),
+    })
     expect(mocks.sendSetupEmail).toHaveBeenCalledWith({
       email: "member@example.com",
       recoveryLink: "https://sselfie.ai/auth/confirm?token=customer-bearer-secret",
-      membershipKey: payload.membershipKey,
+      membershipKey: expect.stringMatching(/^skool:sselfie-photo-club-2569:[a-f0-9]{32}$/),
+      billingPeriodKey: "2026-09-01",
     })
     expect(responseBody).toMatchObject({
       success: true,
       replay: false,
+      billingPeriodKey: "2026-09-01",
       account: { state: "recovery_required", setupEmailSent: true },
       entitlement: { source: "skool", status: "active" },
       credits: { granted: 100, balance: 100 },
