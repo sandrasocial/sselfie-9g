@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserSubscription } from "@/lib/subscription"
+import { getUserMembershipAccess } from "@/lib/subscription"
 import { sql } from "@/lib/db/client"
 
 export async function GET() {
@@ -30,7 +30,7 @@ export async function GET() {
     console.log("[v0] Profile info: Neon user ID:", neonUser.id)
 
 
-    const subscription = await getUserSubscription(neonUser.id)
+    const subscription = await getUserMembershipAccess(neonUser.id)
 
     const userInfo = await sql`
       SELECT 

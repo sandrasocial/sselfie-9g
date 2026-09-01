@@ -140,7 +140,7 @@ export default function SselfieApp({
 }: SselfieAppProps) {
   const isMembershipUser =
     (subscriptionStatus === "active" || subscriptionStatus === "trialing") &&
-    ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
+    ["sselfie_studio_membership", "skool_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
 
   const getInitialTab = () => {
     if (typeof window !== "undefined") {

@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
-import { getUserSubscription } from "@/lib/subscription"
+import { getUserMembershipAccess } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 import SselfieApp from "@/components/sselfie/sselfie-app"
 
@@ -72,7 +72,7 @@ export default async function MayaPage() {
     console.log(`[Maya Page] ✅ User ${neonUser.email} has Maya access`)
   }
 
-  const subscription = await getUserSubscription(neonUser.id)
+  const subscription = await getUserMembershipAccess(neonUser.id)
 
   console.log("[v0] [MAYA PAGE] User:", neonUser.email)
   console.log("[v0] [MAYA PAGE] Subscription status:", subscription?.status ?? "none")

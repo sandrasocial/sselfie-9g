@@ -1,7 +1,7 @@
 import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
-import { getUserSubscription, shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
+import { getUserMembershipAccess, shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import SselfieApp from "@/components/sselfie/sselfie-app"
@@ -196,7 +196,7 @@ export default async function StudioPage({
     // Don't fail Studio load if credit grant fails
   }
 
-  const subscription = await getUserSubscription(neonUser.id)
+  const subscription = await getUserMembershipAccess(neonUser.id)
 
   console.log("[v0] [STUDIO PAGE] User:", neonUser.email)
   console.log("[v0] [STUDIO PAGE] Subscription status:", subscription?.status ?? "none")

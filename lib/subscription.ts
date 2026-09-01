@@ -3,6 +3,7 @@ import { hasSubscriptionAccess } from "@/lib/membership-access-policy"
 
 export type ProductType =
   | "sselfie_studio_membership"
+  | "skool_membership"
   | "brand_studio_membership"
   | "pro"
   | "vault_maya"
@@ -35,6 +36,10 @@ type PickPreferredSubscriptionOptions = {
 }
 
 const MEMBERSHIP_PRODUCT_TYPES: ProductType[] = ["sselfie_studio_membership", "brand_studio_membership", "pro"]
+
+export type UserMembershipAccess = SubscriptionRow & {
+  access_source: "stripe" | "skool"
+}
 
 export function shouldEnforceLiveSubscriptionRows(nodeEnv = process.env.NODE_ENV): boolean {
   return nodeEnv === "production"
@@ -129,7 +134,10 @@ export async function getUserSubscription(userId: string) {
 export async function hasStudioMembership(userId: string): Promise<boolean> {
   try {
     const subscription = await getUserSubscription(userId)
-    return isMembershipProduct(subscription?.product_type)
+    if (isMembershipProduct(subscription?.product_type)) return true
+
+    const { hasActiveSkoolMembership } = await import("@/lib/skool/membership-service")
+    return hasActiveSkoolMembership(userId)
   } catch (error) {
     console.error("[v0] [hasStudioMembership] Error checking studio membership:", error)
     return false
@@ -141,7 +149,12 @@ export async function hasStudioMembership(userId: string): Promise<boolean> {
 export async function hasFullStudioMembership(userId: string): Promise<boolean> {
   try {
     const subscription = await getUserSubscription(userId)
-    return isMembershipProduct(subscription?.product_type) && subscription?.plan !== "maya_essential_pilot"
+    if (isMembershipProduct(subscription?.product_type) && subscription?.plan !== "maya_essential_pilot") {
+      return true
+    }
+
+    const { hasActiveSkoolMembership } = await import("@/lib/skool/membership-service")
+    return hasActiveSkoolMembership(userId)
   } catch (error) {
     console.error("[v0] [hasFullStudioMembership] Error checking full studio membership:", error)
     return false
@@ -170,12 +183,16 @@ export async function hasVaultMayaAccess(userId: string): Promise<boolean> {
     if (rows.some((row) => row.product_type === "vault_maya" && isSubscriptionAccessActive(row))) {
       return true
     }
-    return rows.some(
+    const hasStripeAccess = rows.some(
       row =>
         isMembershipProduct(row.product_type) &&
         row.plan !== "maya_essential_pilot" &&
         isSubscriptionAccessActive(row),
     )
+    if (hasStripeAccess) return true
+
+    const { hasActiveSkoolMembership } = await import("@/lib/skool/membership-service")
+    return hasActiveSkoolMembership(userId)
   } catch (error) {
     console.error("[v0] [hasVaultMayaAccess] Error checking vault maya access:", error)
     return false
@@ -184,10 +201,10 @@ export async function hasVaultMayaAccess(userId: string): Promise<boolean> {
 
 export async function hasFullAccess(userId: string): Promise<boolean> {
   try {
-    const subscription = await getUserSubscription(userId)
+    const access = await getUserMembershipAccess(userId)
     return (
-      ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(subscription?.product_type || "") &&
-      subscription?.plan !== "maya_essential_pilot"
+      ["sselfie_studio_membership", "skool_membership", "brand_studio_membership", "pro", "one_time_session"].includes(access?.product_type || "") &&
+      access?.plan !== "maya_essential_pilot"
     )
   } catch (error) {
     console.error("[v0] [hasFullAccess] Error checking full access:", error)
@@ -212,7 +229,7 @@ export async function hasOneTimeSession(userId: string): Promise<boolean> {
  */
 export async function getUserProductAccess(userId: string): Promise<ProductType | null> {
   try {
-    const subscription = await getUserSubscription(userId)
+    const subscription = await getUserMembershipAccess(userId)
 
     if (!subscription) {
       return null
@@ -223,6 +240,40 @@ export async function getUserProductAccess(userId: string): Promise<ProductType 
     console.error("[v0] Error getting user product access:", error)
     return null
   }
+}
+
+/**
+ * Customer-facing access projection. A full Stripe membership stays primary;
+ * full Skool access outranks a simultaneous lower-tier Stripe product. Skool
+ * is represented explicitly and never written into the subscriptions table.
+ */
+export async function getUserMembershipAccess(userId: string): Promise<UserMembershipAccess | null> {
+  const subscription = await getUserSubscription(userId)
+  if (
+    subscription &&
+    isMembershipProduct(subscription.product_type) &&
+    subscription.plan !== "maya_essential_pilot"
+  ) {
+    return { ...subscription, access_source: "stripe" }
+  }
+
+  const { hasActiveSkoolMembership } = await import("@/lib/skool/membership-service")
+  if (await hasActiveSkoolMembership(userId)) {
+    return {
+      product_type: "skool_membership",
+      plan: "skool_monthly",
+      status: "active",
+      stripe_subscription_id: null,
+      stripe_customer_id: null,
+      current_period_start: null,
+      current_period_end: null,
+      created_at: null,
+      is_test_mode: false,
+      access_source: "skool",
+    }
+  }
+
+  return subscription ? { ...subscription, access_source: "stripe" } : null
 }
 
 /**

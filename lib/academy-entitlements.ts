@@ -2,6 +2,7 @@ import { sql } from "@/lib/db/client"
 import { ACADEMY_PRODUCTS, PRICING_PRODUCTS } from "@/lib/products"
 import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { VISIBILITY_MINI_PRODUCT_BY_ID } from "@/lib/visibility-products"
+import { hasActiveSkoolMembership } from "@/lib/skool/membership-service"
 
 const MEMBERSHIP_PRODUCT_TYPES = [
   "sselfie_studio_membership",
@@ -489,7 +490,9 @@ export async function hasActiveStudioMembership(userId: string): Promise<boolean
       LIMIT 1
     `
 
-    return membership.length > 0
+    if (membership.length > 0) return true
+
+    return hasActiveSkoolMembership(userId)
   } catch (error) {
     console.error("[academy-entitlements] Failed membership lookup:", error)
     return false

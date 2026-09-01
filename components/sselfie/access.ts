@@ -29,7 +29,7 @@ export function getAccessState({
 
   const isMember = subscriptionStatus === "active" || subscriptionStatus === "trialing"
   const isPaidBlueprintOnly = productType === "paid_blueprint"
-  const isMembership = isMember && ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
+  const isMembership = isMember && ["sselfie_studio_membership", "skool_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
 
   if (isMembership) {
     return {
@@ -37,7 +37,7 @@ export function getAccessState({
       canUseGenerators: true, // Membership = full access
       showUpgradeUI: false,
       isPaidBlueprintOnly: false,
-      hasFullAccess: ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(productType || ""), // Only Studio Membership has Academy
+      hasFullAccess: ["sselfie_studio_membership", "skool_membership", "brand_studio_membership", "pro"].includes(productType || ""), // Full membership includes Academy
     }
   }
 

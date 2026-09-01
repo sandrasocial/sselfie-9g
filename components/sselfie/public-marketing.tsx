@@ -10,6 +10,7 @@ import { VaultMayaCheckoutLink } from "@/components/vault-maya/vault-maya-checko
 import { SuiteMultiFormatWalkthrough } from "@/components/sselfie/suite-multiformat-walkthrough"
 import { SuiteProductWalkthrough } from "@/components/sselfie/suite-product-walkthrough"
 import vaultMayaStyles from "@/components/vault-maya/vault-maya-landing.module.css"
+import { resolvePublicMembershipAcquisitionHref } from "@/lib/skool/public-acquisition"
 
 // ─── Vercel Blob images ───────────────────────────────────────────────────────
 const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
@@ -2000,9 +2001,15 @@ export function StudioPageContent({ checkoutSource }: { checkoutSource?: string 
     })
   }
 
-  const heroCheckoutHref = `/checkout/membership?interval=month&source=${sourceTop}`
-  const pricingCheckoutHref = `/checkout/membership?interval=month&source=${checkoutSource ? `${checkoutSource}_pricing` : "studio_page_pricing"}`
-  const closingCheckoutHref = `/checkout/membership?interval=month&source=${sourceBottom}`
+  const heroCheckoutHref = resolvePublicMembershipAcquisitionHref({
+    legacyHref: `/checkout/membership?interval=month&source=${sourceTop}`,
+  })
+  const pricingCheckoutHref = resolvePublicMembershipAcquisitionHref({
+    legacyHref: `/checkout/membership?interval=month&source=${checkoutSource ? `${checkoutSource}_pricing` : "studio_page_pricing"}`,
+  })
+  const closingCheckoutHref = resolvePublicMembershipAcquisitionHref({
+    legacyHref: `/checkout/membership?interval=month&source=${sourceBottom}`,
+  })
   return (
     <PublicPageShell>
       <PublicNav />

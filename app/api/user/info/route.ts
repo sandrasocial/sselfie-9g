@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserSubscription } from "@/lib/subscription"
+import { getUserMembershipAccess, getUserSubscription } from "@/lib/subscription"
 import { sql } from "@/lib/db/client"
 
 interface DatabaseErrorWithCode {
@@ -30,14 +30,15 @@ export async function GET() {
 
     console.log("[v0] User info: Neon user ID:", neonUser.id)
 
-    const subscription = await getUserSubscription(neonUser.id)
+    const subscription = await getUserMembershipAccess(neonUser.id)
 
     // Check for stripe_customer_id in both subscriptions and users table
     let stripeCustomerId: string | null = null
     
     // First check subscriptions table
-    if (subscription?.stripe_customer_id) {
-      stripeCustomerId = subscription.stripe_customer_id
+    const stripeSubscription = await getUserSubscription(neonUser.id)
+    if (stripeSubscription?.stripe_customer_id) {
+      stripeCustomerId = stripeSubscription.stripe_customer_id
     } else {
       // Fall back to users table
       const userStripeCheck = await sql`

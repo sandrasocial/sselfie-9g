@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
-import { getUserSubscription } from "@/lib/subscription"
+import { getUserMembershipAccess } from "@/lib/subscription"
 import { redirect } from 'next/navigation'
 import SselfieApp from "@/components/sselfie/sselfie-app"
 
@@ -46,7 +46,7 @@ export default async function FeedPlannerPage({
     redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
   }
 
-  const subscription = await getUserSubscription(neonUser.id)
+  const subscription = await getUserMembershipAccess(neonUser.id)
   const purchaseSuccess = params.purchase === "success"
   const initialTab = params.tab || "feed-planner" // Default to feed-planner tab
 
