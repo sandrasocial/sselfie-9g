@@ -44,7 +44,9 @@ export function buildSkoolSetupEntryLink(input: {
 
   const url = new URL("/auth/skool-setup", productionOrigin(input.productionUrl))
   url.searchParams.set("membership", input.membershipKey)
-  url.searchParams.set("token", setupDigest(secret, input.membershipKey))
+  // Keep the bearer credential in the fragment. Browsers do not send URL
+  // fragments in HTTP requests, reverse-proxy logs, or referrer headers.
+  url.hash = `token=${setupDigest(secret, input.membershipKey)}`
   return url.toString()
 }
 
