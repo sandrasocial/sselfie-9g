@@ -13,7 +13,7 @@ export const maxDuration = 30
 
 export async function POST(request: Request) {
   // Deployment is inert until the release steward explicitly activates the
-  // already-approved issue #25 cutover after migrations and E2E verification.
+  // approved issue #25 cutover after migration and E2E verification.
   if (process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED !== "true") {
     return NextResponse.json(
       { error: "Skool membership provisioning is not active" },
@@ -21,6 +21,7 @@ export async function POST(request: Request) {
     )
   }
 
+  const signingSecret = process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET
   const rawBody = await request.text()
   if (Buffer.byteLength(rawBody, "utf8") > 16_384) {
     return NextResponse.json({ error: "Invalid request" }, { status: 413 })
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     rawBody,
     timestamp: signatureTimestamp,
     signature: request.headers.get("x-sselfie-signature"),
-    secret: process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET,
+    secret: signingSecret,
   })
   if (!signatureValid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   const ingressTime = new Date(Number(signatureTimestamp) * 1000)
   const envelope = normalizeSkoolMembershipEnvelope(
     parsed,
-    process.env.SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET,
+    process.env.SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET || signingSecret,
     { now: ingressTime },
   )
   if (!envelope) {
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
         email: envelope.privateProvisioning.email,
         recoveryLink: account.recoveryLink,
         membershipKey: envelope.membershipKey,
+        billingPeriodKey: envelope.billingPeriodKey,
       })
       setupEmailSent = true
     }
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       replay: grant.replay,
+      billingPeriodKey: envelope.billingPeriodKey,
       account: {
         state: account.accountState,
         setupEmailSent,
