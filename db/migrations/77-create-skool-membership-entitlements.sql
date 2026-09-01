@@ -35,10 +35,11 @@ CREATE INDEX IF NOT EXISTS skool_membership_entitlements_access_idx
 CREATE INDEX IF NOT EXISTS skool_membership_entitlements_reconciliation_idx
   ON skool_membership_entitlements (reconciliation_status, last_observed_at);
 
--- This durable claim stores no email or other customer content.
+-- One durable claim per confirmed paid billing date. The sender never chooses
+-- this key; the application derives it from the signed payment observation.
 CREATE TABLE IF NOT EXISTS skool_membership_events (
   dedupe_key TEXT PRIMARY KEY CHECK (
-    dedupe_key ~ '^skool:sselfie-photo-club-2569:[a-f0-9]{32}:present$'
+    dedupe_key ~ '^skool:sselfie-photo-club-2569:[a-f0-9]{32}:period:[0-9]{4}-[0-9]{2}-[0-9]{2}$'
   ),
   membership_key TEXT NOT NULL REFERENCES skool_membership_entitlements(membership_key)
     ON DELETE RESTRICT,
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS skool_membership_events (
 CREATE UNIQUE INDEX IF NOT EXISTS credit_transactions_skool_membership_grant_key
   ON credit_transactions (user_id, reference_id)
   WHERE transaction_type = 'subscription_grant'
-    AND reference_id LIKE 'skool-membership-initial:%';
+    AND reference_id LIKE 'skool-membership-period:%';
 
 ALTER TABLE skool_membership_entitlements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE skool_membership_events ENABLE ROW LEVEL SECURITY;
