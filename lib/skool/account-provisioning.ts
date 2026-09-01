@@ -15,42 +15,10 @@ export type SkoolAccountProvisioningResult = {
   userId: string
   authUserId: string
   accountState: "ready" | "recovery_required"
-  recoveryLink: string | null
-}
-
-function firstPartyRecoveryLink(actionLink: string, productionUrl: string): string {
-  try {
-    const url = new URL(actionLink)
-    const token = url.searchParams.get("token")
-    const type = url.searchParams.get("type") || "recovery"
-    if (token) {
-      const destination = `/auth/setup-password?next=${encodeURIComponent("/app")}`
-      return `${productionUrl}/auth/confirm?token=${encodeURIComponent(token)}&type=${encodeURIComponent(type)}&redirect_to=${encodeURIComponent(destination)}`
-    }
-  } catch {
-    // The provider action link remains the safe fallback if its URL format changes.
-  }
-  return actionLink
-}
-
-function productionOrigin(value: string | null | undefined): string {
-  try {
-    const parsed = new URL(value || "https://sselfie.ai")
-    if (
-      parsed.protocol === "https:" &&
-      (parsed.hostname === "sselfie.ai" || parsed.hostname === "www.sselfie.ai")
-    ) {
-      return parsed.origin
-    }
-  } catch {
-    // Fall through to the canonical origin.
-  }
-  return "https://sselfie.ai"
 }
 
 export async function ensureSkoolMemberAccount(input: {
   email: string
-  productionUrl?: string | null
 }): Promise<SkoolAccountProvisioningResult> {
   const email = input.email.trim().toLowerCase()
   const localRows = (await sql`
@@ -152,18 +120,13 @@ export async function ensureSkoolMemberAccount(input: {
         WHERE id = ${userId}
       `
     }
-    return { userId, authUserId: authUser.id, accountState: "ready", recoveryLink: null }
+    return { userId, authUserId: authUser.id, accountState: "ready" }
   }
 
-  const origin = productionOrigin(input.productionUrl)
-  const { data, error } = await admin.generateLink({
-    type: "recovery",
-    email,
-    options: { redirectTo: `${origin}/auth/setup-password?next=%2Fapp` },
-  })
-  const actionLink = data?.properties?.action_link
-  if (error || !actionLink) throw error || new Error("SKOOL_RECOVERY_LINK_FAILED")
-
+  // Do not mint a provider recovery credential during webhook processing.
+  // Retries must be able to return the same account state without invalidating
+  // an already-delivered setup email. A one-time recovery token is generated
+  // only after the customer opens the stable SSELFIE setup entry link.
   await sql`
     UPDATE users SET password_setup_complete = FALSE, updated_at = NOW()
     WHERE id = ${userId}
@@ -173,6 +136,5 @@ export async function ensureSkoolMemberAccount(input: {
     userId,
     authUserId: authUser.id,
     accountState: "recovery_required",
-    recoveryLink: firstPartyRecoveryLink(actionLink, origin),
   }
 }
