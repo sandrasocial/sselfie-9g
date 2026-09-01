@@ -51,6 +51,7 @@ function identityDigest(secret: Buffer, email: string): string {
 export function normalizeSkoolMembershipEnvelope(
   input: unknown,
   auditKeySecret: string | null | undefined,
+  options?: { now?: Date; maxFutureSkewSeconds?: number },
 ): SkoolMembershipEnvelope | null {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null
   const value = input as Record<string, unknown>
@@ -62,6 +63,11 @@ export function normalizeSkoolMembershipEnvelope(
   const observedAtMillis = typeof value.observedAt === "string" ? Date.parse(value.observedAt) : NaN
   const membershipKey = typeof value.membershipKey === "string" ? value.membershipKey : ""
   const dedupeKey = typeof value.dedupeKey === "string" ? value.dedupeKey : ""
+  const nowMillis = (options?.now ?? new Date()).getTime()
+  const maxFutureSkewSeconds = Math.max(
+    0,
+    Math.min(900, options?.maxFutureSkewSeconds ?? 300),
+  )
 
   if (
     value.schemaVersion !== 1 ||
@@ -72,6 +78,8 @@ export function normalizeSkoolMembershipEnvelope(
     !email ||
     !secret ||
     !Number.isFinite(observedAtMillis) ||
+    !Number.isFinite(nowMillis) ||
+    observedAtMillis > nowMillis + maxFutureSkewSeconds * 1000 ||
     !MEMBERSHIP_KEY.test(membershipKey) ||
     dedupeKey !== `${membershipKey}:present`
   ) {
