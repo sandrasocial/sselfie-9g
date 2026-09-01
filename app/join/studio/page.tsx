@@ -1,5 +1,11 @@
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
+
 import { StudioPageContent } from "@/components/sselfie/public-marketing"
+import {
+  isSkoolPublicAcquisitionEnabled,
+  SKOOL_PUBLIC_MEMBERSHIP_URL,
+} from "@/lib/skool/public-acquisition"
 
 export const metadata: Metadata = {
   title: "SSELFIE SUITE with Maya",
@@ -54,6 +60,14 @@ export default async function JoinStudioPage({
 }: {
   searchParams: Promise<{ source?: string }>
 }) {
+  // During the Skool launch, this public legacy acquisition door must not
+  // advertise or sell the parallel Stripe membership. Existing/internal
+  // Stripe checkout routes remain available because only this public page is
+  // redirected behind the launch flag.
+  if (isSkoolPublicAcquisitionEnabled()) {
+    redirect(SKOOL_PUBLIC_MEMBERSHIP_URL)
+  }
+
   // Doors elsewhere (free prompts page, Vault access) arrive with a source param; forwarding it
   // into the checkout CTAs keeps the attribution chain intact (door -> landing -> checkout).
   const params = await searchParams
