@@ -10,17 +10,17 @@ function escapeHtml(value: string): string {
 
 export async function sendSkoolSetupEmail(input: {
   email: string
-  recoveryLink: string
+  setupLink: string
   membershipKey: string
   billingPeriodKey: string
 }): Promise<{ messageId: string | null }> {
-  const recoveryLink = input.recoveryLink.trim()
-  if (!recoveryLink.startsWith("https://")) {
+  const setupLink = input.setupLink.trim()
+  if (!setupLink.startsWith("https://sselfie.ai/") && !setupLink.startsWith("https://www.sselfie.ai/")) {
     throw new Error("SKOOL_SETUP_EMAIL_FAILED")
   }
 
   const resend = requireResendClient()
-  const safeLink = escapeHtml(recoveryLink)
+  const safeLink = escapeHtml(setupLink)
   const subject = "Your SSELFIE access is ready 🤍"
   const text = [
     "Hey 🤍",
@@ -30,7 +30,7 @@ export async function sendSkoolSetupEmail(input: {
     "Because you joined through Skool, SSELFIE Suite + Maya are included. You do not need to buy or pay for Suite again.",
     "",
     "Use this private link to finish setting up your SSELFIE account:",
-    recoveryLink,
+    setupLink,
     "",
     "Once your password is set, you will land inside SSELFIE and can start creating.",
     "",
