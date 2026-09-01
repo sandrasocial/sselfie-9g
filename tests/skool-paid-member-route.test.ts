@@ -75,6 +75,20 @@ describe("Skool paid-member ingress", () => {
     expect(mocks.sendSetupEmail).not.toHaveBeenCalled()
   })
 
+  it("fails closed when provisioning is enabled but the signing secret is absent", async () => {
+    process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
+    delete process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET
+    const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
+    const response = await POST(
+      new Request("https://sselfie.ai/api/orchestration/skool/paid-member", {
+        method: "POST",
+        body: JSON.stringify(body()),
+      }),
+    )
+    expect(response.status).toBe(503)
+    expect(mocks.ensureAccount).not.toHaveBeenCalled()
+  })
+
   it("rejects invalid signatures, an unapproved free plan, and future observations", async () => {
     process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
     const { POST } = await import("@/app/api/orchestration/skool/paid-member/route")
@@ -100,13 +114,12 @@ describe("Skool paid-member ingress", () => {
     expect(mocks.ensureAccount).not.toHaveBeenCalled()
   })
 
-  it("derives private audit ids, delivers setup, and exposes only safe state", async () => {
+  it("derives private audit ids, delivers a stable SSELFIE setup entry, and exposes only safe state", async () => {
     process.env.SKOOL_MEMBERSHIP_PROVISIONING_ENABLED = "true"
     mocks.ensureAccount.mockResolvedValue({
       userId: "user_1",
       authUserId: "auth_1",
       accountState: "recovery_required",
-      recoveryLink: "https://sselfie.ai/auth/confirm?token=customer-bearer-secret",
     })
     mocks.grantMembership.mockResolvedValue({
       replay: false,
@@ -129,7 +142,9 @@ describe("Skool paid-member ingress", () => {
     })
     expect(mocks.sendSetupEmail).toHaveBeenCalledWith({
       email: "member@example.com",
-      recoveryLink: "https://sselfie.ai/auth/confirm?token=customer-bearer-secret",
+      setupLink: expect.stringMatching(
+        /^https:\/\/sselfie\.ai\/auth\/skool-setup\?membership=skool%3Asselfie-photo-club-2569%3A[a-f0-9]{32}#token=[A-Za-z0-9_-]{43}$/,
+      ),
       membershipKey: expect.stringMatching(/^skool:sselfie-photo-club-2569:[a-f0-9]{32}$/),
       billingPeriodKey: "2026-09-01",
     })
@@ -143,9 +158,8 @@ describe("Skool paid-member ingress", () => {
     })
     const serialized = JSON.stringify(responseBody)
     expect(serialized).not.toContain("member@example.com")
-    expect(serialized).not.toContain("recoveryLink")
-    expect(serialized).not.toContain("customer-bearer-secret")
-    expect(serialized).not.toContain("token=")
+    expect(serialized).not.toContain("setupLink")
+    expect(serialized).not.toContain("#token=")
   })
 
   it("fails the webhook so the delivery can retry when setup email delivery fails", async () => {
@@ -154,7 +168,6 @@ describe("Skool paid-member ingress", () => {
       userId: "user_1",
       authUserId: "auth_1",
       accountState: "recovery_required",
-      recoveryLink: "https://sselfie.ai/auth/confirm?token=customer-bearer-secret",
     })
     mocks.grantMembership.mockResolvedValue({
       replay: false,
@@ -172,6 +185,5 @@ describe("Skool paid-member ingress", () => {
       error: "Membership provisioning failed",
       code: "SKOOL_SETUP_EMAIL_FAILED",
     })
-    expect(JSON.stringify(responseBody)).not.toContain("customer-bearer-secret")
   })
 })
