@@ -13,15 +13,16 @@ export type SkoolMembershipGrantResult = {
 }
 
 /**
- * Commit one externally verified membership and its initial monthly allocation.
- * The event claim, entitlement, wallet delta, and ledger row share one DB
- * transaction. Nothing here creates or changes a Stripe row.
+ * Commit one externally verified paid membership period and its monthly
+ * allocation. The event claim, entitlement, wallet delta, and ledger row share
+ * one DB transaction. Nothing here creates or changes a Stripe row.
  */
 export async function grantSkoolMembership(input: {
   userId: string
   envelope: SkoolMembershipEnvelope
 }): Promise<SkoolMembershipGrantResult> {
-  const creditReference = `skool-membership-initial:${input.envelope.membershipKey}`
+  const creditReference =
+    `skool-membership-period:${input.envelope.membershipKey}:${input.envelope.billingPeriodKey}`
   const transactionRows = (await sql.transaction(tx => [
     tx`SELECT pg_advisory_xact_lock(hashtext(${input.envelope.membershipKey}))`,
     tx`
@@ -38,6 +39,11 @@ export async function grantSkoolMembership(input: {
           ${input.envelope.observedAt}, NOW()
         )
         ON CONFLICT (membership_key) DO UPDATE SET
+          source_event_id = CASE
+            WHEN EXCLUDED.last_observed_at > skool_membership_entitlements.last_observed_at
+              THEN EXCLUDED.source_event_id
+            ELSE skool_membership_entitlements.source_event_id
+          END,
           reconciliation_status = CASE
             WHEN EXCLUDED.last_observed_at > skool_membership_entitlements.last_observed_at
               THEN 'present'
@@ -99,12 +105,12 @@ export async function grantSkoolMembership(input: {
         )
         SELECT
           ${input.userId}, ${SKOOL_MEMBERSHIP_CREDITS}, 'subscription_grant',
-          'Skool membership initial monthly allocation', ${creditReference},
-          NULL, wallet.balance, FALSE, NOW()
+          ${`Skool membership ${input.envelope.billingPeriodKey} monthly allocation`},
+          ${creditReference}, NULL, wallet.balance, FALSE, NOW()
         FROM wallet
         ON CONFLICT (user_id, reference_id)
           WHERE transaction_type = 'subscription_grant'
-            AND reference_id LIKE 'skool-membership-initial:%'
+            AND reference_id LIKE 'skool-membership-period:%'
         DO NOTHING
         RETURNING balance_after
       )
