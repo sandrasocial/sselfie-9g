@@ -33,7 +33,7 @@ describe("Skool account provisioning", () => {
     Object.values(mocks).forEach(mock => mock.mockReset())
   })
 
-  it("reuses a verified existing account without creating or recovering it", async () => {
+  it("reuses a verified existing account without creating recovery credentials", async () => {
     mocks.sql.mockResolvedValueOnce([
       {
         id: "local_1",
@@ -60,14 +60,13 @@ describe("Skool account provisioning", () => {
       userId: "local_1",
       authUserId: "auth_1",
       accountState: "ready",
-      recoveryLink: null,
     })
     expect(mocks.findByEmail).not.toHaveBeenCalled()
     expect(mocks.createUser).not.toHaveBeenCalled()
     expect(mocks.generateLink).not.toHaveBeenCalled()
   })
 
-  it("creates one missing Auth/local account and returns a first-party recovery link", async () => {
+  it("creates one missing Auth/local account but does not mint recovery credentials in the webhook", async () => {
     mocks.sql
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ id: "local_new" }])
@@ -83,19 +82,10 @@ describe("Skool account provisioning", () => {
       },
       error: null,
     })
-    mocks.generateLink.mockResolvedValue({
-      data: {
-        properties: {
-          action_link: "https://auth.example.com/verify?token=one_time_token&type=recovery",
-        },
-      },
-      error: null,
-    })
 
     const { ensureSkoolMemberAccount } = await import("@/lib/skool/account-provisioning")
     const result = await ensureSkoolMemberAccount({
       email: "new@example.com",
-      productionUrl: "https://sselfie.ai",
     })
 
     expect(mocks.createUser).toHaveBeenCalledWith({
@@ -103,12 +93,43 @@ describe("Skool account provisioning", () => {
       email_confirm: true,
       user_metadata: { created_via: "skool_membership" },
     })
-    expect(result).toMatchObject({
+    expect(result).toEqual({
       userId: "local_new",
       authUserId: "auth_new",
       accountState: "recovery_required",
     })
-    expect(result.recoveryLink).toContain("https://sselfie.ai/auth/confirm?token=one_time_token")
+    expect(mocks.generateLink).not.toHaveBeenCalled()
+  })
+
+  it("returns the same recovery-required state on retry without replacing a customer credential", async () => {
+    mocks.sql
+      .mockResolvedValueOnce([
+        {
+          id: "local_new",
+          email: "new@example.com",
+          supabase_user_id: "auth_new",
+          password_setup_complete: false,
+        },
+      ])
+      .mockResolvedValueOnce([])
+    mocks.getUserById.mockResolvedValue({
+      data: {
+        user: {
+          id: "auth_new",
+          email: "new@example.com",
+          last_sign_in_at: null,
+        },
+      },
+      error: null,
+    })
+
+    const { ensureSkoolMemberAccount } = await import("@/lib/skool/account-provisioning")
+    await expect(ensureSkoolMemberAccount({ email: "new@example.com" })).resolves.toEqual({
+      userId: "local_new",
+      authUserId: "auth_new",
+      accountState: "recovery_required",
+    })
+    expect(mocks.generateLink).not.toHaveBeenCalled()
   })
 
   it("stops on a conflicting mapped Auth identity", async () => {
