@@ -132,6 +132,38 @@ describe("Skool account provisioning", () => {
     expect(mocks.generateLink).not.toHaveBeenCalled()
   })
 
+  it("keeps recovery-link sign-ins in setup until the password marker is complete", async () => {
+    mocks.sql
+      .mockResolvedValueOnce([
+        {
+          id: "local_new",
+          email: "new@example.com",
+          supabase_user_id: "auth_new",
+          password_setup_complete: false,
+        },
+      ])
+      .mockResolvedValueOnce([])
+    mocks.getUserById.mockResolvedValue({
+      data: {
+        user: {
+          id: "auth_new",
+          email: "new@example.com",
+          last_sign_in_at: "2026-09-01T12:00:00.000Z",
+        },
+      },
+      error: null,
+    })
+
+    const { ensureSkoolMemberAccount } = await import("@/lib/skool/account-provisioning")
+    await expect(ensureSkoolMemberAccount({ email: "new@example.com" })).resolves.toEqual({
+      userId: "local_new",
+      authUserId: "auth_new",
+      accountState: "recovery_required",
+    })
+    expect(mocks.sql).toHaveBeenCalledTimes(2)
+    expect(mocks.generateLink).not.toHaveBeenCalled()
+  })
+
   it("stops on a conflicting mapped Auth identity", async () => {
     mocks.sql.mockResolvedValueOnce([
       {
