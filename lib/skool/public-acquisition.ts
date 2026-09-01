@@ -1,5 +1,5 @@
 export const SKOOL_PUBLIC_MEMBERSHIP_URL =
-  "https://www.skool.com/sselfie-photo-club-2569/about"
+  "https://www.skool.com/sselfie/about"
 
 export const SKOOL_PUBLIC_ACQUISITION_FLAG =
   "NEXT_PUBLIC_SKOOL_PUBLIC_ACQUISITION_ENABLED"
