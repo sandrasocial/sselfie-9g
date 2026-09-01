@@ -49,4 +49,12 @@ describe("public Skool acquisition cutover", () => {
     expect(checkout).not.toContain(SKOOL_PUBLIC_MEMBERSHIP_URL)
     expect(publicPage).toContain("resolvePublicMembershipAcquisitionHref")
   })
+
+  it("redirects the legacy public Suite landing to Skool only when launch acquisition is enabled", () => {
+    const joinPage = readFileSync("app/join/studio/page.tsx", "utf8")
+
+    expect(joinPage).toContain("isSkoolPublicAcquisitionEnabled()")
+    expect(joinPage).toContain("redirect(SKOOL_PUBLIC_MEMBERSHIP_URL)")
+    expect(joinPage).toContain("<StudioPageContent")
+  })
 })
