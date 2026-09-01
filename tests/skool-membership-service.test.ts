@@ -11,8 +11,24 @@ const sql = vi.hoisted(() => {
 vi.mock("@/lib/db/client", () => ({ sql }))
 vi.mock("@/lib/credits-cached", () => ({ invalidateCreditCache: vi.fn() }))
 
+function paidEnvelope(period: "2026-09-01" | "2026-10-01") {
+  const membershipKey = `skool:sselfie-photo-club-2569:${"a".repeat(32)}`
+  return {
+    schemaVersion: 1 as const,
+    source: "skool" as const,
+    eventType: "membership.present" as const,
+    groupId: "sselfie-photo-club-2569" as const,
+    planCode: "sselfie-skool-monthly" as const,
+    observedAt: `${period}T04:00:00.000Z`,
+    billingPeriodKey: period,
+    membershipKey,
+    dedupeKey: `${membershipKey}:period:${period}`,
+    privateProvisioning: { email: "member@example.com" },
+  }
+}
+
 describe("Skool membership persistence", () => {
-  it("returns a first 100-credit grant and a zero-credit replay", async () => {
+  it("grants once per paid billing period and never double-grants a replay", async () => {
     const tx = vi.fn().mockResolvedValue([])
     ;(sql.transaction as ReturnType<typeof vi.fn>)
       .mockImplementationOnce(async callback => {
@@ -25,29 +41,30 @@ describe("Skool membership persistence", () => {
         await Promise.all(statements)
         return [[], [{ entitlement_upserted: true, event_claimed: false, credits_granted: false, balance: 100 }]]
       })
+      .mockImplementationOnce(async callback => {
+        const statements = callback(tx)
+        await Promise.all(statements)
+        return [[], [{ entitlement_upserted: true, event_claimed: true, credits_granted: true, balance: 200 }]]
+      })
 
     const { grantSkoolMembership } = await import("@/lib/skool/membership-service")
-    const envelope = {
-      schemaVersion: 1 as const,
-      source: "skool" as const,
-      eventType: "membership.present" as const,
-      groupId: "sselfie-photo-club-2569" as const,
-      planCode: "sselfie-skool-monthly" as const,
-      observedAt: "2026-09-01T04:00:00.000Z",
-      membershipKey: `skool:sselfie-photo-club-2569:${"a".repeat(32)}`,
-      dedupeKey: `skool:sselfie-photo-club-2569:${"a".repeat(32)}:present`,
-      privateProvisioning: { email: "member@example.com" },
-    }
+    const september = paidEnvelope("2026-09-01")
+    const october = paidEnvelope("2026-10-01")
 
-    await expect(grantSkoolMembership({ userId: "user_1", envelope })).resolves.toEqual({
+    await expect(grantSkoolMembership({ userId: "user_1", envelope: september })).resolves.toEqual({
       replay: false,
       creditsGranted: 100,
       balance: 100,
     })
-    await expect(grantSkoolMembership({ userId: "user_1", envelope })).resolves.toEqual({
+    await expect(grantSkoolMembership({ userId: "user_1", envelope: september })).resolves.toEqual({
       replay: true,
       creditsGranted: 0,
       balance: 100,
+    })
+    await expect(grantSkoolMembership({ userId: "user_1", envelope: october })).resolves.toEqual({
+      replay: false,
+      creditsGranted: 100,
+      balance: 200,
     })
   })
 
@@ -60,20 +77,10 @@ describe("Skool membership persistence", () => {
     })
 
     const { grantSkoolMembership } = await import("@/lib/skool/membership-service")
-    const membershipKey = `skool:sselfie-photo-club-2569:${"b".repeat(32)}`
+    const envelope = paidEnvelope("2026-09-01")
     await expect(grantSkoolMembership({
       userId: "different_user",
-      envelope: {
-        schemaVersion: 1,
-        source: "skool",
-        eventType: "membership.present",
-        groupId: "sselfie-photo-club-2569",
-        planCode: "sselfie-skool-monthly",
-        observedAt: "2026-09-01T04:00:00.000Z",
-        membershipKey,
-        dedupeKey: `${membershipKey}:present`,
-        privateProvisioning: { email: "member@example.com" },
-      },
+      envelope: { ...envelope, membershipKey: `skool:sselfie-photo-club-2569:${"b".repeat(32)}` },
     })).rejects.toThrow("SKOOL_ENTITLEMENT_CONFLICT")
   })
 
@@ -104,6 +111,7 @@ describe("Skool membership persistence", () => {
     )
     expect(grant).toContain("ELSE skool_membership_entitlements.reconciliation_status")
     expect(grant).toContain("ELSE skool_membership_entitlements.consecutive_roster_misses")
+    expect(grant).toContain("skool-membership-period:")
   })
 
   it("does not count the same roster-miss observation twice", () => {
