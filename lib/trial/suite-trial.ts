@@ -8,6 +8,7 @@
 import { sql } from "@/lib/db/client"
 import { addCredits } from "@/lib/credits"
 import { hasSubscriptionAccess } from "@/lib/membership-access-policy"
+import { hasActiveSkoolMembership } from "@/lib/skool/membership-service"
 
 export const TRIAL_DAYS = 7
 export const TRIAL_CREDITS = 20
@@ -100,6 +101,7 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
         OR (product_type IN ('starter_kit', 'selfie_guide', 'brand_strategy_pack', 'paid_blueprint') AND status IN ('active', 'completed'))
       )
   `
+  const hasActiveSkool = await hasActiveSkoolMembership(userId)
 
   // Entitlement precedence (Sandra, 2026-07-30): paid SUITE > active bundle pass >
   // active trial > Vault Maya. A HIGHER temporary tier must never be downgraded by a
@@ -124,7 +126,7 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
   const fullAppIncluded = hasActiveFullMembership || hasActiveBundlePass || hasActiveTrial
   const vaultIncludedBySuite = hasActiveFullMembership || hasActiveBundlePass
 
-  if (activeMemberships.length > 0) {
+  if (hasActiveFullMembership) {
     return {
       level: "member",
       trialEndsAt: null,
@@ -133,6 +135,34 @@ export async function getSuiteAccess(userId: string): Promise<SuiteAccess> {
       fullAppIncluded,
       vaultIncludedBySuite,
       fullMembershipIncluded: hasActiveFullMembership,
+    }
+  }
+
+  // Skool is an independent paid-membership authority. It must unlock the same
+  // canonical /app and generation path as a full Stripe membership without
+  // creating a synthetic subscriptions row.
+  if (hasActiveSkool) {
+    return {
+      level: "member",
+      trialEndsAt: null,
+      trialDaysLeft: null,
+      calendarIncluded: true,
+      fullAppIncluded: true,
+      vaultIncludedBySuite: true,
+      fullMembershipIncluded: true,
+    }
+  }
+
+  // Maya Essential remains generation-only unless another full entitlement is active.
+  if (activeMemberships.length > 0) {
+    return {
+      level: "member",
+      trialEndsAt: null,
+      trialDaysLeft: null,
+      calendarIncluded: fullAppIncluded,
+      fullAppIncluded,
+      vaultIncludedBySuite,
+      fullMembershipIncluded: false,
     }
   }
 

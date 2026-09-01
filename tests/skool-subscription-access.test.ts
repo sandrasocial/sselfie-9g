@@ -1,5 +1,8 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { readFileSync } from "node:fs"
+
+import { getAccessLabel, getProductDisplayName } from "@/lib/customer-access-labels"
 
 const mocks = vi.hoisted(() => ({
   sql: vi.fn(),
@@ -106,5 +109,32 @@ describe("Skool membership access union", () => {
 
     await expect(hasStudioMembership("user_1")).resolves.toBe(true)
     await expect(hasFullStudioMembership("user_1")).resolves.toBe(true)
+  })
+
+  it("unlocks the canonical /app resolver for an active Skool member", async () => {
+    mocks.sql.mockResolvedValue([])
+    mocks.hasSkool.mockResolvedValue(true)
+    const { getSuiteAccess } = await import("@/lib/trial/suite-trial")
+
+    await expect(getSuiteAccess("user_1")).resolves.toMatchObject({
+      level: "member",
+      calendarIncluded: true,
+      fullAppIncluded: true,
+      vaultIncludedBySuite: true,
+      fullMembershipIncluded: true,
+    })
+  })
+
+  it("labels Skool access as paid and suppresses duplicate membership upgrades", () => {
+    expect(getProductDisplayName("skool_membership")).toBe("Studio")
+    expect(getAccessLabel("skool_membership")).toBe("Studio Member")
+
+    const settings = readFileSync("components/sselfie/settings-screen.tsx", "utf8")
+    const account = readFileSync("components/sselfie/account-screen.tsx", "utf8")
+    const appAccount = readFileSync("app/api/app-v3/account/route.ts", "utf8")
+    expect(settings).toContain('currentTier === "skool_membership"')
+    expect(account).toContain('userInfo?.product_type === "skool_membership"')
+    expect(appAccount).toContain("if (hasActiveSkool)")
+    expect(appAccount).toContain('plan: "SSELFIE Skool membership"')
   })
 })

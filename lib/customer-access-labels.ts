@@ -1,6 +1,7 @@
 export function getProductDisplayName(productType?: string | null): string {
   switch (productType) {
     case "sselfie_studio_membership":
+    case "skool_membership":
     case "brand_studio_membership":
       return "Studio"
     case "one_time_session":

@@ -450,7 +450,9 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
   const hasActiveSubscription = subscriptionInfo?.status === "active"
   const currentTier: "one_time_session" | "sselfie_studio_membership" =
-    userInfo?.product_type === "sselfie_studio_membership" || userInfo?.product_type === "brand_studio_membership"
+    userInfo?.product_type === "sselfie_studio_membership" ||
+    userInfo?.product_type === "skool_membership" ||
+    userInfo?.product_type === "brand_studio_membership"
       ? "sselfie_studio_membership"
       : "one_time_session"
   // Only show upgrade for users without Creator Studio membership

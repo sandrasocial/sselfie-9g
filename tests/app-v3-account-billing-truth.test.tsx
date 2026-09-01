@@ -9,6 +9,7 @@ const routeMocks = vi.hoisted(() => ({
   getUserIdFromSupabase: vi.fn(),
   sql: vi.fn(),
   getUserCredits: vi.fn(),
+  hasActiveSkoolMembership: vi.fn(),
 }))
 
 vi.mock("@/lib/auth-helper", () => ({
@@ -25,6 +26,9 @@ vi.mock("@/lib/subscription", () => ({
   shouldEnforceLiveSubscriptionRows: () => true,
 }))
 vi.mock("@/lib/admin-feature-flags", () => ({ isAdminEmail: () => false }))
+vi.mock("@/lib/skool/membership-service", () => ({
+  hasActiveSkoolMembership: routeMocks.hasActiveSkoolMembership,
+}))
 
 vi.mock("next/image", () => ({
   default: (props: Record<string, unknown>) => {
@@ -41,12 +45,14 @@ describe("App v3 account billing truth", () => {
     routeMocks.getUserIdFromSupabase.mockReset()
     routeMocks.sql.mockReset()
     routeMocks.getUserCredits.mockReset()
+    routeMocks.hasActiveSkoolMembership.mockReset()
     routeMocks.getAuthenticatedUser.mockResolvedValue({
       user: { id: "auth_buyer", email: "buyer@example.com" },
       error: null,
     })
     routeMocks.getUserIdFromSupabase.mockResolvedValue("neon_buyer")
     routeMocks.getUserCredits.mockResolvedValue(184)
+    routeMocks.hasActiveSkoolMembership.mockResolvedValue(false)
   })
 
   it("reports an active bundle pass as fixed access with an end date and no renewal", async () => {
@@ -148,6 +154,23 @@ describe("App v3 account billing truth", () => {
       billingKind: "recurring",
       renewsAt,
       accessEndsAt: null,
+    })
+  })
+
+  it("reports active Skool access without pretending it is Stripe billing", async () => {
+    routeMocks.sql.mockResolvedValue([])
+    routeMocks.hasActiveSkoolMembership.mockResolvedValue(true)
+    const { GET } = await import("@/app/api/app-v3/account/route")
+
+    const response = await GET()
+
+    expect(await response.json()).toMatchObject({
+      plan: "SSELFIE Skool membership",
+      status: "active",
+      billingKind: null,
+      renewsAt: null,
+      accessEndsAt: null,
+      includedMonthlyCredits: 100,
     })
   })
 

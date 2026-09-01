@@ -11,6 +11,7 @@ import { shouldEnforceLiveSubscriptionRows } from "@/lib/subscription"
 import { isAdminEmail } from "@/lib/admin-feature-flags"
 import { MAYA_ESSENTIAL_PILOT_PLAN } from "@/lib/business/maya-tier-pilot"
 import { MAYA_ESSENTIAL_MONTHLY_CREDITS, MONTHLY_MEMBERSHIP_CREDITS } from "@/lib/credit-policy"
+import { hasActiveSkoolMembership } from "@/lib/skool/membership-service"
 
 export const dynamic = "force-dynamic"
 
@@ -60,7 +61,7 @@ export async function GET() {
     }
 
     const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
-    const [credits, subs] = await Promise.all([
+    const [credits, subs, hasActiveSkool] = await Promise.all([
       getUserCredits(String(neonUserId)).catch(() => null),
       sql`
         SELECT plan, product_type, status, current_period_end, trial_ends_at
@@ -75,6 +76,7 @@ export async function GET() {
           AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
         ORDER BY created_at DESC
       `.catch(() => [] as Record<string, unknown>[]),
+      hasActiveSkoolMembership(String(neonUserId)),
     ])
 
     const subscriptionRows = subs as Record<string, unknown>[]
@@ -105,6 +107,20 @@ export async function GET() {
           recurringMembership.plan === MAYA_ESSENTIAL_PILOT_PLAN
             ? MAYA_ESSENTIAL_MONTHLY_CREDITS
             : MONTHLY_MEMBERSHIP_CREDITS,
+        creditsUnlimited,
+        email: user.email ?? null,
+      })
+    }
+
+    if (hasActiveSkool) {
+      return NextResponse.json({
+        plan: "SSELFIE Skool membership",
+        status: "active",
+        renewsAt: null,
+        accessEndsAt: null,
+        billingKind: null,
+        credits,
+        includedMonthlyCredits: MONTHLY_MEMBERSHIP_CREDITS,
         creditsUnlimited,
         email: user.email ?? null,
       })

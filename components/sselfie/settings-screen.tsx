@@ -265,7 +265,9 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const currentTier = (userInfo?.product_type as any) ?? "one_time_session"
   // Only show upgrade for users without Creator Studio membership
   const upgradeTargetTier =
-    currentTier === "sselfie_studio_membership" || currentTier === "brand_studio_membership"
+    currentTier === "sselfie_studio_membership" ||
+    currentTier === "skool_membership" ||
+    currentTier === "brand_studio_membership"
       ? null // Already on Creator Studio (or legacy Brand Studio)
       : "sselfie_studio_membership"
 
