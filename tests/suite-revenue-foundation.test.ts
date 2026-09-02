@@ -30,7 +30,7 @@ describe("SUITE revenue foundation", () => {
     expect(homepage).not.toContain("Convert")
   })
 
-  it("gives desktop and mobile visitors the same current product path", () => {
+  it("gives desktop and mobile visitors the same current membership path", () => {
     const marketing = readFileSync("components/sselfie/public-marketing.tsx", "utf8")
     const navigation = marketing.slice(
       marketing.indexOf("export function PublicNav"),
@@ -38,7 +38,9 @@ describe("SUITE revenue foundation", () => {
     )
 
     expect(navigation).toContain('{ href: "/prompt-vault", label: "Prompt Vault" }')
-    expect(navigation).toContain('{ href: "/join/studio", label: "SSELFIE SUITE" }')
+    expect(navigation).toContain('legacyHref: "/join/studio"')
+    expect(navigation).toContain("href: membershipHref")
+    expect(navigation).toContain('skoolLaunch ? "SSELFIE Membership" : "SSELFIE SUITE"')
     expect(navigation).toContain('aria-label={menuOpen ? "Close menu" : "Open menu"}')
     expect(navigation).toContain("aria-expanded={menuOpen}")
     expect(navigation).toContain('aria-label="SSELFIE menu"')

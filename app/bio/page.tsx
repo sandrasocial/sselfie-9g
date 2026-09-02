@@ -2,6 +2,10 @@ import Image from "next/image"
 import Link from "next/link"
 import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
+import {
+  isSkoolPublicAcquisitionEnabled,
+  resolvePublicMembershipAcquisitionHref,
+} from "@/lib/skool/public-acquisition"
 
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] })
@@ -15,6 +19,9 @@ export const metadata: Metadata = {
 }
 
 export default function BioPage() {
+  const skoolLaunch = isSkoolPublicAcquisitionEnabled()
+  const membershipHref = resolvePublicMembershipAcquisitionHref({ legacyHref: "/join/studio" })
+
   return (
     <main className={`bio-page ${inter.className}`}>
       <div className="bio-hero">
@@ -144,7 +151,7 @@ export default function BioPage() {
               <span className="bio-shop-price">$37</span>
             </Link>
 
-            <Link href="/join/studio" className="bio-shop-card">
+            <Link href={membershipHref} className="bio-shop-card">
               <span className="bio-shop-thumb">
                 <Image
                   src="/images/ai-prompts/marble-wine-shot-1.jpg"
@@ -155,10 +162,19 @@ export default function BioPage() {
                 />
               </span>
               <span className="bio-shop-text">
-                <span className="bio-shop-title">Join SSELFIE SUITE</span>
-                <span className="bio-shop-desc">Your whole brand studio · cancel anytime</span>
+                <span className="bio-shop-title">
+                  {skoolLaunch ? "Build With Sandra" : "Join SSELFIE SUITE"}
+                </span>
+                <span className="bio-shop-desc">
+                  {skoolLaunch
+                    ? "Live weekly help · SUITE and Maya included"
+                    : "Your whole brand studio · cancel anytime"}
+                </span>
               </span>
-              <span className="bio-shop-price">€97<span className="bio-shop-per">/mo</span></span>
+              <span className="bio-shop-price">
+                {skoolLaunch ? "$97" : "€97"}
+                <span className="bio-shop-per">/mo</span>
+              </span>
             </Link>
           </div>
 

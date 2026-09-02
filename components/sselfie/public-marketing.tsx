@@ -10,7 +10,10 @@ import { VaultMayaCheckoutLink } from "@/components/vault-maya/vault-maya-checko
 import { SuiteMultiFormatWalkthrough } from "@/components/sselfie/suite-multiformat-walkthrough"
 import { SuiteProductWalkthrough } from "@/components/sselfie/suite-product-walkthrough"
 import vaultMayaStyles from "@/components/vault-maya/vault-maya-landing.module.css"
-import { resolvePublicMembershipAcquisitionHref } from "@/lib/skool/public-acquisition"
+import {
+  isSkoolPublicAcquisitionEnabled,
+  resolvePublicMembershipAcquisitionHref,
+} from "@/lib/skool/public-acquisition"
 
 // ─── Vercel Blob images ───────────────────────────────────────────────────────
 const BLOB = "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com"
@@ -531,10 +534,15 @@ function IntroScreen() {
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 export function PublicNav({ loginHref = "/auth/login" }: { loginHref?: string }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const skoolLaunch = isSkoolPublicAcquisitionEnabled()
+  const membershipHref = resolvePublicMembershipAcquisitionHref({ legacyHref: "/join/studio" })
   const links = [
     { href: "/ai-prompts", label: "Free AI Prompts" },
     { href: "/prompt-vault", label: "Prompt Vault" },
-    { href: "/join/studio", label: "SSELFIE SUITE" },
+    {
+      href: membershipHref,
+      label: skoolLaunch ? "SSELFIE Membership" : "SSELFIE SUITE",
+    },
   ]
 
   return (
@@ -680,6 +688,17 @@ function PublicNeonSignature({
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 export function PublicFooter() {
+  const skoolLaunch = isSkoolPublicAcquisitionEnabled()
+  const membershipHref = resolvePublicMembershipAcquisitionHref({ legacyHref: "/join/studio" })
+  const links = [
+    { href: "/ai-prompts", label: "Free AI Prompts" },
+    { href: "/prompt-vault", label: "Prompt Vault" },
+    {
+      href: membershipHref,
+      label: skoolLaunch ? "SSELFIE Membership" : "SSELFIE SUITE",
+    },
+  ]
+
   return (
     <footer
       style={{
@@ -702,22 +721,15 @@ export function PublicFooter() {
           SSELFIE
         </p>
         <div className="flex flex-wrap gap-6">
-          {[
-            "/ai-prompts:Free AI Prompts",
-            "/prompt-vault:Prompt Vault",
-            "/join/studio:SSELFIE SUITE",
-          ].map(s => {
-            const [href, label] = s.split(":")
-            return (
-              <Link
-                key={href}
-                href={href}
-                style={{ ...ty("eyebrow", true), textDecoration: "none" }}
-              >
-                {label}
-              </Link>
-            )
-          })}
+          {links.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              style={{ ...ty("eyebrow", true), textDecoration: "none" }}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
       </div>
       <div
@@ -1215,6 +1227,7 @@ const FAQS = {
 
 export function HomePageContent({ referralCode }: { referralCode?: string | null } = {}) {
   const r = (href: string) => appendReferralParam(href, referralCode)
+  const skoolLaunch = isSkoolPublicAcquisitionEnabled()
   const login = buildReferralLoginHref({ returnTo: "/app", referralCode })
   const freePrompts = r(
     "/ai-prompts?utm_source=website&utm_medium=homepage&utm_campaign=vault_to_suite_path"
@@ -1222,7 +1235,9 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
   const vault = r(
     "/prompt-vault?source=homepage&utm_source=website&utm_medium=homepage&utm_campaign=vault_to_suite_path"
   )
-  const suite = r("/join/studio?source=homepage")
+  const membership = resolvePublicMembershipAcquisitionHref({
+    legacyHref: r("/join/studio?source=homepage"),
+  })
 
   return (
     <PublicPageShell>
@@ -1233,14 +1248,24 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         eyebrow="Start with what you already have"
         title={<>Start with one selfie. See what you can build from there.</>}
         body={
-          <p>
-            Turn one normal selfie into photos that still feel like you, something useful to post,
-            and one clear next step. Begin with the Prompt Vault. Keep building with Maya inside
-            SSELFIE SUITE.
-          </p>
+          skoolLaunch ? (
+            <p>
+              Build with Sandra every week. Ask questions, get feedback, and turn what you are
+              working on into something real. SSELFIE SUITE and Maya are included.
+            </p>
+          ) : (
+            <p>
+              Turn one normal selfie into photos that still feel like you, something useful to
+              post, and one clear next step. Begin with the Prompt Vault. Keep building with Maya
+              inside SSELFIE SUITE.
+            </p>
+          )
         }
         primary={{ href: vault, label: "Explore the Prompt Vault" }}
-        secondary={{ href: suite, label: "See SSELFIE SUITE" }}
+        secondary={{
+          href: membership,
+          label: skoolLaunch ? "Join SSELFIE on Skool" : "See SSELFIE SUITE",
+        }}
         imageSrc={IMG.homeHero}
         imageAlt="Sandra Aamodt, founder of SSELFIE"
       />
@@ -1273,8 +1298,9 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
       >
         <div className="mf mb-8 max-w-3xl">
           <p style={{ ...ty("body", false), fontSize: "16px" }}>
-            Inside SUITE, Maya works beside your photos and Calendar. She helps you choose a
-            direction, make the pieces, and keep the next step visible.
+            {skoolLaunch
+              ? "Inside the membership, you build with Sandra and use SUITE, Maya, and Calendar to choose a direction, make the pieces, and keep the next step visible."
+              : "Inside SUITE, Maya works beside your photos and Calendar. She helps you choose a direction, make the pieces, and keep the next step visible."}
           </p>
         </div>
         <SuiteProductWalkthrough />
@@ -1344,7 +1370,7 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           <article className="mf min-w-0 flex min-h-[310px] flex-col justify-between bg-stone-950 p-7 text-white sm:p-9">
             <div>
               <span style={{ ...ty("eyebrow", true), marginBottom: "14px" }}>
-                Ongoing help · €97 a month
+                {skoolLaunch ? "Live help every week · $97 a month" : "Ongoing help · €97 a month"}
               </span>
               <h3
                 style={{
@@ -1353,16 +1379,19 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
                   marginBottom: "14px",
                 }}
               >
-                Maya helps you create, write, and plan what goes out next.
+                {skoolLaunch
+                  ? "Build your visibility and business with Sandra every week."
+                  : "Maya helps you create, write, and plan what goes out next."}
               </h3>
               <p style={{ ...ty("body", true), fontSize: "15px", maxWidth: "520px" }}>
-                One membership. Maya, Create, Calendar, Learn, and the SSELFIE library together. €97
-                a month.
+                {skoolLaunch
+                  ? "Join one 90-minute Build With Sandra session each week. Ask questions, get feedback, and build with SSELFIE SUITE and Maya included."
+                  : "One membership. Maya, Create, Calendar, Learn, and the SSELFIE library together. €97 a month."}
               </p>
             </div>
             <div className="mt-8">
-              <Btn href={suite} surface="dark">
-                See SSELFIE SUITE
+              <Btn href={membership} surface="dark">
+                {skoolLaunch ? "Join SSELFIE on Skool" : "See SSELFIE SUITE"}
               </Btn>
             </div>
           </article>
@@ -1400,8 +1429,8 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
         imgFirst
         dark={false}
         cta={
-          <Btn href={suite} surface="light">
-            See SSELFIE SUITE
+          <Btn href={membership} surface="light">
+            {skoolLaunch ? "Join SSELFIE on Skool" : "See SSELFIE SUITE"}
           </Btn>
         }
       />
@@ -1416,7 +1445,10 @@ export function HomePageContent({ referralCode }: { referralCode?: string | null
           </p>
         }
         primary={{ href: vault, label: "Explore the Prompt Vault" }}
-        secondary={{ href: suite, label: "See SSELFIE SUITE" }}
+        secondary={{
+          href: membership,
+          label: skoolLaunch ? "Join SSELFIE on Skool" : "See SSELFIE SUITE",
+        }}
         dark
       />
 

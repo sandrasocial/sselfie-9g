@@ -57,4 +57,17 @@ describe("public Skool acquisition cutover", () => {
     expect(joinPage).toContain("redirect(SKOOL_PUBLIC_MEMBERSHIP_URL)")
     expect(joinPage).toContain("<StudioPageContent")
   })
+
+  it("switches public homepage, navigation, footer, and bio acquisition copy with the flag", () => {
+    const marketing = readFileSync("components/sselfie/public-marketing.tsx", "utf8")
+    const bio = readFileSync("app/bio/page.tsx", "utf8")
+
+    expect(marketing).toContain("isSkoolPublicAcquisitionEnabled()")
+    expect(marketing).toContain("Join SSELFIE on Skool")
+    expect(marketing).toContain("Live help every week · $97 a month")
+    expect(marketing).toContain("SSELFIE SUITE and Maya are included")
+    expect(bio).toContain("Build With Sandra")
+    expect(bio).toContain("Live weekly help · SUITE and Maya included")
+    expect(bio).toContain("resolvePublicMembershipAcquisitionHref")
+  })
 })
