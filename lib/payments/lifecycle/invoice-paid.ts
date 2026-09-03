@@ -468,6 +468,33 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
       )
     }
 
+    // Persist the billing period BEFORE any notification work. This used to sit after the
+    // credit-renewal email, which throws so Stripe retries — so an email outage left a paying
+    // member with a stale current_period_end while those retries ran. The access policy reads
+    // that column, so a stale value can expire a member who has actually paid. This update and
+    // the credit reset are both invoice-idempotent, so the retry path itself is unchanged.
+    //
+    // On Stripe API 2025-03+ the billing period lives at
+    // subscription.items.data[].current_period_* (top-level fields are gone).
+    const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any
+    const renewedPeriodStart =
+      subscription.current_period_start ??
+      subscription.items?.data?.[0]?.current_period_start ??
+      null
+    const renewedPeriodEnd =
+      subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end ?? null
+    await sql`
+    UPDATE subscriptions
+    SET
+      status = ${subscription.status},
+      current_period_start = to_timestamp(${renewedPeriodStart}),
+      current_period_end = to_timestamp(${renewedPeriodEnd}),
+      is_test_mode = ${!event.livemode},
+      updated_at = NOW()
+    WHERE stripe_subscription_id = ${subscriptionId}
+  `
+    console.log(`[v0] Subscription period updated for ${subscriptionId}`)
+
     // Grant credits for recurring tiers with a monthly credit allowance. The primitive owns the
     // invoice-level advisory lock and replay check, so no rolling-period/check-then-act gate belongs
     // in the handler.
@@ -579,26 +606,6 @@ export async function handleInvoicePaid(rawEvent: Stripe.Event): Promise<void> {
       )
     }
 
-    // Update subscription period. On Stripe API 2025-03+ the billing period lives at
-    // subscription.items.data[].current_period_* (top-level fields are gone).
-    const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any
-    const renewedPeriodStart =
-      subscription.current_period_start ??
-      subscription.items?.data?.[0]?.current_period_start ??
-      null
-    const renewedPeriodEnd =
-      subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end ?? null
-    await sql`
-    UPDATE subscriptions
-    SET
-      status = ${subscription.status},
-      current_period_start = to_timestamp(${renewedPeriodStart}),
-      current_period_end = to_timestamp(${renewedPeriodEnd}),
-      is_test_mode = ${!event.livemode},
-      updated_at = NOW()
-    WHERE stripe_subscription_id = ${subscriptionId}
-  `
-    console.log(`[v0] Subscription period updated for ${subscriptionId}`)
 
     await markEventProcessed(INVOICE_FULFILLMENT_PROVIDER, invoice.id)
     invoiceClaimCompleted = true

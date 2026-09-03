@@ -379,11 +379,18 @@ describe("paid invoice business-key fulfillment", () => {
     ])
   })
 
-  it("replays safely after email when current-subscription refresh fails", async () => {
+  it("replays safely without a duplicate email when current-subscription refresh fails", async () => {
+    // The billing-period refresh now runs BEFORE the renewal notification, so an email
+    // failure can no longer leave a paying member on a stale current_period_end. The
+    // knock-on benefit shows up here: when Stripe's subscription refresh is the thing that
+    // fails, fulfillment stops before the notification, so the replay sends exactly one
+    // renewal email instead of the two the old email-first ordering produced.
     mocks.claimEvent.mockResolvedValue({ claimed: true, duplicate: false, duplicateStatus: null })
-    mocks.grantMonthlyCredits
-      .mockResolvedValueOnce({ success: true, granted: true, newBalance: 100 })
-      .mockResolvedValueOnce({ success: true, granted: false, newBalance: 100 })
+    mocks.grantMonthlyCredits.mockResolvedValue({
+      success: true,
+      granted: true,
+      newBalance: 100,
+    })
     mocks.retrieveSubscription
       .mockRejectedValueOnce(new Error("Stripe subscription unavailable"))
       .mockResolvedValueOnce({
@@ -402,9 +409,8 @@ describe("paid invoice business-key fulfillment", () => {
     await expect(handleInvoicePaid(event)).resolves.toBeUndefined()
 
     expect(mocks.grantReferencedBonusCredits).not.toHaveBeenCalled()
-    expect(mocks.sendEmail).toHaveBeenCalledTimes(2)
+    expect(mocks.sendEmail).toHaveBeenCalledTimes(1)
     expect(mocks.sendEmail.mock.calls.map(([input]) => input.idempotencyKey)).toEqual([
-      "membership-credit-renewal:in_once_1",
       "membership-credit-renewal:in_once_1",
     ])
   })
