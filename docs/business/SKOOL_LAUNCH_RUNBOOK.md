@@ -26,6 +26,25 @@ says what was left:
 Nothing is broken. The transport was parked and never connected. Everything
 below closes that gap.
 
+### Launch checklist — verified 2026-09-03
+
+| # | Gate | State |
+|---|------|-------|
+| 1 | `SKOOL_MEMBERSHIP_INGRESS_SECRET` in Vercel **production** | ✅ already set 2026-09-01 — **do not regenerate** |
+| 2 | Same secret in Vercel **preview** | ❌ absent |
+| 3 | Same secret in local `.env.local` | ❌ absent — blocks `skool:grant` and `skool:preflight` |
+| 4 | `NEXT_PUBLIC_SKOOL_PUBLIC_ACQUISITION_ENABLED=true` | ❌ unset in production and preview |
+| 5 | Redeploy after 2–4 (`NEXT_PUBLIC_` inlines at build) | ❌ not done |
+| 6 | `RESEND_API_KEY`, `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL` in production | ✅ all present |
+| 7 | Migration 77 / `skool_membership_entitlements` in the live DB | ✅ wired — `vercel.json` `buildCommand` runs `run-production-launch-migrations.ts` (which calls migration 77) before `next build`, so every production deploy applies it. `skool:preflight` confirms against the live DB. |
+| 8 | Zapier `New Paid Member` → ingress endpoint | ❌ not wired |
+| 9 | Renewal policy | ✅ **decided** — monthly run (§5) |
+
+`/join/studio` returned **200** on 2026-09-03 instead of redirecting to
+`skool.com/sselfie/about`, which is the direct confirmation that gate 4 is off:
+the bio link and every marketing CTA are selling the parallel Stripe €97
+membership today.
+
 ---
 
 ## 1 · Preflight
@@ -43,21 +62,67 @@ confirm production separately with `vercel env ls`.
 
 Both go in **Vercel production and preview**, and in `.env.local`.
 
-**`SKOOL_MEMBERSHIP_INGRESS_SECRET`** — generate once:
+### `SKOOL_MEMBERSHIP_INGRESS_SECRET` — already set. Do not generate a new one.
+
+**Checked 2026-09-03: this secret already exists in Vercel Production**, set
+2026-09-01 alongside the PR #131 merge. Earlier drafts of this runbook told you to
+generate one. Do not. Running the generate command now and pasting the result over
+the existing value **rotates the secret**, and every membership key and setup link
+derives from it — that orphans anything already provisioned and invalidates any
+setup link already sent.
+
+What is still missing is the *mirroring*: the same value must also be in
+**Preview** and in **`.env.local`**, and it is in neither. Copy the existing one
+outward rather than making a new one:
+
+```bash
+vercel env pull .env.local --environment=production   # brings the live value down
+vercel env ls preview | grep SKOOL                    # confirm; add it there if absent
+```
+
+Generate a value **only** if `vercel env ls production` shows no
+`SKOOL_MEMBERSHIP_INGRESS_SECRET` at all:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
-Identical in all three places, and **never rotated**. Every membership key and
-every setup link is derived from it; changing it orphans every member provisioned
-before the change.
+Identical in all three places, and **never rotated** thereafter.
 
-**`NEXT_PUBLIC_SKOOL_PUBLIC_ACQUISITION_ENABLED=true`** — until this is on,
-`/join/studio`, `/bio` and the marketing CTAs still sell the parallel Stripe €97
-membership. With it on, `/join/studio` redirects to the Skool about page.
+### `NEXT_PUBLIC_SKOOL_PUBLIC_ACQUISITION_ENABLED=true` — not set anywhere yet
 
-Redeploy after setting both.
+Confirmed off in production on 2026-09-03: `https://www.sselfie.ai/join/studio`
+returns 200 and renders, instead of redirecting to the Skool about page. While it
+is off, `/join/studio`, `/bio` and the marketing CTAs all still sell the parallel
+Stripe €97 membership — **the bio link is pointing at the wrong offer.**
+
+```bash
+printf 'true' | vercel env add NEXT_PUBLIC_SKOOL_PUBLIC_ACQUISITION_ENABLED production
+printf 'true' | vercel env add NEXT_PUBLIC_SKOOL_PUBLIC_ACQUISITION_ENABLED preview
+```
+
+This is a `NEXT_PUBLIC_` value, so it is inlined at build time: **redeploy or it
+does not take effect.** Setting the variable alone changes nothing.
+
+```bash
+vercel --prod
+```
+
+The Vercel project `sselfie-9g` is git-linked to `sandrasocial/sselfie-9g` with
+`main` as the production branch, so **any merge to `main` also triggers a
+production deploy** and picks up the new values. Merging a PR works as the
+redeploy; you do not need the CLI for this step.
+
+> **The Vercel MCP connector cannot do any of this.** It exposes seven tools —
+> project protection, web analytics, pause/unpause, git-project creation — and
+> none of them read or write environment variables or trigger a deploy. Env vars
+> are the CLI or the dashboard, nothing else.
+
+Verify it landed — this should redirect to `skool.com/sselfie/about`, not 200:
+
+```bash
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://www.sselfie.ai/join/studio
+```
 
 ---
 
@@ -153,24 +218,76 @@ email and the secret, so the payload carries no ids and replays are safe.
 
 ---
 
-## 5 · The unsolved one: renewals
+## 5 · Renewals — decided: option 1, the monthly run
 
-Skool's Zapier has no documented recurring-payment trigger. So step 4 covers the
-first month and nothing after it. PR #131 is explicit that *"the monthly-credit
-promise must not be activated without an authoritative renewal/payment source."*
+**Sandra's decision, 2026-09-03: the monthly-credit promise stays in the copy.**
 
-The launch copy promises ongoing monthly credits. Three honest ways to square it:
+That closes the question PR #131 left open, and it does so by committing to the
+operational answer rather than the engineering one. The copy is true *because the
+monthly run happens*, not because a system guarantees it. Skool still has no
+documented recurring-payment trigger, so step 4 covers the first join and nothing
+after it. Nothing below is automatic.
 
-1. **Run the monthly command** (step 3). True while you are doing it. Fine for a
-   first cohort; a chore at a few hundred members.
-2. **Find an authoritative renewal source** — a Skool payments export, or their
-   API if it exposes invoices — and drive `recordSkoolRosterObservation` plus a
-   period grant from it. That is the real fix and it is not built.
-3. **Change the promise** to the credits that come with joining, and treat ongoing
-   top-ups as something granted rather than guaranteed.
+**What that obliges, every month, on the 1st:**
 
-Until one of those is chosen, the monthly run is the only thing making the copy
-true.
+```bash
+pnpm skool:grant --list                    # who is provisioned already
+# reconcile against the active member list in Skool, one email per line:
+pnpm skool:grant --file=members.txt
+```
+
+The grant is idempotent within a calendar month (the billing period defaults to
+the 1st), so a re-run inside the same month grants nothing. A *missed* month is
+the failure mode that shows up — as a member who paid and did not get credits.
+
+**Reconciliation is manual and it matters.** `--list` reports who SSELFIE has
+provisioned; it cannot know who is still paying on Skool. Anyone who churned must
+be dropped from `members.txt` by hand, because `recordSkoolRosterObservation()`
+is built but never called and access is never withdrawn automatically.
+
+**This is a commitment with a shelf life.** It is fine for a first cohort and a
+chore at a few hundred members. The real fix remains unbuilt and unchanged:
+
+- **The durable fix** — find an authoritative renewal source (a Skool payments
+  export, or their API if it exposes invoices) and drive
+  `recordSkoolRosterObservation` plus a period grant from it. Revisit this the
+  first month the manual run is late, or when the roster outgrows a text file.
+- **The retreat** — if the run stops happening, the honest move is to change the
+  promise to credits-on-joining rather than let the copy outrun the delivery.
+
+### Where to run it from
+
+`pnpm skool:grant` lives on `main`. The working clone at `~/ACTIVE/sselfie-9g` is
+checked out on `codex/fresh-start-reset`, which is ~121 commits behind main and
+does **not** contain these scripts. Run the monthly command from a checkout of
+`main` — the dedicated worktree at `.claude/worktrees/skool-launch` exists for
+exactly this and has its dependencies installed.
+
+Its `.env.local` must carry the **production** `SKOOL_MEMBERSHIP_INGRESS_SECRET`.
+A local secret that differs from Vercel derives different membership keys, and
+the member gets an entitlement and a setup link the live endpoint will not
+recognise.
+
+---
+
+## Landmine: `vercel.json` differs between branches
+
+`vercel.json` on `main` overrides the build:
+
+```
+"buildCommand": "pnpm exec tsx scripts/run-production-launch-migrations.ts && pnpm exec next build"
+```
+
+That is the only thing that applies migration 77. On `codex/fresh-start-reset` —
+the branch the working clone sits on — `vercel.json` contains **crons only, no
+`buildCommand`**, so the build falls back to `package.json`’s plain `next build`
+and no migration runs.
+
+Production deploys from `main`, so this is currently harmless. It stops being
+harmless the moment anything from that branch becomes the production source:
+the Skool endpoint would come up against a database with no
+`skool_membership_entitlements` table. If `codex/fresh-start-reset` is ever
+merged or promoted, carry `main`’s `buildCommand` across first.
 
 ---
 
