@@ -27,16 +27,36 @@ function getPublicBypass(pathname: string) {
   return PUBLIC_MIDDLEWARE_BYPASSES.find(bypass => pathname.startsWith(bypass.prefix))
 }
 
+// Multipart upload handlers that must receive an untouched request body. This was a
+// substring test for "/upload" anywhere in the path, which silently exempted any current
+// or future route whose URL happened to contain that word. Each entry below is an actual
+// upload handler under /api; every one of them authenticates in its own route handler.
+const RAW_BODY_UPLOAD_PATHS: readonly RegExp[] = [
+  /^\/api\/upload$/,
+  /^\/api\/upload-image$/,
+  /^\/api\/upload-highlight-overlay$/,
+  /^\/api\/app-v3\/upload-selfie$/,
+  /^\/api\/brand-assets\/upload$/,
+  /^\/api\/blueprint\/upload-selfies$/,
+  /^\/api\/admin\/content-kit\/assets\/upload$/,
+  /^\/api\/admin\/content-kit\/shoots\/upload(-token)?$/,
+  /^\/api\/feed\/[^/]+\/upload-profile-image$/,
+] as const
+
+function isRawBodyUploadRoute(pathname: string, method: string): boolean {
+  // Training uploads post multipart ZIPs and image batches across several routes.
+  if (pathname.startsWith("/api/training/")) {
+    return method === "POST"
+  }
+  return RAW_BODY_UPLOAD_PATHS.some(pattern => pattern.test(pathname))
+}
+
 export async function middleware(request: NextRequest) {
   if (DEBUG_LOGS) {
     console.log("[v0] middleware:", request.nextUrl.pathname)
   }
 
-  const isUploadRoute =
-    request.nextUrl.pathname.includes("/upload") ||
-    (request.nextUrl.pathname.includes("/training") && request.method === "POST")
-
-  if (isUploadRoute) {
+  if (isRawBodyUploadRoute(request.nextUrl.pathname, request.method)) {
     if (DEBUG_LOGS) {
       console.log(
         "[v0] Upload route detected - completely bypassing all middleware to preserve request body"
