@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const predictionId = searchParams.get("id")
-    const userId = searchParams.get("userId") // Get user_id from query params
     const conceptDescription = searchParams.get("conceptDescription") // Add conceptDescription from query params
 
     if (!predictionId) {
@@ -25,23 +24,21 @@ export async function GET(request: NextRequest) {
 
     console.log("[v0] 📊 Checking photoshoot prediction:", predictionId)
 
-    let numericUserId = userId
+    // The owner of the saved images is always the signed-in caller. This previously took a
+    // `userId` query parameter and trusted it, which let any authenticated member write
+    // generated images into another member's gallery. Older clients may still send it; it
+    // is now ignored.
+    const [dbUser] = await sql`
+      SELECT id FROM users
+      WHERE supabase_user_id = ${user.id}
+    `
 
-    // Fallback: Look up user_id if not provided (backward compatibility)
-    if (!numericUserId) {
-      console.log("[v0] ⚠️ No userId provided, looking up from database...")
-      const [dbUser] = await sql`
-        SELECT id FROM users 
-        WHERE supabase_user_id = ${user.id}
-      `
-
-      if (!dbUser || !dbUser.id) {
-        console.error("[v0] ❌ User not found in database")
-        return NextResponse.json({ error: "User not found" }, { status: 404 })
-      }
-
-      numericUserId = String(dbUser.id)
+    if (!dbUser || !dbUser.id) {
+      console.error("[v0] ❌ User not found in database")
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+
+    const numericUserId = String(dbUser.id)
 
     console.log("[v0] ✅ Using user_id:", numericUserId)
 
