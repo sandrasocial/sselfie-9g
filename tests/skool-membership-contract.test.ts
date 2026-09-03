@@ -76,6 +76,30 @@ describe("Skool signed membership contract", () => {
     expect(october.dedupeKey).not.toBe(september.dedupeKey)
   })
 
+  it("anchors the billing period to the first of the month, matching the manual grant", () => {
+    // Skool fires "New Paid Member" on the day she joins, which is almost never
+    // the 1st. A day-based key here would not match the YYYY-MM-01 key that
+    // scripts/grant-skool-member.ts derives for the monthly run, and the same
+    // member in the same month would be granted the 100 credits twice.
+    const firstOfMonth = normalizeSkoolMembershipEnvelope(envelope(), SECRET)!
+
+    const midMonth = normalizeSkoolMembershipEnvelope(
+      envelope({ observedAt: "2026-09-12T13:45:00.000Z" }),
+      SECRET,
+      { now: new Date("2026-09-12T13:45:00.000Z") },
+    )!
+    expect(midMonth.billingPeriodKey).toBe("2026-09-01")
+    expect(midMonth.dedupeKey).toBe(firstOfMonth.dedupeKey)
+
+    const lastInstant = normalizeSkoolMembershipEnvelope(
+      envelope({ observedAt: "2026-09-30T23:59:59.000Z" }),
+      SECRET,
+      { now: new Date("2026-09-30T23:59:59.000Z") },
+    )!
+    expect(lastInstant.billingPeriodKey).toBe("2026-09-01")
+    expect(lastInstant.dedupeKey).toBe(firstOfMonth.dedupeKey)
+  })
+
   it("rejects observations that are too far ahead of the authenticated ingress time", () => {
     const ingressTime = new Date("2026-09-01T08:00:00.000Z")
     expect(
