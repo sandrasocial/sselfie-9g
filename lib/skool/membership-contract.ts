@@ -49,7 +49,13 @@ function identityDigest(secret: Buffer, email: string): string {
 }
 
 function billingPeriodKey(observedAtMillis: number): string {
-  return new Date(observedAtMillis).toISOString().slice(0, 10)
+  // The FIRST OF THE MONTH, not the observed day. Skool fires "New Paid Member"
+  // on the day she actually joins, so a day-based key would not match the key
+  // scripts/grant-skool-member.ts derives for the monthly run (always YYYY-MM-01).
+  // Two different dedupe keys for the same member in the same month means she is
+  // granted the 100 credits twice. Both paths must agree.
+  const observed = new Date(observedAtMillis)
+  return `${observed.getUTCFullYear()}-${String(observed.getUTCMonth() + 1).padStart(2, "0")}-01`
 }
 
 export function normalizeSkoolMembershipEnvelope(
