@@ -23,6 +23,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "start": "next start",
+    "audit:close-out": "tsx scripts/audit-close-out.ts",
     "audit-subscriptions": "tsx scripts/audit-subscription-data.ts",
     "audit-revenue": "tsx scripts/audit-revenue-sources.ts",
     "academy:reconcile": "tsx scripts/reconcile-academy-entitlements.ts",
