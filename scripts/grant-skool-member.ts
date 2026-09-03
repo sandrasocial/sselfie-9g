@@ -3,6 +3,7 @@
  *
  *   pnpm skool:grant her@email.com
  *   pnpm skool:grant her@email.com --dry-run
+ *   pnpm skool:grant her@email.com --period=2026-10-01   # next month's renewal
  *
  * WHY THIS EXISTS
  * ---------------
@@ -94,20 +95,34 @@ async function main() {
       "secret — rotating it orphans every member provisioned before the change.",
     )
   }
-  const secret = Buffer.from(rawSecret, "base64url")
-
   // Audit key falls back to the ingress secret, exactly as the route does.
   const auditSecret = process.env.SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET?.trim() || rawSecret
   if (!BASE64URL_32.test(auditSecret)) {
     fail("SKOOL_MEMBERSHIP_AUDIT_KEY_SECRET is set but malformed. Unset it, or fix it.")
   }
 
-  const observedAt = new Date()
+  // Credits are granted once per billing period, and the period key is what makes a
+  // re-run a no-op. Deriving it from "today" would mean running this on the 3rd and
+  // again on the 11th grants 200 credits to the same member in one month — a silent
+  // credit leak on the exact path a human runs by hand.
+  //
+  // So the period defaults to the first of the current month: every run inside a month
+  // resolves to the same key and only the first one grants. Pass --period=YYYY-MM-DD to
+  // set it explicitly (use the real paid date when back-filling a specific join).
+  const periodArg = args.find(a => a.startsWith("--period="))?.split("=")[1]?.trim()
+  if (periodArg && !/^\d{4}-\d{2}-\d{2}$/.test(periodArg)) {
+    fail(`--period must be YYYY-MM-DD, got "${periodArg}".`)
+  }
+  const now = new Date()
+  const billingPeriodKey =
+    periodArg ?? `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`
+  const observedAt = new Date(`${billingPeriodKey}T00:00:00.000Z`)
+  if (Number.isNaN(observedAt.getTime())) fail(`--period "${billingPeriodKey}" is not a real date.`)
+
   const membershipKey = `skool:${SKOOL_GROUP_ID}:${identityDigest(
     Buffer.from(auditSecret, "base64url"),
     email
   )}`
-  const billingPeriodKey = observedAt.toISOString().slice(0, 10)
 
   const envelope: SkoolMembershipEnvelope = {
     schemaVersion: 1,
@@ -126,7 +141,7 @@ async function main() {
   console.log(`  member          ${email}`)
   console.log(`  group           ${SKOOL_GROUP_ID}`)
   console.log(`  plan            ${SKOOL_PLAN_CODE}`)
-  console.log(`  billing period  ${billingPeriodKey}`)
+  console.log(`  billing period  ${billingPeriodKey}${periodArg ? " (explicit)" : " (this month)"}`)
   console.log(`  credits         ${SKOOL_MEMBERSHIP_CREDITS}`)
   console.log("")
 
