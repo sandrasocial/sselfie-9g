@@ -101,6 +101,15 @@ async function getCandidates(): Promise<Candidate[]> {
             AND s.product_type = 'sselfie_studio_membership' AND s.status = 'active'
             AND COALESCE(s.is_test_mode, FALSE) = FALSE
         )
+        -- ...nor to a Skool member. She pays the same membership on Skool and has
+        -- no subscriptions row at all, so the guard above cannot see her. Chasing
+        -- her with a Stripe checkout link would bill the same thing twice.
+        AND NOT EXISTS (
+          SELECT 1 FROM users u
+          JOIN skool_membership_entitlements sme ON sme.user_id = u.id
+          WHERE LOWER(u.email) = LOWER(BTRIM(checkout_attribution.user_email))
+            AND sme.access_status = 'active'
+        )
         AND NOT EXISTS (
           SELECT 1 FROM email_logs el
           WHERE LOWER(BTRIM(el.user_email)) = LOWER(BTRIM(checkout_attribution.user_email))
