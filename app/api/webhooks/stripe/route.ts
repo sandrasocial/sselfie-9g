@@ -16,6 +16,11 @@ import {
 } from "@/lib/payments/lifecycle/payment-adjustments"
 import { claimEvent, markEventFailed, markEventProcessed } from "@/lib/events/idempotency"
 
+// Fulfilment does real work per event: Stripe round trips, account provisioning, credit
+// grants, delivery email. With no explicit budget this ran on the platform default, and a
+// timeout mid-handler means a customer paid and fulfilment never finished.
+export const maxDuration = 60
+
 /** Stable id for Redis webhook rate limit - never bucket unrelated traffic on "undefined". */
 function stripeWebhookRateLimitKey(event: {
   id: string

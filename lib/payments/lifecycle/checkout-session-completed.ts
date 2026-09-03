@@ -1207,21 +1207,16 @@ export async function handleCheckoutSessionCompleted(
           const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
           const supabaseAdmin = createAdminClient()
 
-          console.log(`[v0] Step 1: Checking every Supabase auth page for an existing account...`)
-
-          const existingUser = await findAuthUserByEmail({
-            email: customerEmail,
-            listUsers: params => supabaseAdmin.auth.admin.listUsers(params),
-          })
-
-          if (existingUser) {
-            console.log(`[v0] User already exists in Supabase auth: ${existingUser.id}`)
-
-            const neonUser = await getOrCreateNeonUser(existingUser.id, customerEmail, null)
-            userId = neonUser.id
-            referralPurchaseUserId = userId
-            console.log(`[v0] Linked existing Supabase user to Neon user ${userId}`)
-          } else {
+          // We only get here when the LOWER(email) lookup above found no application user,
+          // so this is a new buyer. It used to page through EVERY Supabase auth account
+          // first (up to 100 pages of 1,000) looking for one that, by construction, almost
+          // never exists — O(all users) inside the webhook on the growth path, and the
+          // thing most likely to start timing out fulfilment as the account list grows.
+          //
+          // Go straight to createUser. The one case the scan existed for — an auth user
+          // with no application row — still resolves through the create-conflict recovery
+          // below, which is where it belongs: on the rare path, not on every purchase.
+          {
             console.log(`[v0] Step 2: Creating new user in Supabase auth (no email sent)...`)
 
             const { data: createData, error: createError } =
