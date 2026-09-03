@@ -2,8 +2,11 @@
  * Give one paid Skool member her SSELFIE access, by hand.
  *
  *   pnpm skool:grant her@email.com
+ *   pnpm skool:grant a@x.com b@y.com c@z.com        # several at once
+ *   pnpm skool:grant --file=members.txt             # one email per line
+ *   pnpm skool:grant --list                         # who is already provisioned
  *   pnpm skool:grant her@email.com --dry-run
- *   pnpm skool:grant her@email.com --period=2026-10-01   # next month's renewal
+ *   pnpm skool:grant --file=members.txt --period=2026-10-01   # the monthly renewal run
  *
  * WHY THIS EXISTS
  * ---------------
@@ -69,17 +72,83 @@ function normalizeEmail(value: string): string | null {
   return normalized
 }
 
+async function listProvisioned() {
+  const { sql } = await import("@/lib/db/client")
+  const rows = (await sql`
+    SELECT e.membership_key, e.access_status, e.last_confirmed_at, u.email,
+           COALESCE(c.balance, 0)::int AS balance,
+           (SELECT MAX(ct.created_at) FROM credit_transactions ct
+             WHERE ct.user_id = e.user_id
+               AND ct.transaction_type = 'subscription_grant'
+               AND ct.reference_id LIKE 'skool-membership-period:%') AS last_grant
+    FROM skool_membership_entitlements e
+    JOIN users u ON u.id = e.user_id
+    LEFT JOIN user_credits c ON c.user_id = e.user_id
+    WHERE e.group_id = ${SKOOL_GROUP_ID}
+    ORDER BY e.last_confirmed_at DESC NULLS LAST
+  `) as Array<Record<string, any>>
+
+  console.log("")
+  if (rows.length === 0) {
+    console.log("  No Skool member has been provisioned yet.\n")
+    return
+  }
+  console.log(`  ${rows.length} provisioned Skool member${rows.length > 1 ? "s" : ""}:\n`)
+  console.log("  email                                   status    credits  last grant")
+  for (const r of rows) {
+    const last = r.last_grant ? new Date(r.last_grant).toISOString().slice(0, 10) : "never"
+    console.log(
+      `  ${String(r.email).padEnd(38)}  ${String(r.access_status).padEnd(8)}  ` +
+        `${String(r.balance).padStart(7)}  ${last}`
+    )
+  }
+  console.log("")
+  console.log("  Anyone whose last grant is not this month still needs the renewal run.")
+  console.log("")
+}
+
 async function main() {
   const args = process.argv.slice(2)
   const dryRun = args.includes("--dry-run")
-  const rawEmail = args.find(a => !a.startsWith("--"))
 
-  if (!rawEmail) {
-    fail("No email given.", "Usage: pnpm skool:grant her@email.com [--dry-run]")
+  if (args.includes("--list")) {
+    await listProvisioned()
+    return
   }
 
-  const email = normalizeEmail(rawEmail)
-  if (!email) fail(`"${rawEmail}" is not a valid email address.`)
+  const fileArg = args.find(a => a.startsWith("--file="))?.split("=")[1]?.trim()
+  const inlineEmails = args.filter(a => !a.startsWith("--"))
+  let rawEmails: string[] = inlineEmails
+
+  if (fileArg) {
+    const { readFileSync } = await import("node:fs")
+    let contents: string
+    try {
+      contents = readFileSync(fileArg, "utf8")
+    } catch {
+      fail(`Could not read ${fileArg}.`)
+    }
+    rawEmails = [
+      ...inlineEmails,
+      ...contents.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith("#")),
+    ]
+  }
+
+  if (rawEmails.length === 0) {
+    fail(
+      "No email given.",
+      "Usage: pnpm skool:grant her@email.com [more@emails ...] [--dry-run]",
+      "       pnpm skool:grant --file=members.txt",
+      "       pnpm skool:grant --list",
+    )
+  }
+
+  const emails: string[] = []
+  for (const raw of rawEmails) {
+    const normalized = normalizeEmail(raw)
+    if (!normalized) fail(`"${raw}" is not a valid email address.`)
+    if (!emails.includes(normalized)) emails.push(normalized)
+  }
 
   const rawSecret = process.env.SKOOL_MEMBERSHIP_INGRESS_SECRET?.trim() || ""
   if (!BASE64URL_32.test(rawSecret)) {
@@ -119,86 +188,99 @@ async function main() {
   const observedAt = new Date(`${billingPeriodKey}T00:00:00.000Z`)
   if (Number.isNaN(observedAt.getTime())) fail(`--period "${billingPeriodKey}" is not a real date.`)
 
-  const membershipKey = `skool:${SKOOL_GROUP_ID}:${identityDigest(
-    Buffer.from(auditSecret, "base64url"),
-    email
-  )}`
-
-  const envelope: SkoolMembershipEnvelope = {
-    schemaVersion: 1,
-    source: "skool",
-    eventType: "membership.present",
-    groupId: SKOOL_GROUP_ID,
-    planCode: SKOOL_PLAN_CODE,
-    observedAt: observedAt.toISOString(),
-    billingPeriodKey,
-    membershipKey,
-    dedupeKey: `${membershipKey}:period:${billingPeriodKey}`,
-    privateProvisioning: { email },
-  }
-
   console.log("")
-  console.log(`  member          ${email}`)
   console.log(`  group           ${SKOOL_GROUP_ID}`)
   console.log(`  plan            ${SKOOL_PLAN_CODE}`)
   console.log(`  billing period  ${billingPeriodKey}${periodArg ? " (explicit)" : " (this month)"}`)
-  console.log(`  credits         ${SKOOL_MEMBERSHIP_CREDITS}`)
+  console.log(`  credits         ${SKOOL_MEMBERSHIP_CREDITS} per member per period`)
+  console.log(`  members         ${emails.length}`)
   console.log("")
 
   if (dryRun) {
-    console.log("  --dry-run: nothing was written. Re-run without the flag to provision.\n")
+    for (const email of emails) console.log(`  · ${email}`)
+    console.log("\n  --dry-run: nothing was written. Re-run without the flag to provision.\n")
     return
   }
 
-  let account
-  try {
-    account = await ensureSkoolMemberAccount({ email })
-  } catch (error: any) {
-    if (error?.message === "SKOOL_IDENTITY_CONFLICT") {
-      fail(
-        `Two accounts share ${email}, or the auth account's email does not match.`,
-        "",
-        "This is the case-variant duplicate the audit flagged. Run `pnpm audit:close-out`",
-        "and merge the two rows before provisioning her, or she will end up with credits",
-        "on the account she cannot log into.",
-      )
-    }
-    throw error
-  }
+  let granted = 0
+  let alreadyDone = 0
+  const failures: Array<{ email: string; reason: string }> = []
 
-  console.log(`  ✓ account       ${account.userId} (${account.accountState})`)
-
-  const grant = await grantSkoolMembership({ userId: account.userId, envelope })
-
-  if (grant.replay) {
-    console.log(`  · already provisioned for ${billingPeriodKey} — no credits added`)
-  } else {
-    console.log(`  ✓ credits       +${grant.creditsGranted}`)
-  }
-  console.log(`  ✓ balance       ${grant.balance}`)
-
-  if (account.accountState === "recovery_required") {
-    const setupLink = buildSkoolSetupEntryLink({
-      membershipKey,
-      secret: rawSecret,
-      productionUrl: process.env.NEXT_PUBLIC_SITE_URL || null,
-    })
-    const sent = await sendSkoolSetupEmail({
-      email,
-      setupLink,
-      membershipKey,
+  // One member at a time, deliberately. Each grant is its own transaction, so a
+  // failure part-way through leaves every member before it fully provisioned and
+  // every member after it untouched — re-running is safe and picks up where it
+  // stopped. A batch that half-commits would be worse than a slow one.
+  for (const email of emails) {
+    const membershipKey = `skool:${SKOOL_GROUP_ID}:${identityDigest(
+      Buffer.from(auditSecret, "base64url"),
+      email
+    )}`
+    const envelope: SkoolMembershipEnvelope = {
+      schemaVersion: 1,
+      source: "skool",
+      eventType: "membership.present",
+      groupId: SKOOL_GROUP_ID,
+      planCode: SKOOL_PLAN_CODE,
+      observedAt: observedAt.toISOString(),
       billingPeriodKey,
-    })
-    console.log(`  ✓ setup email   sent (${sent.messageId || "no id"})`)
-    console.log("")
-    console.log("  If it does not arrive, send her this link directly:")
-    console.log(`  ${setupLink}`)
-  } else {
-    console.log("  · she already has a password — no setup email needed, she just logs in")
+      membershipKey,
+      dedupeKey: `${membershipKey}:period:${billingPeriodKey}`,
+      privateProvisioning: { email },
+    }
+
+    try {
+      const account = await ensureSkoolMemberAccount({ email })
+      const grant = await grantSkoolMembership({ userId: account.userId, envelope })
+
+      let note: string
+      if (grant.replay) {
+        alreadyDone += 1
+        note = `already had ${billingPeriodKey} · balance ${grant.balance}`
+      } else {
+        granted += 1
+        note = `+${grant.creditsGranted} · balance ${grant.balance}`
+      }
+
+      if (account.accountState === "recovery_required") {
+        const setupLink = buildSkoolSetupEntryLink({
+          membershipKey,
+          secret: rawSecret,
+          productionUrl: process.env.NEXT_PUBLIC_SITE_URL || null,
+        })
+        await sendSkoolSetupEmail({ email, setupLink, membershipKey, billingPeriodKey })
+        note += " · setup email sent"
+      } else {
+        note += " · has a password already"
+      }
+
+      console.log(`  ✓ ${email.padEnd(38)} ${note}`)
+    } catch (error: any) {
+      const reason =
+        error?.message === "SKOOL_IDENTITY_CONFLICT"
+          ? "duplicate account — run pnpm audit:close-out and merge first"
+          : error?.message || String(error)
+      failures.push({ email, reason })
+      console.log(`  ✗ ${email.padEnd(38)} ${reason}`)
+    }
   }
 
   console.log("")
-  console.log("  Done. She has SSELFIE Suite + Maya.")
+  console.log(
+    `  ${granted} newly granted · ${alreadyDone} already had this period · ${failures.length} failed`
+  )
+
+  if (failures.length > 0) {
+    console.log("")
+    console.log("  Not provisioned — these members have paid and have nothing:")
+    for (const f of failures) console.log(`    ${f.email}  ${f.reason}`)
+    console.log("")
+    console.log("  Fix the cause and re-run. Everyone already done will be skipped.")
+    console.log("")
+    process.exit(1)
+  }
+
+  console.log("")
+  console.log("  Done. They have SSELFIE Suite + Maya.")
   console.log("")
 }
 

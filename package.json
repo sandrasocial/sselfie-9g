@@ -24,6 +24,7 @@
     "test:coverage": "vitest --coverage",
     "start": "next start",
     "audit:close-out": "tsx scripts/audit-close-out.ts",
+    "skool:preflight": "node --conditions=react-server --import tsx scripts/skool-preflight.ts",
     "skool:grant": "node --conditions=react-server --import tsx scripts/grant-skool-member.ts",
     "audit-subscriptions": "tsx scripts/audit-subscription-data.ts",
     "audit-revenue": "tsx scripts/audit-revenue-sources.ts",
