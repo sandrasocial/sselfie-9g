@@ -428,22 +428,27 @@ export async function sendEmail(
     }
   }
 
-  const rateLimit = await checkEmailRateLimit(recipient)
+  // The per-recipient limiter exists to stop a marketing burst hitting one inbox. It must
+  // never apply to transactional mail: password setup and purchase delivery are how a paying
+  // customer gets access, and eight marketing crons run between 09:00 and 10:25 UTC, so a
+  // buyer on a busy morning could have her way-in email silently dropped and logged failed.
+  if (options.marketing) {
+    const rateLimit = await checkEmailRateLimit(recipient)
 
-  if (!rateLimit.success) {
-    console.log(`[v0] Email rate limit exceeded for ${recipient}, skipping send`)
-    // Log rate limit as failed
-    await logEmailSend(
-      recipient,
-      emailType,
-      "failed",
-      undefined,
-      "Rate limit exceeded",
-      options.campaignId
-    )
-    return {
-      success: false,
-      error: `Rate limit exceeded. Please try again in ${Math.ceil((rateLimit.reset - Date.now()) / 1000 / 60)} minutes.`,
+    if (!rateLimit.success) {
+      console.log(`[v0] Marketing email rate limit exceeded for ${recipient}, skipping send`)
+      await logEmailSend(
+        recipient,
+        emailType,
+        "failed",
+        undefined,
+        "Rate limit exceeded",
+        options.campaignId
+      )
+      return {
+        success: false,
+        error: `Rate limit exceeded. Please try again in ${Math.ceil((rateLimit.reset - Date.now()) / 1000 / 60)} minutes.`,
+      }
     }
   }
 
