@@ -26,6 +26,7 @@ import {
 } from "@/lib/app-v3/maya/operating-layer-rollout"
 import { hasPaidBlueprint } from "@/lib/subscription"
 import { resolveSkoolMayaHandoff } from "@/lib/app-v3/maya/skool-handoff"
+import { rethrowIfNextControlFlow } from "@/lib/next-redirect-error"
 
 export const metadata = {
   title: "SSELFIE Suite",
@@ -201,7 +202,15 @@ export default async function StudioV3Page({
           }
         }
       } catch (e) {
-        console.error("[/app gate] access check failed, falling back to /studio:", e)
+        // `redirect()` throws — without this rethrow the Vault Maya redirect above was
+        // swallowed and that member fell through to the limited shell.
+        rethrowIfNextControlFlow(e)
+        // Everything else reaching here is a CORE entitlement failure (user mapping,
+        // getSuiteAccess, hasPaidBlueprint); the optional lookups all catch their own
+        // errors above. Continuing would serve a paying member the locked shell with no
+        // signal that anything went wrong, so fail visibly instead and let Sentry see it.
+        console.error("[/app gate] access check failed:", e)
+        throw e
       }
     }
     if (process.env.APP_V3_MEMBERS_ENABLED !== "true") redirect("/studio")
