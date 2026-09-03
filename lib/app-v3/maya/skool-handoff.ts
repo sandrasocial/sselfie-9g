@@ -1,3 +1,5 @@
+import { SKOOL_CLASSROOM_URL } from "@/lib/skool/public-acquisition"
+
 export const SKOOL_HANDOFF_SOURCE = "skool" as const
 
 export const SKOOL_HANDOFF_KEYS = [
@@ -19,6 +21,12 @@ export type SkoolMayaHandoff = {
   returnUrl: string
 }
 
+// TODO (launch, 2026-09-03): the group moved to skool.com/sselfie. The four
+// per-lesson classroom ids below came from the retired sselfie-photo-club-2569
+// group and do not resolve in the new one, so every returnUrl currently lands on
+// the classroom root instead of the exact lesson. Functional, but she loses her
+// place. Swap SKOOL_CLASSROOM_URL for `${SKOOL_CLASSROOM_URL}/<id>?md=<md>` per
+// handoff once the real ids are pulled from the live classroom.
 const SKOOL_HANDOFFS: Record<SkoolHandoffKey, SkoolMayaHandoff> = {
   "suite-maya": {
     key: "suite-maya",
@@ -29,8 +37,7 @@ const SKOOL_HANDOFFS: Record<SkoolHandoffKey, SkoolMayaHandoff> = {
     creationIdea: "Choose my next step in the SSELFIE method after the Skool introduction.",
     starterPrompt:
       "I just came from the Skool lesson about how Skool, SUITE, and Maya work together. Help me choose one clear next step today. Keep it simple and guide me one step at a time.",
-    returnUrl:
-      "https://www.skool.com/sselfie-photo-club-2569/classroom/e389435f?md=c160ba1d8f5d4ca48e5386e7859d9776",
+    returnUrl: SKOOL_CLASSROOM_URL,
   },
   "selfie-practice": {
     key: "selfie-practice",
@@ -41,8 +48,7 @@ const SKOOL_HANDOFFS: Record<SkoolHandoffKey, SkoolMayaHandoff> = {
     creationIdea: "Practise one simple selfie setup from the SSELFIE Skool Selfies lesson.",
     starterPrompt:
       "I just finished the Selfies lesson in SSELFIE Skool. Help me choose one simple selfie setup to practise today. Ask only what you need, then give me clear step-by-step direction.",
-    returnUrl:
-      "https://www.skool.com/sselfie-photo-club-2569/classroom/bbc97b69?md=56cf2d688f15419886c9c6e156264c2a",
+    returnUrl: SKOOL_CLASSROOM_URL,
   },
   "editing-practice": {
     key: "editing-practice",
@@ -53,8 +59,7 @@ const SKOOL_HANDOFFS: Record<SkoolHandoffKey, SkoolMayaHandoff> = {
     creationIdea: "Practise one editing skill from the SSELFIE Skool Editing lesson.",
     starterPrompt:
       "I just finished the Editing lesson in SSELFIE Skool. Help me choose one useful edit to practise on my photo. Explain what to change, why it helps, and how to know when the edit is finished.",
-    returnUrl:
-      "https://www.skool.com/sselfie-photo-club-2569/classroom/3ba102f5?md=f66f6d9f7c78498eb8acdd1a505d8f70",
+    returnUrl: SKOOL_CLASSROOM_URL,
   },
   "ai-photo-practice": {
     key: "ai-photo-practice",
@@ -65,8 +70,7 @@ const SKOOL_HANDOFFS: Record<SkoolHandoffKey, SkoolMayaHandoff> = {
     creationIdea: "Create one realistic AI photo from the SSELFIE Skool AI Photos lesson.",
     starterPrompt:
       "I just finished the AI Photos lesson in SSELFIE Skool. Help me choose the best source selfie and create one realistic photo that still looks and feels like me. Guide me one step at a time.",
-    returnUrl:
-      "https://www.skool.com/sselfie-photo-club-2569/classroom/d44fa254?md=264d072bb6c74b3abbff4ff13d6dc3cf",
+    returnUrl: SKOOL_CLASSROOM_URL,
   },
 }
 

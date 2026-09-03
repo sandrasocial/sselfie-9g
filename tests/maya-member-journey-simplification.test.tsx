@@ -85,7 +85,7 @@ describe("Maya simplified member journey", () => {
 
     expect(shell).toContain("learningDestinations={LEARNING_DESTINATIONS}")
     expect(library).toContain("Learning spaces")
-    expect(destinations).toContain("https://www.skool.com/sselfie-photo-club-2569")
+    expect(destinations).toContain("@/lib/skool/public-acquisition")
     expect(destinations).toContain("NEXT_PUBLIC_SSELFIE_STUDIO_COM_URL")
     expect(destinations).toContain('status: studioComUrl ? "available" : "coming-soon"')
   })

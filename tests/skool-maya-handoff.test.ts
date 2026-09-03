@@ -52,9 +52,13 @@ describe("Skool to Maya handoff", () => {
       "ai-photo-practice",
     ] as const) {
       const handoff = getSkoolMayaHandoff(key)
-      expect(handoff?.returnUrl).toMatch(
-        /^https:\/\/www\.skool\.com\/sselfie-photo-club-2569\/classroom\//
-      )
+      // The invariant is containment: a return link must never leave the one live
+      // SSELFIE Skool group. The group moved to /sselfie on 2026-09-03, and the
+      // four per-lesson classroom ids from the retired group do not exist there,
+      // so these currently land on the classroom root. Restore the deep-link
+      // suffix here once the real lesson ids are wired in.
+      expect(handoff?.returnUrl).toMatch(/^https:\/\/www\.skool\.com\/sselfie\/classroom/)
+      expect(handoff?.returnUrl).not.toContain("sselfie-photo-club-2569")
     }
   })
 

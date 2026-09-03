@@ -1,3 +1,4 @@
+import { SKOOL_GROUP_URL } from "@/lib/skool/public-acquisition"
 export interface LearningDestination {
   id: "skool" | "studio"
   label: string
@@ -13,7 +14,7 @@ export const LEARNING_DESTINATIONS: readonly LearningDestination[] = [
     id: "skool",
     label: "Skool community",
     description: "Lessons, practice, support and conversation with the SSELFIE community.",
-    href: "https://www.skool.com/sselfie-photo-club-2569",
+    href: SKOOL_GROUP_URL,
     status: "available",
   },
   {
