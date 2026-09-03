@@ -15,9 +15,9 @@ Sentry.init({
   enableLogs: true,
   
   // Adjust this value in production, or use tracesSampler for greater control
-  tracesSampleRate: 1,
+  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
   
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: true,
+  debug: process.env.NODE_ENV !== "production",
 });
 
