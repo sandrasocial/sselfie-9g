@@ -3,6 +3,7 @@ import "server-only"
 import { NextResponse } from "next/server"
 
 import { requireAcademyProductAccess } from "@/lib/academy-server-access"
+import { sql } from "@/lib/db/client"
 
 export type ProtectedAcademyWorkbookId = "what_to_say" | "show_up" | "get_paid"
 
@@ -34,6 +35,35 @@ const WORKBOOK_SECURITY_HEADERS = {
 type AcademyError = {
   status: number
   body: Record<string, unknown>
+}
+
+const DEFAULT_WORKBOOK_IMAGES: Record<ProtectedAcademyWorkbookId, string> = {
+  what_to_say: "/academy/visibility-suite/what-to-say.png",
+  show_up: "/academy/visibility-suite/show-up.png",
+  get_paid: "/academy/visibility-suite/get-paid.png",
+}
+
+async function getWorkbookImage(productId: ProtectedAcademyWorkbookId) {
+  try {
+    const rows = await sql`
+      SELECT thumbnail_url
+      FROM academy_product_overrides
+      WHERE product_id = ${productId}
+      LIMIT 1
+    `
+    const url = (rows[0] as { thumbnail_url?: unknown } | undefined)?.thumbnail_url
+    return typeof url === "string" && url.trim() ? url.trim() : DEFAULT_WORKBOOK_IMAGES[productId]
+  } catch {
+    return DEFAULT_WORKBOOK_IMAGES[productId]
+  }
+}
+
+function injectWorkbookImage(html: string, imageUrl: string) {
+  const serialized = JSON.stringify(imageUrl).replace(/</g, "\\u003c")
+  return html.replace(
+    '<script src="/academy-workbook-wizard.js"></script>',
+    `<script>window.SSELFIE_COURSE_IMAGE=${serialized}</script><script src="/academy-workbook-wizard.js"></script>`
+  )
 }
 
 function isAcademyError(error: unknown): error is AcademyError {
@@ -103,7 +133,12 @@ export async function respondWithProtectedAcademyWorkbook({
 
   try {
     const html = await readWorkbook()
-    return securedResponse(headOnly ? null : html, { status: 200 }, "text/html; charset=utf-8")
+    const imageUrl = await getWorkbookImage(productId)
+    return securedResponse(
+      headOnly ? null : injectWorkbookImage(html, imageUrl),
+      { status: 200 },
+      "text/html; charset=utf-8"
+    )
   } catch (error) {
     console.error(`[academy-workbook] Failed to read ${productId}:`, error)
     return jsonResponse({ error: "Workbook unavailable" }, 500, headOnly)

@@ -10,7 +10,7 @@ const TOOLS = [
   {
     title: "Academy",
     description: "Courses, lessons, products, and monthly drops.",
-    href: "/admin/academy",
+    href: "/admin/academy?tab=course-photos",
   },
   {
     title: "Credits",

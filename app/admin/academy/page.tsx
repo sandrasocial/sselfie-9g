@@ -59,7 +59,7 @@ export default function AdminAcademyPage() {
   const [loading, setLoading] = useState(true)
 
   const [activeTab, setActiveTab] = useState<
-    "courses" | "products" | "templates" | "monthly-drops" | "flatlay-images" | "grant-access"
+    "courses" | "course-photos" | "products" | "templates" | "monthly-drops" | "flatlay-images" | "grant-access"
   >("courses")
 
   const [courses, setCourses] = useState<Course[]>([])
@@ -486,6 +486,12 @@ export default function AdminAcademyPage() {
       console.error("[v0] Error fetching flatlay images:", error)
     }
   }, [router])
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "course-photos") {
+      setActiveTab("course-photos")
+    }
+  }, [])
 
   useEffect(() => {
     fetchCourses()
@@ -1088,6 +1094,16 @@ export default function AdminAcademyPage() {
             Courses
           </button>
           <button
+            onClick={() => setActiveTab("course-photos")}
+            className={`px-6 py-3 text-sm tracking-wider uppercase transition-all ${
+              activeTab === "course-photos"
+                ? "border-b-2 border-stone-950 text-stone-950"
+                : "text-stone-500 hover:text-stone-950"
+            }`}
+          >
+            Course Photos
+          </button>
+          <button
             onClick={() => setActiveTab("products")}
             className={`px-6 py-3 text-sm tracking-wider uppercase transition-all ${
               activeTab === "products"
@@ -1138,6 +1154,66 @@ export default function AdminAcademyPage() {
             Grant Access
           </button>
         </div>
+
+        {activeTab === "course-photos" && (
+          <section className="mx-auto max-w-6xl">
+            <div className="mb-7 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-stone-500">
+                  Visibility courses
+                </p>
+                <h2 className="mt-2 font-serif text-4xl font-light tracking-tight text-stone-950">
+                  Change the course photos
+                </h2>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-stone-600">
+                  Replace a photo here and it changes in the live course. No code or deployment needed.
+                </p>
+              </div>
+              {productMessage && (
+                <p className="border border-stone-200 bg-white px-4 py-2 text-xs text-stone-600">
+                  {productMessage}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-3">
+              {products
+                .filter(product => ["what_to_say", "show_up", "get_paid"].includes(product.id))
+                .map(product => {
+                  const busy = savingProductId === product.id || uploadingProductId === product.id
+                  return (
+                    <article key={product.id} className="overflow-hidden border border-stone-200 bg-white">
+                      <div className="relative aspect-[4/5] bg-stone-100">
+                        {product.thumbnailUrl ? (
+                          <img src={product.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center px-8 text-center text-sm text-stone-400">
+                            The original course photo is active.
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-5">
+                        <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-stone-500">
+                          {product.id === "what_to_say" ? "01" : product.id === "show_up" ? "02" : "03"}
+                        </p>
+                        <h3 className="mt-2 font-serif text-2xl font-light text-stone-950">{product.name}</h3>
+                        <p className="mt-2 text-xs leading-relaxed text-stone-500">
+                          JPG, PNG, or WebP. A vertical photo works best.
+                        </p>
+                        <label className={`mt-5 flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-stone-950 px-5 text-[10px] font-medium uppercase tracking-[0.2em] text-white ${busy ? "pointer-events-none opacity-50" : ""}`}>
+                          {uploadingProductId === product.id ? "Uploading..." : "Replace photo"}
+                          <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={busy} onChange={event => handleProductThumbnailUpload(product, event)} />
+                        </label>
+                        <a href={product.accessUrl} target="_blank" rel="noreferrer" className="mt-4 block text-center text-[10px] font-medium uppercase tracking-[0.2em] text-stone-600 underline decoration-stone-300 underline-offset-4">
+                          Preview live course
+                        </a>
+                      </div>
+                    </article>
+                  )
+                })}
+            </div>
+          </section>
+        )}
 
         {activeTab === "courses" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

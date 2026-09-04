@@ -9,7 +9,8 @@
   var saved={screen:0,values:{}};try{saved=JSON.parse(localStorage.getItem(storageKey)||'null')||saved}catch(e){}
   var current=Math.min(Number(saved.screen)||0,questions.length);
   questions.forEach(function(block,i){block.querySelectorAll('textarea,input,select').forEach(function(field,j){var key=field.getAttribute('data-wts-key')||field.getAttribute('data-su-key')||field.getAttribute('data-gp-key')||field.id||('q'+i+'f'+j);field.dataset.wizardKey=key;if(saved.values&&saved.values[key]!=null)field.value=saved.values[key]})});
-  var shell=document.createElement('main');shell.className='sw-shell';shell.innerHTML='<header class="sw-header"><a class="sw-logo" href="/">SSELFIE</a><span>'+title+'</span><a href="/academy">Academy</a></header><div class="sw-progress"><span></span></div><section class="sw-stage"><div class="sw-copy"></div><figure class="sw-visual"><img src="'+(images[slug]||images.what_to_say)+'" alt=""></figure></section>';
+  var courseImage=typeof window.SSELFIE_COURSE_IMAGE==='string'&&window.SSELFIE_COURSE_IMAGE?window.SSELFIE_COURSE_IMAGE:(images[slug]||images.what_to_say);
+  var shell=document.createElement('main');shell.className='sw-shell';shell.innerHTML='<header class="sw-header"><a class="sw-logo" href="/">SSELFIE</a><span>'+title+'</span><a href="/academy">Academy</a></header><div class="sw-progress"><span></span></div><section class="sw-stage"><div class="sw-copy"></div><figure class="sw-visual"><img src="'+courseImage.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" alt=""></figure></section>';
   document.body.insertBefore(shell,document.body.firstChild);
   var copy=shell.querySelector('.sw-copy'),bar=shell.querySelector('.sw-progress span');
   function values(){var result={};questions.forEach(function(block){block.querySelectorAll('[data-wizard-key]').forEach(function(field){result[field.dataset.wizardKey]=field.value})});return result}
