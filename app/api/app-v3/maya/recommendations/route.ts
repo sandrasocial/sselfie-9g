@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server"
 import { generateText } from "ai"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { requireMayaInferenceAccess } from "@/lib/maya/require-inference-access"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
@@ -97,6 +98,16 @@ function scorePrompt(promptText: string, intent: Intent): number {
 export async function GET() {
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  // Recommendations run a language model. Same paid surface, same gate.
+  const gateUserId = await getUserIdFromSupabase(user.id)
+  const inferenceAccess = await requireMayaInferenceAccess({
+    neonUserId: gateUserId,
+    email: user.email,
+  })
+  if (!inferenceAccess.allowed) {
+    return NextResponse.json(inferenceAccess.body, { status: inferenceAccess.status })
+  }
 
   // Everything Maya knows: brand profile + memory + what she's recently made.
   let brandContext = ""

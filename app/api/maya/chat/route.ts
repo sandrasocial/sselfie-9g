@@ -67,6 +67,7 @@ import {
 import { getWeekPlanSystemAddendum } from "@/lib/maya/week-plan-prompt"
 import { resolveMethodDepth } from "@/lib/maya/method-depth"
 import { hasStudioMembership } from "@/lib/subscription"
+import { requireMayaInferenceAccess } from "@/lib/maya/require-inference-access"
 import {
   isMayaImageContinuationEnabled,
   isMayaInlineChatImagesEnabled,
@@ -743,6 +744,20 @@ export async function POST(req: Request) {
     }
 
     const dbUserId = user.id
+
+    // This legacy route still runs 28 LLM call sites. hasStudioMembership was
+    // imported here but only ever chose prompt depth, never blocked — so the
+    // route was reachable by any authenticated account. Gate it on the same
+    // rule as the app-v3 surfaces. Resolved from the EFFECTIVE user, so admin
+    // impersonation correctly evaluates the member being impersonated.
+    const inferenceAccess = await requireMayaInferenceAccess({
+      neonUserId: dbUserId,
+      email: user.email,
+    })
+    if (!inferenceAccess.allowed) {
+      return NextResponse.json(inferenceAccess.body, { status: inferenceAccess.status })
+    }
+
     let mayaSnapshot: Awaited<ReturnType<typeof getMayaUserSnapshot>> | null = null
 
     debugLog("[Maya Chat API] User authenticated", { userId, dbUserId, userEmail: user.email })

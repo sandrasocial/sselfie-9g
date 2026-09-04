@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   hasUsableBrandProfile: vi.fn(),
   generateText: vi.fn(),
   sql: vi.fn(),
+  getSuiteAccess: vi.fn(),
 }))
 
 vi.mock("server-only", () => ({}))
@@ -23,6 +24,9 @@ vi.mock("@/lib/app-v3/maya/brand-profile-store", () => ({
   hasUsableBrandProfile: mocks.hasUsableBrandProfile,
 }))
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
+// Maya inference is membership-gated. This suite is about what Maya SAYS, not who
+// may call her, so grant access and let the truth guard be the thing under test.
+vi.mock("@/lib/trial/suite-trial", () => ({ getSuiteAccess: mocks.getSuiteAccess }))
 vi.mock("ai", () => ({ generateText: mocks.generateText }))
 vi.mock("@/lib/maya/openrouter", () => ({
   createMayaOpenRouterModel: vi.fn(() => "mock-model"),
@@ -43,6 +47,7 @@ describe("Create recommendation truth guard", () => {
     mocks.listChats.mockResolvedValue([])
     mocks.hasUsableBrandProfile.mockResolvedValue(false)
     mocks.sql.mockResolvedValue([])
+    mocks.getSuiteAccess.mockResolvedValue({ level: "member" })
   })
 
   it("uses the safe frontend fallback instead of inventing a personal story for a blank profile", async () => {

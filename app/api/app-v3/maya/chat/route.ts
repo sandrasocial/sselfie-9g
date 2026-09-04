@@ -19,6 +19,7 @@ import {
 } from "ai"
 import { z } from "zod"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { requireMayaInferenceAccess } from "@/lib/maya/require-inference-access"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { getAppV3MayaSystemPrompt } from "@/lib/app-v3/maya/persona"
 import { getMayaGeneralAssistantPrompt } from "@/lib/maya/general-assistant-persona"
@@ -867,6 +868,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // New Maya inference is a paid surface. Reading past conversations is not
+    // gated — history lives on /api/app-v3/maya/chats — but generating a new
+    // turn spends provider money and must match the entitlement rules that
+    // /api/app-v3/maya/generate has enforced since BRIDGE-01 Phase D.
+    const gateUserId = await getUserIdFromSupabase(user.id)
+    const inferenceAccess = await requireMayaInferenceAccess({
+      neonUserId: gateUserId,
+      email: user.email,
+    })
+    if (!inferenceAccess.allowed) {
+      return NextResponse.json(inferenceAccess.body, { status: inferenceAccess.status })
+    }
+
     const body = (await req.json().catch(() => null)) as ChatBody | null
     const uiMessages = body?.messages
     if (!Array.isArray(uiMessages) || uiMessages.length === 0) {
@@ -967,7 +981,9 @@ export async function POST(req: Request) {
     let recentWardrobe: string[] = []
     let memoryUserId: string | null = null
     try {
-      const neonUserId = await getUserIdFromSupabase(user.id)
+      // Already resolved for the inference gate above — reuse it rather than
+      // paying for a second identity lookup on every turn.
+      const neonUserId = gateUserId
       if (neonUserId) {
         memoryUserId = String(neonUserId)
         memory = await getMemory(String(neonUserId))

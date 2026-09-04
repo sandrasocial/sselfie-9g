@@ -59,6 +59,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./"),
+      // `server-only` throws outside a React Server Component — correct in
+      // production, fatal for unit-testing the modules that carry that guard.
+      // Alias it to a no-op so those modules stay testable without dropping
+      // the guard from the source.
+      "server-only": path.resolve(__dirname, "./tests/stubs/server-only.ts"),
     },
   },
 })
