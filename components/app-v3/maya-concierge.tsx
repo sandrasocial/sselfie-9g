@@ -540,7 +540,7 @@ function MayaPathChooser({
         {activePath === "ai-photos" && !hasSelfie ? (
           <button
             type="button"
-            onClick={onChooseSelfie}
+            onClick={() => afterInteractionPaint(onChooseSelfie)}
             disabled={disabled}
             className={`${actionClass} !bg-[color:var(--suite-accent)] !text-white hover:!bg-[color:var(--suite-night)]`}
           >
@@ -550,7 +550,7 @@ function MayaPathChooser({
           <>
             <button
               type="button"
-              onClick={onCreateWithMaya}
+              onClick={() => afterInteractionPaint(onCreateWithMaya)}
               disabled={disabled}
               className={`${actionClass} !bg-[color:var(--suite-accent)] !text-white hover:!bg-[color:var(--suite-night)]`}
             >
@@ -558,7 +558,7 @@ function MayaPathChooser({
             </button>
             <button
               type="button"
-              onClick={onCreateFromVault}
+              onClick={() => afterInteractionPaint(onCreateFromVault)}
               disabled={disabled}
               className={actionClass}
             >
@@ -568,7 +568,7 @@ function MayaPathChooser({
         ) : activePath === "edit-photo" ? (
           <button
             type="button"
-            onClick={onStartEdit}
+            onClick={() => onStartEdit && afterInteractionPaint(onStartEdit)}
             disabled={disabled || !onStartEdit}
             className={actionClass}
           >
@@ -578,7 +578,7 @@ function MayaPathChooser({
           <>
             <button
               type="button"
-              onClick={() => onPickFormat("carousel")}
+              onClick={() => afterInteractionPaint(() => onPickFormat("carousel"))}
               disabled={disabled}
               className={`${actionClass} !bg-[color:var(--suite-accent)] !text-white hover:!bg-[color:var(--suite-night)]`}
             >
@@ -586,7 +586,7 @@ function MayaPathChooser({
             </button>
             <button
               type="button"
-              onClick={onStartCaption}
+              onClick={() => afterInteractionPaint(onStartCaption)}
               disabled={disabled}
               className={actionClass}
             >
@@ -594,7 +594,7 @@ function MayaPathChooser({
             </button>
             <button
               type="button"
-              onClick={() => onPickFormat("story-sequence")}
+              onClick={() => afterInteractionPaint(() => onPickFormat("story-sequence"))}
               disabled={disabled}
               className={actionClass}
             >
@@ -648,7 +648,9 @@ const DEFAULT_GRAPHIC_OVERLAY_STYLE: OverlayStyleId = "editorial-serif-center"
 /** Let the browser paint the pressed/menu-closed state before mounting a large overlay.
  * This keeps image and header interactions out of Maya's expensive workspace render. */
 function afterInteractionPaint(update: () => void) {
-  window.requestAnimationFrame(() => startTransition(update))
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => startTransition(update))
+  })
 }
 
 type UploadSlot = "face" | "angle" | "side" | "body" | "inspiration" | "video"
