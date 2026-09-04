@@ -3,6 +3,7 @@ import { existsSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 import { projectAcademyProductRegistry } from "@/lib/academy-entitlements"
+import { VISIBILITY_MINI_PRODUCT_BY_SLUG } from "@/lib/visibility-products"
 
 /**
  * Skool is the hub: a member gets every digital product free.
@@ -23,6 +24,22 @@ describe("Skool members get every digital product", () => {
       .filter((product) => !product.membershipIncluded)
       .map((product) => product.id)
     expect(excluded, `these active products are not included in the membership`).toEqual([])
+  })
+
+  it("gives EVERY active product a real access route", () => {
+    // Not just private deliveries. Three academy_course products shipped with
+    // underscored targets and no route, so /academy/access/<id> 404d for anyone
+    // who owned them — Skool or Stripe. A route is either a dedicated directory
+    // or a visibility mini-product slug served by [productSlug].
+    const miniSlugs = new Set(Object.keys(VISIBILITY_MINI_PRODUCT_BY_SLUG))
+    const unreachable = active
+      .filter(
+        (product) =>
+          !existsSync(`app/academy/access/${product.accessTarget}/page.tsx`) &&
+          !miniSlugs.has(product.accessTarget),
+      )
+      .map((product) => `${product.id} -> /academy/access/${product.accessTarget}`)
+    expect(unreachable, "active products whose access link 404s").toEqual([])
   })
 
   it("gives every privately delivered product a real access route", () => {

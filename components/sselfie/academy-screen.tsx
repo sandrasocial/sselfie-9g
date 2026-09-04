@@ -181,7 +181,7 @@ const PRODUCT_VISUALS: Record<string, { image: string; label: string; href?: str
   ai_photo_prompts: {
     image: "/academy/sselfie-minimalism/academy-studio-resources.jpg",
     label: "Prompt pack",
-    href: "/academy/access/ai-photo-prompts",
+    href: "/academy/products/ai_photo_prompts",
   },
   visibility_suite: {
     image: "/academy/visibility-suite/hero.png",
