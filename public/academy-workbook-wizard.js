@@ -1,0 +1,20 @@
+(function(){
+  var questions=Array.from(document.querySelectorAll('.question-block')).filter(function(block){return block.querySelector('textarea,input,select')});
+  if(!questions.length)return;
+  document.documentElement.classList.add('sselfie-wizard');
+  var title=(document.title.split('—')[0]||'Your course').trim();
+  var slug=location.pathname.split('/').filter(Boolean).pop()||'course';
+  var images={what_to_say:'/academy/visibility-suite/what-to-say.png',show_up:'/academy/visibility-suite/show-up.png',get_paid:'/academy/visibility-suite/get-paid.png'};
+  var storageKey='sselfie-workbook-wizard:'+slug+':v1';
+  var saved={screen:0,values:{}};try{saved=JSON.parse(localStorage.getItem(storageKey)||'null')||saved}catch(e){}
+  var current=Math.min(Number(saved.screen)||0,questions.length);
+  questions.forEach(function(block,i){block.querySelectorAll('textarea,input,select').forEach(function(field,j){var key=field.getAttribute('data-wts-key')||field.getAttribute('data-su-key')||field.getAttribute('data-gp-key')||field.id||('q'+i+'f'+j);field.dataset.wizardKey=key;if(saved.values&&saved.values[key]!=null)field.value=saved.values[key]})});
+  var shell=document.createElement('main');shell.className='sw-shell';shell.innerHTML='<header class="sw-header"><a class="sw-logo" href="/">SSELFIE</a><span>'+title+'</span><a href="/academy">Academy</a></header><div class="sw-progress"><span></span></div><section class="sw-stage"><div class="sw-copy"></div><figure class="sw-visual"><img src="'+(images[slug]||images.what_to_say)+'" alt=""></figure></section>';
+  document.body.insertBefore(shell,document.body.firstChild);
+  var copy=shell.querySelector('.sw-copy'),bar=shell.querySelector('.sw-progress span');
+  function values(){var result={};questions.forEach(function(block){block.querySelectorAll('[data-wizard-key]').forEach(function(field){result[field.dataset.wizardKey]=field.value})});return result}
+  function save(){localStorage.setItem(storageKey,JSON.stringify({screen:current,values:values()}))}
+  function render(){copy.innerHTML='';bar.style.width=Math.round((current/questions.length)*100)+'%';if(current>=questions.length){copy.className='sw-copy sw-finish';copy.innerHTML='<div class="sw-meta"><span>'+title+'</span><span>Complete</span></div><h1>Your work is saved.</h1><p>You answered every question. Download your answers and use them for your next step.</p><button class="sw-download">Download my answers</button><button class="sw-review">Review my answers</button>';copy.querySelector('.sw-review').onclick=function(){current=0;render()};copy.querySelector('.sw-download').onclick=download;save();return}copy.className='sw-copy';var meta=document.createElement('div');meta.className='sw-meta';meta.innerHTML='<span>'+title+'</span><span>'+(current+1)+' / '+questions.length+'</span>';copy.appendChild(meta);var question=questions[current];copy.appendChild(question);var actions=document.createElement('div');actions.className='sw-actions';actions.innerHTML='<button class="sw-back">Back</button><button class="sw-next">'+(current===questions.length-1?'Finish my plan':'Continue')+'</button>';copy.appendChild(actions);actions.querySelector('.sw-back').onclick=function(){if(current>0){save();current--;render()}else location.href='/academy'};actions.querySelector('.sw-next').onclick=function(){save();current++;render()};question.querySelectorAll('textarea,input,select').forEach(function(field){field.addEventListener('input',save)});window.scrollTo(0,0)}
+  function download(){var lines=[title.toUpperCase(),''];questions.forEach(function(block,i){var label=block.querySelector('.question-label');var prompt=block.querySelector('.question-text');lines.push((label?label.textContent:'Question '+(i+1)).trim());if(prompt)lines.push(prompt.textContent.trim());block.querySelectorAll('[data-wizard-key]').forEach(function(field){lines.push(field.value||'Not answered')});lines.push('')});var url=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}));var a=document.createElement('a');a.href=url;a.download=slug.replaceAll('_','-')+'-answers.txt';a.click();URL.revokeObjectURL(url)}
+  render();
+})();

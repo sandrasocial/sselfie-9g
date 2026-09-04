@@ -8,6 +8,7 @@ import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
 import VisibilitySuiteMayaChat from "@/components/academy/visibility-suite-maya-chat"
 import { VisibilityPlanGenerator } from "@/components/academy/visibility-plan-generator"
 import { VISIBILITY_MINI_PRODUCTS } from "@/lib/visibility-products"
+import { VisibilitySuiteDirectRedirect } from "@/components/academy/visibility-suite-direct-redirect"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -48,7 +49,7 @@ const SUITE_PRODUCTS = [
       "Hooks and simple CTAs so people know what to do next.",
     ],
     image: "/academy/visibility-suite/what-to-say.png",
-    workbookUrl: "/academy/what_to_say/",
+    workbookUrl: "/academy/what_to_say",
     purchaseUrl: "/academy/products/what_to_say",
   },
   {
@@ -64,7 +65,7 @@ const SUITE_PRODUCTS = [
       "Visibility-first structure for stronger reach",
     ],
     image: "/academy/visibility-suite/show-up.png",
-    workbookUrl: "/academy/show_up/",
+    workbookUrl: "/academy/show_up",
     purchaseUrl: "/academy/products/show_up",
   },
   {
@@ -80,7 +81,7 @@ const SUITE_PRODUCTS = [
       "90-day execution cadence with launch checkpoints",
     ],
     image: "/academy/visibility-suite/get-paid.png",
-    workbookUrl: "/academy/get_paid/",
+    workbookUrl: "/academy/get_paid",
     purchaseUrl: "/academy/products/get_paid",
   },
 ]
@@ -123,6 +124,7 @@ export default async function VisibilitySuitePage() {
       className={`${inter.className} min-h-screen`}
       style={{ background: C.creamWarm, color: C.onCream }}
     >
+      <VisibilitySuiteDirectRedirect />
       {/* ─── Hero ─────────────────────────────────────────────────────────── */}
       <section
         className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)]"

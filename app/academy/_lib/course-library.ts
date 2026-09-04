@@ -235,6 +235,13 @@ function getOwnedProductActionLabel(productId: string): string {
   }
 }
 
+function getSuiteProductAccessUrl(productId: string): string {
+  if (productId === "what_to_say") return "/academy/what_to_say"
+  if (productId === "show_up") return "/academy/show_up"
+  if (productId === "get_paid") return "/academy/get_paid"
+  return "/academy/access/visibility-suite"
+}
+
 export function getMasterclassImplementationPath({
   hasBrandStrategyAccess,
   primaryCourseHref,
@@ -298,7 +305,7 @@ export async function getAcademyHomeState(userId: string): Promise<AcademyHomeSt
       tagline: product.tagline,
       description: product.description,
       accessUrl: (SUITE_PRODUCT_IDS as readonly string[]).includes(product.id)
-        ? "/academy/access/visibility-suite"
+        ? getSuiteProductAccessUrl(product.id)
         : product.accessUrl,
       purchaseUrl: product.purchaseUrl,
       thumbnailUrl: product.thumbnailUrl,
