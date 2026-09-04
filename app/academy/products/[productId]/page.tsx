@@ -85,9 +85,21 @@ export default async function AcademyProductPage({
   // Historical workbook owners continue directly into the matching protected workbook.
   // Other Academy course products fall back to the library because their accessUrl points
   // back to this page and would otherwise create a circular redirect.
+  // Only bounce when there is somewhere real to bounce to. A product with no
+  // workbook path (the AI Photo Prompt Pack) used to be sent to /academy, which
+  // told an owner nothing; it now renders this page and its included list.
   if (product.deliveryKind === "academy_course" && product.hasAccess) {
-    redirect(PROTECTED_WORKBOOK_PATH_BY_PRODUCT[product.id] || "/academy")
+    const workbookPath = PROTECTED_WORKBOOK_PATH_BY_PRODUCT[product.id]
+    if (workbookPath) {
+      redirect(workbookPath)
+    }
   }
+
+  // A product with no delivery route of its own has an accessUrl pointing back at
+  // this page, so rendering it as the CTA would loop. The AI Photo Prompt Pack is
+  // the live case: it has no content route and no fulfilment handler.
+  const hasNoDeliveryRoute =
+    product.deliveryKind === "academy_course" && !PROTECTED_WORKBOOK_PATH_BY_PRODUCT[product.id]
 
   const includedItems = INCLUDED_BY_PRODUCT[product.id] ?? [
     product.description || "This Academy product is ready in your library.",
@@ -182,8 +194,11 @@ export default async function AcademyProductPage({
               className={`${inter.className} mt-3 text-[14px] leading-[1.72]`}
               style={{ color: C.stone, fontWeight: 300 }}
             >
-              Your product is unlocked and ready.
+              {hasNoDeliveryRoute
+                ? "Included with your membership."
+                : "Your product is unlocked and ready."}
             </p>
+            {!hasNoDeliveryRoute && (
             <a
               href={product.accessUrl}
               className={`${inter.className} mt-7 inline-flex px-8 py-[13px] text-[10px] uppercase tracking-[0.22em] transition-opacity hover:opacity-90`}
@@ -197,6 +212,7 @@ export default async function AcademyProductPage({
             >
               Open {product.name} →
             </a>
+            )}
           </section>
         )}
       </div>

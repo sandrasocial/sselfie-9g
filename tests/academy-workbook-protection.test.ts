@@ -374,9 +374,13 @@ describe("Academy workbook private assets and routing contracts", () => {
     }
     expect(productPage).toContain("/auth/login?returnTo=")
     expect(productPage).not.toContain("/auth/login?redirect=")
-    expect(productPage).toContain(
-      'redirect(PROTECTED_WORKBOOK_PATH_BY_PRODUCT[product.id] || "/academy")'
-    )
+    // Each workbook product still redirects into its protected workbook. The
+    // `|| "/academy"` fallback was removed deliberately: a product with no workbook
+    // path (the AI Photo Prompt Pack) was being bounced to the library, which told
+    // an owner nothing. It now renders its own page instead. What matters here is
+    // that a product WITH a workbook path is still redirected, never rendered.
+    expect(productPage).toContain("const workbookPath = PROTECTED_WORKBOOK_PATH_BY_PRODUCT[product.id]")
+    expect(productPage).toContain("redirect(workbookPath)")
     expect(purchaseButton).toContain("/auth/login?returnTo=")
     expect(purchaseButton).not.toContain("/auth/login?redirect=")
   })

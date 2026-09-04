@@ -212,6 +212,13 @@ function priceFromCents(priceCents: number | null): number | null {
   return priceCents / 100
 }
 
+/** Access routes for academy_course products that are not visibility mini-products. */
+const NON_MINI_ACCESS_TARGETS: Record<string, string> = {
+  ai_photo_prompts: "ai-photo-prompts",
+  editing_masterclass: "editing-masterclass",
+  branded_by_sselfie: "branded-by-sselfie",
+}
+
 function buildDefaultRegistry(): AcademyProductRecord[] {
   const miniProducts: AcademyProductRecord[] = Object.values(ACADEMY_PRODUCTS).map(
     (product, idx) => ({
@@ -228,7 +235,12 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
       accessTarget:
         product.id === "visibility_suite"
           ? "visibility-suite"
-          : VISIBILITY_MINI_PRODUCT_BY_ID[product.id as keyof typeof VISIBILITY_MINI_PRODUCT_BY_ID]?.slug || product.id,
+          : VISIBILITY_MINI_PRODUCT_BY_ID[product.id as keyof typeof VISIBILITY_MINI_PRODUCT_BY_ID]?.slug ||
+            // Products outside the visibility mini-set have no slug there, and the
+            // raw id is underscored — /academy/access/<id> 404s. These three have
+            // dedicated hyphenated routes.
+            NON_MINI_ACCESS_TARGETS[product.id] ||
+            product.id,
     })
   )
 
