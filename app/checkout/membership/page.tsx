@@ -74,6 +74,33 @@ export default async function MembershipCheckoutPage({
   } = await supabase.auth.getUser()
   const urlEmail = normalizeCheckoutEmail(params.checkout_email || params.email)
   const checkoutEmail = authUser?.email ?? urlEmail ?? null
+
+  // A Skool member already pays for this membership on Skool. The app must never
+  // take a second subscription for the same thing, so this page never sells to
+  // her — Skool is the only place the membership is billed.
+  if (authUser) {
+    try {
+      const { getUserIdFromSupabase } = await import("@/lib/user-mapping")
+      const { hasActiveSkoolMembership } = await import("@/lib/skool/membership-service")
+      const skoolUserId = await getUserIdFromSupabase(authUser.id)
+      if (skoolUserId && (await hasActiveSkoolMembership(skoolUserId))) {
+        redirect("/app")
+      }
+    } catch (error: unknown) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "digest" in error &&
+        typeof error.digest === "string" &&
+        error.digest.startsWith("NEXT_REDIRECT")
+      ) {
+        throw error
+      }
+      // Fail open for everyone who is not a Skool member: getUserIdFromSupabase
+      // throws for an unmapped auth user, and that must not block a real sale.
+      console.error("[checkout/membership] Skool membership check failed", error)
+    }
+  }
   const requestedVaultOffer = params.offer === PROMPT_VAULT_SUITE_OFFER_SLUG
   const isApprovedVaultOffer = requestedVaultOffer
     ? await hasPaidPromptVaultAccess(params.vault_token)
