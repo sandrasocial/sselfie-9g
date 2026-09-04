@@ -21,8 +21,8 @@ const C = {
   divStrong: "var(--app-border, #e5e5e5)",
 }
 
-const PAPER_INPUT_BORDER = "rgba(10,10,10,0.12)"
-const PAPER_INPUT_FOCUS = "rgba(10,10,10,0.28)"
+const PAPER_INPUT_BORDER = "#BEB5A8"
+const PAPER_INPUT_FOCUS = "#6F665A"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ActionLevel = "bare_minimum" | "bold_move" | "bonus_vibe"
@@ -130,7 +130,6 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
   const [error, setError] = useState<string | null>(null)
   const [guidanceResult, setGuidanceResult] = useState<MayaGuidanceResult | null>(null)
 
-  const contextPrefixUsedRef = useRef(false)
   const guidanceUnavailableRef = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -146,21 +145,17 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
       setError(null)
       setOpen(true)
 
-      // On the first message, prepend lesson context invisibly so Maya has it
-      const textToSend = contextPrefixUsedRef.current
-        ? userText
-        : buildContextPrefix(props) + userText
-
-      if (!contextPrefixUsedRef.current) {
-        contextPrefixUsedRef.current = true
-      }
+      // Keep every fallback turn grounded in the active lesson. The primary
+      // guidance route receives lessonRef on every turn; the main Maya chat
+      // fallback should retain the same grounding throughout the conversation.
+      const textToSend = buildContextPrefix(props) + userText
 
       const userMessage: ChatMessage = { role: "user", content: userText }
       const apiMessage: ChatMessage = { role: "user", content: textToSend }
 
       const nextMessages = [...messages, userMessage]
       const apiMessages = [
-        ...messages, // prior turns already have context
+        ...messages,
         apiMessage,
       ]
 
@@ -263,9 +258,10 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
     <div
       className="overflow-hidden"
       style={{
-        border: `1px solid ${C.divStrong}`,
-        background: C.cream,
-        boxShadow: "0 8px 32px rgba(10,10,10,0.12), 0 2px 8px rgba(10,10,10,0.08)",
+        border: "1px solid #BEB5A8",
+        borderTop: "2px solid #0F0D0B",
+        background: "#F8F6F2",
+        boxShadow: "0 12px 36px rgba(15,13,11,0.14), 0 2px 8px rgba(15,13,11,0.08)",
       }}
     >
       {/* ── Header / toggle ── */}
@@ -318,7 +314,7 @@ export function LessonMayaChat(props: LessonMayaChatProps) {
           {hasMessages && (
             <div
               className="flex-1 overflow-y-auto px-5 py-4 space-y-5"
-              style={{ scrollbarWidth: "none", background: C.inkSoft }}
+              style={{ scrollbarWidth: "none", background: "#EEE9E1" }}
             >
               {messages.map((msg, i) => (
                 <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>

@@ -46,15 +46,21 @@ const C = {
 const LP =
   "1px 2px 3px rgba(255,255,255,0.88), -1px -1px 2px rgba(10,10,10,0.08)"
 
-const PAPER_INPUT_BORDER = "rgba(10,10,10,0.12)"
-const PAPER_INPUT_FOCUS = "rgba(10,10,10,0.28)"
+const PAPER_INPUT_BORDER = "#BEB5A8"
+const PAPER_INPUT_FOCUS = "#6F665A"
 const paperInputStyle = {
-  background: "#ffffff",
-  border: `1px solid ${PAPER_INPUT_BORDER}`,
+  background: "#FFFEFC",
+  border: "1px solid #BEB5A8",
   color: "var(--app-text-primary, #0a0a0a)",
   fontWeight: 400,
   boxShadow:
     "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(10,10,10,0.06)",
+}
+
+const workbookPanelStyle = {
+  background: "#FBF9F5",
+  border: "1px solid #CFC7BC",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -439,8 +445,8 @@ export function LessonViewerClient({
   const actionSection = (
     <section
       id="academy-lesson-action"
-      className="space-y-5 pt-6"
-      style={{ borderTop: `1px solid ${C.div}` }}
+      className="space-y-5 p-6"
+      style={workbookPanelStyle}
     >
       <p
         className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
@@ -511,8 +517,8 @@ export function LessonViewerClient({
   // ─── Reflection ───────────────────────────────────────────────────────────
   const reflectionSection = (
     <section
-      className="space-y-5 pt-6"
-      style={{ borderTop: `1px solid ${C.div}` }}
+      className="space-y-5 p-6"
+      style={workbookPanelStyle}
     >
       <p
         className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
@@ -610,8 +616,8 @@ export function LessonViewerClient({
   // ─── Resources / downloads ────────────────────────────────────────────────
   const resourcesSection = resources.length > 0 ? (
     <section
-      className="space-y-5 pt-6"
-      style={{ borderTop: `1px solid ${C.div}` }}
+      className="space-y-5 p-6"
+      style={workbookPanelStyle}
     >
       <p
         className={`${inter.className} text-[10px] uppercase tracking-[0.5em]`}
@@ -874,8 +880,8 @@ export function LessonViewerClient({
             <div
               className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto p-6"
               style={{
-                background: C.inkSoft,
-                border: `1px solid ${C.divStrong}`,
+                background: "#EEE9E1",
+                border: "1px solid #C7BEB2",
               }}
             >
               <div className="space-y-6">
