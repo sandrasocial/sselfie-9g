@@ -18,7 +18,9 @@ export default async function AcademyPromptVaultAccessPage() {
   const { neonUser } = await requireAcademyPageUser("/academy/access/prompt-vault")
 
   const entitlementState = await getAcademyEntitlementState(neonUser.id)
-  const hasEntitlement = entitlementState.accessibleProductIds.includes("prompt_vault")
+  const hasEntitlement =
+    entitlementState.membershipActive ||
+    entitlementState.accessibleProductIds.includes("prompt_vault")
 
   const rows = await sql`
     SELECT fs.access_token, fs.email_tags, fs.source

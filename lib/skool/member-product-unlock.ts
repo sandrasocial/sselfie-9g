@@ -16,6 +16,7 @@
 
 import { ensurePaidSelfieAiPhotosKitSubscriber } from "@/lib/freebie/selfie-ai-photos-kit-access"
 import { upsertPromptVaultSubscriber } from "@/lib/payments/handlers/prompt-vault"
+import { upsertStarterKitSubscriber } from "@/lib/payments/handlers/starter-kit"
 import { upsertPresetOrderForPurchase } from "@/lib/presets/orders"
 
 /**
@@ -33,16 +34,17 @@ export async function unlockPromptVaultForMember(email: string, name?: string | 
   return subscriber?.accessToken ?? null
 }
 
+export async function unlockStarterKitForMember(email: string, name?: string | null) {
+  const subscriber = await upsertStarterKitSubscriber(email, name)
+  return subscriber?.accessToken ?? null
+}
+
 export async function unlockAiPhotosKitForMember(email: string, name?: string | null) {
   const subscriber = await ensurePaidSelfieAiPhotosKitSubscriber(email, name)
   return subscriber?.accessToken ?? null
 }
 
-export async function unlockPresetsForMember(
-  userId: string,
-  email: string,
-  name?: string | null,
-) {
+export async function unlockPresetsForMember(userId: string, email: string, name?: string | null) {
   // The Full Collection strictly contains the Single, so members get the bundle.
   const order = await upsertPresetOrderForPurchase({
     email,

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { sql } from "@/lib/db/client"
 import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
+import { unlockStarterKitForMember } from "@/lib/skool/member-product-unlock"
 
 /**
  * Starter Kit access gate.
@@ -43,7 +44,13 @@ export default async function AcademyStarterKitAccessPage() {
     redirect(`/access/starter-kit/${encodeURIComponent(token)}`)
   }
 
-  // Fallback: token not found (e.g. manually granted entitlement) - redirect
-  // to the public landing page so the user can contact support.
-  redirect("/starter-kit")
+  // Members and manually granted owners may never have passed through Stripe,
+  // so mint the same stable delivery record on first visit instead of sending
+  // them to a sales page for a product they already own.
+  const mintedToken = await unlockStarterKitForMember(neonUser.email)
+  if (mintedToken) {
+    redirect(`/access/starter-kit/${encodeURIComponent(mintedToken)}`)
+  }
+
+  redirect("/academy?product=starter-kit-unavailable")
 }

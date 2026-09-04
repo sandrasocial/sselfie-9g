@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 import { projectAcademyProductRegistry } from "@/lib/academy-entitlements"
@@ -17,12 +17,12 @@ describe("Skool members get every digital product", () => {
   // projectAcademyProductRegistry appends defaults for ids the database omits,
   // so passing no rows yields exactly the code-default registry.
   const registry = projectAcademyProductRegistry([])
-  const active = registry.filter((product) => product.active)
+  const active = registry.filter(product => product.active)
 
   it("includes every active product in the membership", () => {
     const excluded = active
-      .filter((product) => !product.membershipIncluded)
-      .map((product) => product.id)
+      .filter(product => !product.membershipIncluded)
+      .map(product => product.id)
     expect(excluded, `these active products are not included in the membership`).toEqual([])
   })
 
@@ -34,11 +34,11 @@ describe("Skool members get every digital product", () => {
     const miniSlugs = new Set(Object.keys(VISIBILITY_MINI_PRODUCT_BY_SLUG))
     const unreachable = active
       .filter(
-        (product) =>
+        product =>
           !existsSync(`app/academy/access/${product.accessTarget}/page.tsx`) &&
-          !miniSlugs.has(product.accessTarget),
+          !miniSlugs.has(product.accessTarget)
       )
-      .map((product) => `${product.id} -> /academy/access/${product.accessTarget}`)
+      .map(product => `${product.id} -> /academy/access/${product.accessTarget}`)
     expect(unreachable, "active products whose access link 404s").toEqual([])
   })
 
@@ -47,16 +47,16 @@ describe("Skool members get every digital product", () => {
     // exist is a 404 for a member who owns it, which is worse than a paywall
     // because nothing tells her what went wrong.
     const missing = active
-      .filter((product) => product.deliveryKind === "direct_private")
+      .filter(product => product.deliveryKind === "direct_private")
       // The [productSlug] route only resolves visibility mini-products, so it is
       // NOT a fallback for a private delivery — each needs its own route.
-      .filter((product) => !existsSync(`app/academy/access/${product.accessTarget}/page.tsx`))
-      .map((product) => `${product.id} -> /academy/access/${product.accessTarget}`)
+      .filter(product => !existsSync(`app/academy/access/${product.accessTarget}/page.tsx`))
+      .map(product => `${product.id} -> /academy/access/${product.accessTarget}`)
     expect(missing, "privately delivered products with no access route").toEqual([])
   })
 
   it("mints a token for the products a member never bought", () => {
-    // The three token-delivered unlocks must route through the purchase-path
+    // The token-delivered unlocks must route through the purchase-path
     // helpers, so a member's token is indistinguishable from a buyer's.
     const unlock = "lib/skool/member-product-unlock.ts"
     expect(existsSync(unlock)).toBe(true)
@@ -65,8 +65,10 @@ describe("Skool members get every digital product", () => {
       ["app/academy/access/prompt-vault/page.tsx", "unlockPromptVaultForMember"],
       ["app/academy/access/selfie-to-ai-photos-kit/page.tsx", "unlockAiPhotosKitForMember"],
       ["app/academy/access/presets/page.tsx", "unlockPresetsForMember"],
+      ["app/academy/access/starter-kit/page.tsx", "unlockStarterKitForMember"],
     ] as const) {
       expect(existsSync(page), `${page} is missing`).toBe(true)
+      expect(readFileSync(page, "utf8")).toContain(helper)
     }
   })
 })
