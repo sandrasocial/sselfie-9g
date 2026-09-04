@@ -54,6 +54,12 @@ interface AcademyProductAdmin {
   deliveryKind: string
 }
 
+function getVisibilityCourseUrl(productId: string) {
+  if (productId === "what_to_say") return "/academy/what_to_say"
+  if (productId === "show_up") return "/academy/show_up"
+  return "/academy/get_paid"
+}
+
 export default function AdminAcademyPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -1204,7 +1210,7 @@ export default function AdminAcademyPage() {
                           {uploadingProductId === product.id ? "Uploading..." : "Replace photo"}
                           <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={busy} onChange={event => handleProductThumbnailUpload(product, event)} />
                         </label>
-                        <a href={product.accessUrl} target="_blank" rel="noreferrer" className="mt-4 block text-center text-[10px] font-medium uppercase tracking-[0.2em] text-stone-600 underline decoration-stone-300 underline-offset-4">
+                        <a href={getVisibilityCourseUrl(product.id)} target="_blank" rel="noreferrer" className="mt-4 block text-center text-[10px] font-medium uppercase tracking-[0.2em] text-stone-600 underline decoration-stone-300 underline-offset-4">
                           Preview live course
                         </a>
                       </div>
