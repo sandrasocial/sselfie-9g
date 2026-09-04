@@ -702,7 +702,7 @@ describe("SUITE founder preflight", () => {
     expect(report.baselines).toMatchObject({
       academyLegacySubscriptionProducts: 1,
       academyStripePaymentProducts: 1,
-      academyAccessibleProducts: 17,
+      academyAccessibleProducts: 20,
     })
   })
 
@@ -721,7 +721,10 @@ describe("SUITE founder preflight", () => {
       "feed_reset_9grid",
       "get_paid",
       "masterclass",
+      "presets_bundle",
+      "presets_single",
       "prompt_vault",
+      "selfie_ai_photos_kit",
       "selfie_guide",
       "selfie_guide_bundle",
       "selfie_to_brand_shoot_system",
@@ -753,7 +756,7 @@ describe("SUITE founder preflight", () => {
   })
 
   it.each([
-    ["empty", [], 17],
+    ["empty", [], 20],
     [
       "partial authoritative exclusion",
       [
@@ -771,7 +774,7 @@ describe("SUITE founder preflight", () => {
           access_target: "what_to_say",
         },
       ],
-      16,
+      19,
     ],
   ])(
     "applies %s Academy DB evidence through the canonical projection",

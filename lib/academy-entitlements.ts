@@ -327,6 +327,54 @@ function buildDefaultRegistry(): AcademyProductRecord[] {
       deliveryKind: "direct_private",
       accessTarget: "brand-strategy",
     },
+    {
+      // Skool hub (2026-09-04, Sandra-approved): the membership includes every
+      // digital product. These three have no academy_products row, so the registry
+      // fills them from here — see projectAcademyProductRegistry, which appends
+      // defaults for ids the database does not carry.
+      //
+      // purchasable is false because they are not sold through the academy flow
+      // (no academy price id); they keep their own /checkout routes for non-members.
+      id: "selfie_ai_photos_kit",
+      slug: "selfie-to-ai-photos-kit",
+      title: "Selfie To AI Photos Kit",
+      type: "pack",
+      membershipIncluded: true,
+      purchasable: false,
+      stripePriceId: null,
+      active: true,
+      sortOrder: 95,
+      deliveryKind: "direct_private",
+      accessTarget: "selfie-to-ai-photos-kit",
+    },
+    {
+      id: "presets_bundle",
+      slug: "presets-bundle",
+      title: "SSELFIE Presets · Full Collection",
+      type: "bundle",
+      membershipIncluded: true,
+      purchasable: false,
+      stripePriceId: null,
+      active: true,
+      sortOrder: 100,
+      deliveryKind: "direct_private",
+      accessTarget: "presets",
+    },
+    {
+      // The Full Collection strictly contains this one, and members are granted the
+      // bundle. Listed so the catalogue reads as complete and both ids resolve.
+      id: "presets_single",
+      slug: "presets-single",
+      title: "SSELFIE Presets · Single Collection",
+      type: "pack",
+      membershipIncluded: true,
+      purchasable: false,
+      stripePriceId: null,
+      active: true,
+      sortOrder: 105,
+      deliveryKind: "direct_private",
+      accessTarget: "presets",
+    },
   ]
 
   return [...miniProducts, ...directProducts]
