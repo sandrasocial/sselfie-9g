@@ -2,17 +2,16 @@ import { redirect } from "next/navigation"
 
 import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
+import { sql } from "@/lib/db/client"
 
 /**
  * Branded by SSELFIE access gate.
  *
- * The product is delivered as academy course id 1, so this resolves entitlement
- * and deep-links into the course reader. academy-screen filters this product out
+ * Resolve the current published course by product ID, then deep-link into the
+ * course reader. academy-screen filters this product out
  * of the tile grid (COURSE_PRODUCT_IDS), which is why it needs its own link
  * rather than a tile href.
  */
-const COURSE_ID = 1
-
 export default async function AcademyBrandedBySselfieAccessPage() {
   const { neonUser } = await requireAcademyPageUser("/academy/access/branded-by-sselfie")
 
@@ -25,5 +24,17 @@ export default async function AcademyBrandedBySselfieAccessPage() {
     redirect("/academy?access=required")
   }
 
-  redirect(`/studio?tab=academy&academy_course_id=${COURSE_ID}`)
+  const rows = await sql`
+    SELECT id FROM academy_courses
+    WHERE product_id = 'branded_by_sselfie'
+      AND status = 'published'
+    LIMIT 1
+  `
+  const course = (rows as { id: number }[])[0]
+
+  if (!course) {
+    redirect("/academy?course=unavailable")
+  }
+
+  redirect(`/studio?tab=academy&academy_view=courses&academy_course_id=${course.id}`)
 }

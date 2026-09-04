@@ -53,13 +53,16 @@ export async function GET(request: Request) {
       }
 
       console.log("[v0] 👤 Regular auth, syncing user with Neon")
-      const neonUser = await syncUserWithNeon(data.user.id, data.user.email!, data.user.user_metadata?.name)
+      const neonUser = await syncUserWithNeon(
+        data.user.id,
+        data.user.email!,
+        data.user.user_metadata?.name
+      )
 
       // Decision 1: Grant free user credits to ALL free users who haven't received them yet
       // This ensures credits are granted for all signups via callback route
       if (neonUser?.id) {
         try {
-          
           // Check if user has active subscription (only free users get welcome credits)
           const enforceLiveMode = shouldEnforceLiveSubscriptionRows()
           const hasSubscription = await sql`
@@ -68,7 +71,7 @@ export async function GET(request: Request) {
             WHERE user_id = ${neonUser.id} AND status = 'active'
               AND (${enforceLiveMode} = false OR COALESCE(is_test_mode, false) = false)
           `
-          
+
           if (hasSubscription[0].count === 0) {
             // Check if welcome bonus transaction already exists (prevent duplicates)
             const existingTransaction = await sql`
@@ -78,14 +81,16 @@ export async function GET(request: Request) {
               AND description = 'Free blueprint credits (welcome bonus)'
               LIMIT 1
             `
-            
+
             if (existingTransaction.length === 0) {
               // Grant 2 credits to all free users who haven't received welcome bonus yet
               const { grantFreeUserCredits } = await import("@/lib/credits")
               const creditResult = await grantFreeUserCredits(neonUser.id)
-              
+
               if (creditResult.success) {
-                console.log(`[v0] ✅ Free user credits (2) granted to user ${neonUser.id} via callback`)
+                console.log(
+                  `[v0] ✅ Free user credits (2) granted to user ${neonUser.id} via callback`
+                )
               } else {
                 console.error(`[v0] ❌ Failed to grant free user credits: ${creditResult.error}`)
               }
@@ -93,7 +98,9 @@ export async function GET(request: Request) {
               console.log(`[v0] ⏭️ User ${neonUser.id} already received welcome bonus - skipping`)
             }
           } else {
-            console.log(`[v0] ⏭️ User ${neonUser.id} has active subscription - skipping free credits`)
+            console.log(
+              `[v0] ⏭️ User ${neonUser.id} has active subscription - skipping free credits`
+            )
           }
         } catch (creditError) {
           console.error(`[v0] ❌ Error granting free user credits (non-critical):`, creditError)
@@ -120,16 +127,15 @@ export async function GET(request: Request) {
       const utmSource = requestUrl.searchParams.get("utm_source")
       if (utmSource === "coldreactivation" && neonUser?.id) {
         try {
-          
           // Check if this is a new user (created in last 5 minutes) to avoid granting on every login
           const userCreated = await sql`
             SELECT created_at FROM users WHERE id = ${neonUser.id} LIMIT 1
           `
-          
+
           if (userCreated.length > 0) {
             const createdAt = new Date(userCreated[0].created_at)
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
-            
+
             // Only grant if user was just created (within last 5 minutes)
             if (createdAt > fiveMinutesAgo) {
               const { addCredits } = await import("@/lib/credits")
@@ -137,18 +143,25 @@ export async function GET(request: Request) {
                 neonUser.id,
                 25,
                 "bonus",
-                "Reactivation signup bonus (Day 14 campaign)",
+                "Reactivation signup bonus (Day 14 campaign)"
               )
-              
+
               if (creditResult.success) {
-                console.log(`[v0] ✅ Reactivation bonus credits (25) granted to user ${neonUser.id}`)
+                console.log(
+                  `[v0] ✅ Reactivation bonus credits (25) granted to user ${neonUser.id}`
+                )
               } else {
-                console.error(`[v0] ⚠️ Failed to grant reactivation bonus credits: ${creditResult.error}`)
+                console.error(
+                  `[v0] ⚠️ Failed to grant reactivation bonus credits: ${creditResult.error}`
+                )
               }
             }
           }
         } catch (reactivationError) {
-          console.error(`[v0] ⚠️ Error granting reactivation bonus credits (non-critical):`, reactivationError)
+          console.error(
+            `[v0] ⚠️ Error granting reactivation bonus credits (non-critical):`,
+            reactivationError
+          )
           // Don't fail auth if credit grant fails
         }
       }
@@ -164,7 +177,9 @@ export async function GET(request: Request) {
             })
 
             if (result.success) {
-              console.log(`[v0] ✅ Referral tracked for new user ${neonUser.id} with code ${referralCode}`)
+              console.log(
+                `[v0] ✅ Referral tracked for new user ${neonUser.id} with code ${referralCode}`
+              )
             } else {
               console.log(`[v0] ⚠️ Failed to track referral (non-critical):`, result.status)
             }
@@ -175,8 +190,9 @@ export async function GET(request: Request) {
         }
       }
 
-      // Let the studio page handle access control based on credits
-      return NextResponse.redirect(`${origin}/studio`)
+      // Preserve the page that started sign-in. Course links must return an
+      // authenticated member to that course instead of dropping her at Studio.
+      return NextResponse.redirect(new URL(safeNext, origin))
     } else {
       console.error("[v0] ❌ Error exchanging code:", error)
       return redirectToRecovery(error?.message || "Authentication failed")
