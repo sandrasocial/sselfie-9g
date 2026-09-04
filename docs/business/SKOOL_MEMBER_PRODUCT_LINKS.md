@@ -63,15 +63,6 @@ to `/vault-maya/studio`, **not** `/vault-maya`, which is the sales page.
 
 ---
 
-## One caveat worth knowing
-
-**AI Photo Prompt Pack** has no content page in the app. There is no delivery route
-and no fulfilment handler for it — the `bought_ai_photo_prompts` tag is declared in
-the product catalogue and referenced nowhere else. Its link now lands on a page
-listing what the pack includes, instead of the 404 it used to return, but the 50
-prompts themselves are not in the app. Post it if you deliver them another way;
-otherwise it needs content before it earns a place in the community.
-
 ## Still paid, deliberately
 
 **Your Next Campaign** (€97) is done-for-you work, not a download: an intake form,

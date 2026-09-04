@@ -49,6 +49,7 @@ const PROTECTED_WORKBOOK_PATH_BY_PRODUCT: Record<string, string> = {
   what_to_say: "/academy/what_to_say",
   show_up: "/academy/show_up",
   get_paid: "/academy/get_paid",
+  ai_photo_prompts: "/academy/ai_photo_prompts",
 }
 
 export default async function AcademyProductPage({
@@ -85,9 +86,7 @@ export default async function AcademyProductPage({
   // Historical workbook owners continue directly into the matching protected workbook.
   // Other Academy course products fall back to the library because their accessUrl points
   // back to this page and would otherwise create a circular redirect.
-  // Only bounce when there is somewhere real to bounce to. A product with no
-  // workbook path (the AI Photo Prompt Pack) used to be sent to /academy, which
-  // told an owner nothing; it now renders this page and its included list.
+  // Only bounce when there is somewhere real to bounce to.
   if (product.deliveryKind === "academy_course" && product.hasAccess) {
     const workbookPath = PROTECTED_WORKBOOK_PATH_BY_PRODUCT[product.id]
     if (workbookPath) {
@@ -96,8 +95,7 @@ export default async function AcademyProductPage({
   }
 
   // A product with no delivery route of its own has an accessUrl pointing back at
-  // this page, so rendering it as the CTA would loop. The AI Photo Prompt Pack is
-  // the live case: it has no content route and no fulfilment handler.
+  // this page, so rendering it as the CTA would loop.
   const hasNoDeliveryRoute =
     product.deliveryKind === "academy_course" && !PROTECTED_WORKBOOK_PATH_BY_PRODUCT[product.id]
 

@@ -42,6 +42,12 @@ describe("Skool members get every digital product", () => {
     expect(unreachable, "active products whose access link 404s").toEqual([])
   })
 
+  it("delivers the AI Photo Prompt Pack instead of stopping at its product description", () => {
+    expect(existsSync("app/academy/ai_photo_prompts/route.ts")).toBe(true)
+    expect(existsSync("server/academy-workbooks/ai_photo_prompts/index.html")).toBe(true)
+    expect(existsSync("public/academy/ai_photo_prompts/index.html")).toBe(false)
+  })
+
   it("gives every privately delivered product a real access route", () => {
     // accessTarget drives /academy/access/<target>. A product whose route does not
     // exist is a 404 for a member who owns it, which is worse than a paywall

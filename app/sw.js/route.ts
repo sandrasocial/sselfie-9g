@@ -114,7 +114,8 @@ self.addEventListener("fetch", (event) => {
   const workbookPaths = [
     "/academy/what_to_say",
     "/academy/show_up",
-    "/academy/get_paid"
+    "/academy/get_paid",
+    "/academy/ai_photo_prompts"
   ]
   const isAcademyDocumentNavigation =
     isSameOrigin &&

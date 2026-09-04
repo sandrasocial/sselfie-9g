@@ -13,7 +13,7 @@ vi.mock("@/lib/academy-server-access", () => ({
   requireAcademyProductAccess: requireAcademyProductAccessMock,
 }))
 
-type WorkbookId = "what_to_say" | "show_up" | "get_paid"
+type WorkbookId = "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts"
 
 const WORKBOOKS: Array<{
   id: WorkbookId
@@ -21,6 +21,7 @@ const WORKBOOKS: Array<{
   privateSource: string
   sha256: string
   marker: string
+  studioContract?: boolean
 }> = [
   {
     id: "what_to_say",
@@ -28,6 +29,7 @@ const WORKBOOKS: Array<{
     privateSource: "server/academy-workbooks/what_to_say/index.html",
     sha256: "4c33ac88ef72768bf0cb550c376963bddf02c3e97e5f34f8c661673bfd74c1bc",
     marker: "const MAYA_PRODUCT_ID = 'what_to_say'",
+    studioContract: true,
   },
   {
     id: "show_up",
@@ -35,6 +37,7 @@ const WORKBOOKS: Array<{
     privateSource: "server/academy-workbooks/show_up/index.html",
     sha256: "ae8907f3157f491d8be6eeb72a049d656cd6fa1fecf3ef596d7520a38e1fa91f",
     marker: "const MAYA_PRODUCT_ID = 'show_up'",
+    studioContract: true,
   },
   {
     id: "get_paid",
@@ -42,6 +45,14 @@ const WORKBOOKS: Array<{
     privateSource: "server/academy-workbooks/get_paid/index.html",
     sha256: "63ec48f93345ced33172efe666678daceb7ec36e0a7d49c57209b98996e37e32",
     marker: "const MAYA_PRODUCT_ID = 'get_paid'",
+    studioContract: true,
+  },
+  {
+    id: "ai_photo_prompts",
+    path: "/academy/ai_photo_prompts",
+    privateSource: "server/academy-workbooks/ai_photo_prompts/index.html",
+    sha256: "cda9a238a092898253cb132a47194917c8a0b22288b5a28a539faddd661c83ad",
+    marker: "Prompt 50",
   },
 ]
 
@@ -52,7 +63,8 @@ function academyError(status: number, body: Record<string, unknown>) {
 async function loadRoute(id: WorkbookId) {
   if (id === "what_to_say") return import("@/app/academy/what_to_say/route")
   if (id === "show_up") return import("@/app/academy/show_up/route")
-  return import("@/app/academy/get_paid/route")
+  if (id === "get_paid") return import("@/app/academy/get_paid/route")
+  return import("@/app/academy/ai_photo_prompts/route")
 }
 
 function requestFor(pathname: string, init?: RequestInit) {
@@ -287,7 +299,7 @@ describe("Academy workbook private assets and routing contracts", () => {
     ).toBe(true)
   })
 
-  it("defines exact index.html redirects and output tracing for all three private files", () => {
+  it("defines exact index.html redirects and output tracing for every private file", () => {
     const config = readFileSync(path.join(process.cwd(), "next.config.mjs"), "utf8")
     const sharedResponse = readFileSync(
       path.join(process.cwd(), "lib/academy-workbook-response.ts"),
@@ -318,7 +330,7 @@ describe("Academy workbook private assets and routing contracts", () => {
       "utf8"
     )
 
-    for (const workbook of WORKBOOKS) {
+    for (const workbook of WORKBOOKS.filter(workbook => workbook.studioContract)) {
       expect(screen).toContain(`"${workbook.id.replaceAll("_", "-")}": "${workbook.path}/"`)
       const html = readFileSync(path.join(process.cwd(), workbook.privateSource), "utf8")
       expect(html).toContain("/api/academy/visibility-suite/workbook")

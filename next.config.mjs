@@ -40,6 +40,11 @@ const nextConfig = {
         destination: "/academy/get_paid",
         permanent: false,
       },
+      {
+        source: "/academy/ai_photo_prompts/index.html",
+        destination: "/academy/ai_photo_prompts",
+        permanent: false,
+      },
       // Members type /login by hand; it was a raw 404 (UX audit 2026-07-28).
       { source: "/login", destination: "/auth/login", permanent: true },
       { source: "/signup", destination: "/auth/sign-up", permanent: true },
@@ -80,6 +85,9 @@ const nextConfig = {
     "/academy/what_to_say": ["./server/academy-workbooks/what_to_say/index.html"],
     "/academy/show_up": ["./server/academy-workbooks/show_up/index.html"],
     "/academy/get_paid": ["./server/academy-workbooks/get_paid/index.html"],
+    "/academy/ai_photo_prompts": [
+      "./server/academy-workbooks/ai_photo_prompts/index.html",
+    ],
   },
   // Enable Sentry instrumentation
   experimental: {
@@ -122,6 +130,10 @@ const nextConfig = {
         headers: protectedWorkbookHeaders,
       },
       {
+        source: "/academy/ai_photo_prompts",
+        headers: protectedWorkbookHeaders,
+      },
+      {
         source: "/academy/what_to_say/index.html",
         headers: protectedWorkbookHeaders,
       },
@@ -131,6 +143,10 @@ const nextConfig = {
       },
       {
         source: "/academy/get_paid/index.html",
+        headers: protectedWorkbookHeaders,
+      },
+      {
+        source: "/academy/ai_photo_prompts/index.html",
         headers: protectedWorkbookHeaders,
       },
       {

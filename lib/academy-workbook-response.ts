@@ -4,7 +4,11 @@ import { NextResponse } from "next/server"
 
 import { requireAcademyProductAccess } from "@/lib/academy-server-access"
 
-export type ProtectedAcademyWorkbookId = "what_to_say" | "show_up" | "get_paid"
+export type ProtectedAcademyWorkbookId =
+  | "what_to_say"
+  | "show_up"
+  | "get_paid"
+  | "ai_photo_prompts"
 
 const WORKBOOK_SECURITY_HEADERS = {
   "Cache-Control": "private, no-store, max-age=0, must-revalidate",
