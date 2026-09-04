@@ -136,7 +136,7 @@ const MayaFounderTestMode = dynamic(
 const NEXT_POST_REQUEST =
   "Help me create one finished post I can publish. Start with one of my saved selfies and use what you know about my current priority or unfinished work. Choose one strong idea, the format, and a SSELFIE visual direction for me. Include the words I need so the result is ready to use. Ask only one question if it would materially change the post."
 const MAYA_PHOTO_REQUEST =
-  "Create one realistic editorial photo for me. Use what you remember about me, my brand, and my recent style. Direct the strongest concept yourself and start; do not ask me to choose a style unless something essential is missing."
+  "Create one believable photo for what I want to show today. Use what you know about me, but let this specific story decide whether it should feel candid, everyday, polished, or like a proper shoot. Direct the strongest concept yourself and start; do not ask me to choose a style unless something essential is missing."
 
 /** Editorial portrait for Maya; member avatars remain deliberately quieter. */
 function Avatar({ src, fallback }: { src: string | null; fallback: string }) {

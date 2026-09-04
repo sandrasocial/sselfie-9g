@@ -55,15 +55,23 @@ export async function getVaultOverviewGuide(maxPerCollection = 1): Promise<strin
     const shots = collection.cards
       .slice(0, maxPerCollection)
       .map((card) => `Example - ${tidy(card.title)}: ${stripIdentityParagraph(card.prompt)}`)
-    return [`### ${toDisplayName(collection.title)}`, collection.moodLine, ...shots].filter(Boolean).join("\n")
+    return [
+      `### ${toDisplayName(collection.title)} [collection-id: ${collection.slug}]`,
+      collection.moodLine,
+      ...shots,
+    ]
+      .filter(Boolean)
+      .join("\n")
   })
   const staticOverview = getStaticVaultOverviewGuide(maxPerCollection)
   if (dynamicSections.length === 0) return staticOverview
   return [
     `## VAULT STYLING GUIDE - all collections (she has not picked one look yet)`,
     "",
-    "These are the real, tested SSELFIE Vault collections, including newly published drops.",
-    "First pick the one collection that best fits her brand, topic, and mood. Then ground every",
+    "These are the real, tested SSELFIE Vault collections, newest published first.",
+    "First pick the one collection that best fits what this image needs to communicate, then her",
+    "hard dislikes and strong learned tastes. If two collections fit equally well, use the newest.",
+    "Then ground every",
     "concept brief in that collection's DNA: scene, styling, props, movement, lighting, and grade.",
     "",
     dynamicSections.join("\n\n"),

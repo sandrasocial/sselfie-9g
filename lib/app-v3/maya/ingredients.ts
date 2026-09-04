@@ -25,7 +25,7 @@ export const CAMERA_SPECS: Record<string, string> = {
 }
 
 /** Default camera body when no positioning is detected and Maya supplied none. */
-export const DEFAULT_CAMERA_SPEC = CAMERA_SPECS.luxury
+export const DEFAULT_CAMERA_SPEC = CAMERA_SPECS.casual
 
 /**
  * Named lighting setups by positioning. Ported from prompt-constructor LIGHTING_OPTIONS
@@ -46,7 +46,7 @@ export const LIGHTING_OPTIONS: Record<string, string> = {
 }
 
 /** Default lighting when no positioning is detected and Maya supplied none. */
-export const DEFAULT_LIGHTING = LIGHTING_OPTIONS.luxury
+export const DEFAULT_LIGHTING = LIGHTING_OPTIONS.casual
 
 /**
  * The anti-plastic realism tokens. Ported verbatim from direct-prompt-generation.ts —
@@ -54,7 +54,7 @@ export const DEFAULT_LIGHTING = LIGHTING_OPTIONS.luxury
  * "make it look real, not AI" lever and the compiler appends it to every photo concept.
  */
 export const REALISM_TOKENS =
-  "natural skin texture with pores visible, fine film grain, muted colors, candid editorial feel, not plastic, not over-smoothed"
+  "natural skin texture with pores visible, believable detail, true-to-scene color, not plastic, not over-smoothed"
 
 /**
  * Elevation: SSELFIE doesn't reproduce a tired selfie, it shows the best, most confident
@@ -79,8 +79,8 @@ export const IDENTITY_ANCHOR =
   "Use the attached reference photo as the only source for her face and identity. Preserve her " +
   "facial structure, face shape, skin tone, natural skin texture, body proportions, age, hair " +
   "color, and overall look from the reference. The reference defines the person; this prompt " +
-  "defines only the styling, outfit, location, pose, mood, and editorial look. Keep the result " +
-  "realistic, editorial, sharp, and clearly recognizable as the same woman. Her skin tone stays " +
+  "defines only the styling, outfit, location, pose, mood, and capture treatment. Keep the result " +
+  "realistic, sharp, and clearly recognizable as the same woman. Her skin tone stays " +
   "hers, but render it under THIS scene's light - picking up its color cast, direction, and " +
   "shadow falloff exactly as a camera would see her standing there, never lit separately from " +
   "the background."
@@ -108,15 +108,13 @@ export const AVOID_LIST =
   "pasted-in composite look, HDR over-processing."
 
 /** Output quality + format block per aspect (Sandra's proven anti-blur rules).
- * No numeric ratio in the portrait block: the actual canvas is APP_V3_PORTRAIT_SIZE
- * (1024x1536 = 2:3 today), and claiming "9:16" while rendering 2:3 pushes composition
- * and text placement toward the wrong frame shape (gpt-image-2 research 2026-07-06:
- * conflicting aspect instructions are a documented layout weak spot). */
+ * The shared output-format contract now supplies an exact 4:5 or 9:16 canvas, so these
+ * instructions can describe the intended frame without conflicting with the rendered size. */
 export const PORTRAIT_QUALITY =
-  "Image quality: vertical portrait filling the full frame, 2K quality, crisp editorial sharpness, realistic depth " +
+  "Image quality: vertical portrait filling the full frame, crisp photographic sharpness, realistic depth " +
   "and detail, no blur, no low-resolution softness, no compression haze."
 export const CAROUSEL_QUALITY =
-  "Image quality: vertical 4:5 Instagram format, 2K quality, crisp editorial sharpness, no blur, " +
+  "Image quality: vertical 4:5 Instagram format, crisp photographic sharpness, no blur, " +
   "no low-resolution softness, no compression haze."
 
 /**
@@ -133,9 +131,8 @@ export const PHOTOGRAPHER_REALISM =
   "or flash to a place that would not naturally contain them. Anchor her physically in the " +
   "space: real contact shadows under feet and hands, soft ambient occlusion where her body " +
   "meets surfaces, reflected color from nearby walls and objects on her skin and clothes. Let " +
-  "the frame breathe like a real capture: a caught in-between moment, natural imperfect " +
-  "posture, fabric and hair responding to movement and air, a believable handheld angle, fine " +
-  "film grain, and honest shadows where the scene makes them."
+  "the frame obey real physical behavior: fabric and hair respond naturally to movement and air, " +
+  "perspective stays coherent, and shadows remain honest to the scene."
 
 /**
  * Even softer identity wording used only on a content_policy retry, plus a styling note that
@@ -180,7 +177,7 @@ export function detectPositioning(text: string): keyof typeof CAMERA_SPECS {
   for (const { key, patterns } of POSITIONING_KEYWORDS) {
     if (patterns.test(text)) return key
   }
-  return "luxury"
+  return "casual"
 }
 
 /** Camera fallback for free text. */

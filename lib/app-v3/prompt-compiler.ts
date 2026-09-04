@@ -4,7 +4,7 @@
 // finished, image-model-designed slides with text baked into the pixels. Pure + unit-testable.
 
 import type { OutputFormat } from "@/components/app-v3/types"
-import type { CreativeBrief } from "@/lib/app-v3/maya/concept-types"
+import type { CaptureStyle, CreativeBrief } from "@/lib/app-v3/maya/concept-types"
 import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
 import {
   IDENTITY_ANCHOR,
@@ -51,16 +51,8 @@ import {
   type TextOverlaySpec,
 } from "@/lib/app-v3/text-overlay"
 import { normalizeOpenAIImageSize } from "@/lib/app-v3/openai-image-size"
+import { OUTPUT_FORMAT_CONTRACT, outputSize } from "@/lib/app-v3/output-format-contract"
 
-// Replaces the old posed "ELEVATION" line. The Vault look is candid and on-location, not a stiff
-// studio pose, which was the #1 reason /app output read as fake. Keep the elevation (skin, light,
-// styling) but flip the posing to a real caught moment.
-const CANDID_EDITORIAL =
-  "Make this a candid, caught-in-the-moment editorial photograph, like a real on-location shoot: " +
-  "natural movement and a relaxed, unposed moment (walking, sitting, reaching for a coffee, glancing " +
-  "away), never a stiff studio pose or a forced smile straight at the camera. Flattering light, " +
-  "refined healthy skin, tasteful natural makeup, great hair, elegant on-brand styling. Frame her " +
-  "at her best while keeping her clearly recognizable as the same person."
 import type { BrandKit } from "@/lib/app-v3/maya/concept-types"
 
 /** DALL-E-style request size the OpenAI route accepts (it maps these to gpt-image sizes). */
@@ -72,6 +64,39 @@ const BRAND_GRAPHIC_STYLE = SSELFIE_GRAPHIC_STYLE_PROMPT
 
 function clean(text: string | undefined): string {
   return (text ?? "").replace(/\s+/g, " ").trim()
+}
+
+const CAPTURE_TREATMENT: Record<CaptureStyle, string> = {
+  "candid-phone":
+    "Capture treatment: believable recent phone-camera photo, informal framing, available light, and an ordinary lived-in moment. Do not make it look like a brand shoot or campaign.",
+  "friend-took-it":
+    "Capture treatment: a friend took this in the moment, relaxed timing, human eye-level framing, and natural imperfection. It must not read as staged or professionally directed.",
+  documentary:
+    "Capture treatment: observational documentary photograph, honest context, unobtrusive camera, and story-first composition.",
+  lifestyle:
+    "Capture treatment: natural lifestyle photograph with believable movement and a considered but unstaged composition.",
+  street:
+    "Capture treatment: spontaneous street photograph with ambient city light, real movement, and an unforced frame.",
+  "polished-brand":
+    "Capture treatment: polished personal-brand photograph with clean direction and intentional styling, while remaining believable and specific to this story.",
+  cinematic:
+    "Capture treatment: cinematic still with intentional light, atmosphere, and composition. Keep the physical scene believable.",
+  editorial:
+    "Capture treatment: editorial fashion photograph with deliberate art direction, styling, lens choice, and composition.",
+  photoshoot:
+    "Capture treatment: fully directed professional photoshoot with cohesive styling, camera treatment, lighting, and campaign-ready finish.",
+}
+
+function captureTreatmentLine(brief: CreativeBrief, format: OutputFormat): string {
+  const style = brief.captureStyle ?? (format === "photoshoot" ? "photoshoot" : "lifestyle")
+  const polish = brief.polishLevel ?? (style === "photoshoot" ? "campaign" : "refined")
+  return `${CAPTURE_TREATMENT[style]} Creative polish: ${polish}. Technical image quality stays high regardless of polish.`
+}
+
+function resolvedVaultStyleId(brief: CreativeBrief, aestheticId?: string | null): string | null {
+  const explicit = clean(aestheticId ?? "")
+  if (explicit && !explicit.startsWith("maya-")) return explicit
+  return clean(brief.vaultCollectionId) || null
 }
 
 type CarouselSlidePlanLike = NonNullable<NonNullable<CreativeBrief["graphic"]>["slides"]>[number]
@@ -531,13 +556,13 @@ function paletteLine(brandKit?: BrandKit | null): string {
   )
 }
 
-/** Color grading line for the chosen Vault look (vision recipe), or a calm editorial fallback. */
+/** Color grading from the chosen look, or a neutral quality-only fallback. */
 function gradeLine(opts?: CompileConceptOptions): string {
   const recipe = getAestheticRecipe(opts?.aestheticId)
   if (recipe) return recipeToPromptBlock(recipe)
   return (
-    "Color grading: refined neutral editorial palette, true-to-life skin, soft natural contrast, " +
-    "gentle film grain, no heavy filter."
+    "Color grading: true-to-life skin and scene color, natural contrast, no heavy filter. " +
+    "Let the selected capture treatment decide whether grain, polish, or cinematic grading belongs."
   )
 }
 
@@ -635,7 +660,7 @@ function compilePhotoPrompt(
     : `Composition: shot on ${camera}, fill the frame edge to edge with the final photo, no border, mockup, phone screen, or app UI.`
 
   // Ground the photo in the chosen Vault collection's real DNA (auto-derived, stays in sync).
-  const signature = getVaultSignatureDna(opts?.aestheticId)
+  const signature = getVaultSignatureDna(resolvedVaultStyleId(brief, opts?.aestheticId))
 
   // Feed Planner template grounding (2026-07-07): when the brief carries a hand-approved
   // scene template (copied verbatim by Maya from her calendar context), it becomes the scene
@@ -646,8 +671,9 @@ function compilePhotoPrompt(
     : ""
 
   return [
-    "Create an ultra-realistic editorial brand photograph of the same woman.",
+    "Create a realistic photograph of the same woman that fits this specific moment.",
     IDENTITY_ANCHOR,
+    captureTreatmentLine(brief, format),
     signature || "",
     sceneFoundation,
     clean(brief.setting) ? `Scene: ${clean(brief.setting)}.` : "",
@@ -664,7 +690,6 @@ function compilePhotoPrompt(
     SSELFIE_ENVIRONMENT_INTEGRATION,
     PHOTOGRAPHER_REALISM,
     SSELFIE_SELFIE_RESTYLE,
-    CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     quality,
     AVOID_LIST,
@@ -695,6 +720,7 @@ function compileSingleGraphicPrompt(
   return [
     `Create a finished ${surface} featuring the same woman from the reference image.`,
     IDENTITY_ANCHOR,
+    captureTreatmentLine(brief, format),
     clean(brief.setting) ? `Scene: ${clean(brief.setting)}.` : "",
     clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
     "Keep her natural hair color, skin texture, age, and body proportions from the reference photo.",
@@ -739,12 +765,13 @@ function compileCarouselIdentityPrompt(
 ): string {
   const positioning = `${brief.outfit} ${brief.setting} ${brief.mood}`
   const lighting = clean(brief.lighting) || lightingForText(positioning)
-  const signature = getVaultSignatureDna(opts?.aestheticId)
+  const signature = getVaultSignatureDna(resolvedVaultStyleId(brief, opts?.aestheticId))
   const heading = clean(text.heading)
   const body = clean(text.body)
   return [
-    "Create an editorial brand image for an Instagram carousel slide (4:5) featuring the same woman.",
+    "Create a believable brand image for an Instagram carousel slide (4:5) featuring the same woman.",
     IDENTITY_ANCHOR,
+    captureTreatmentLine(brief, "carousel"),
     signature || "",
     clean(brief.setting) ? `Scene: ${clean(brief.setting)}.` : "",
     clean(brief.outfit) ? `Outfit: ${clean(brief.outfit)}.` : "",
@@ -770,7 +797,6 @@ function compileCarouselIdentityPrompt(
     SSELFIE_ENVIRONMENT_INTEGRATION,
     PHOTOGRAPHER_REALISM,
     SSELFIE_SELFIE_RESTYLE,
-    CANDID_EDITORIAL,
     REALISM_TOKENS + ".",
     paletteLine(opts?.brandKit),
     textOverlayLayer
@@ -1080,18 +1106,18 @@ export function conceptRequestSize(format: OutputFormat): RequestSize {
   return format === "carousel" ? "1024x1024" : "1024x1792"
 }
 
-/**
- * The exact gpt-image-2 output size per format. 4:5 for carousels (Instagram carousel), a tall
- * portrait for photos / Reel covers / Story slides. gpt-image-2 accepts any size that is a
- * multiple of 16 with aspect <= 3:1; these are safe, on-format defaults. Env overrides let us
- * push to true 9:16 / 2K once confirmed in staging without a code change.
- */
+/** Exact gpt-image-2 size from the same format contract the UI uses. */
 export function conceptOpenAISize(format: OutputFormat): string {
   // MEASURED 2026-06-10: 2K at high quality takes ~526s per image — past the 300s function
   // ceiling, so 2K must ship as an async "HD export" job, never a synchronous default.
   // (high @ 1024-class: ~191s, fits. medium: ~82s.) Env overrides remain for experiments.
-  if (format === "carousel") {
-    return normalizeOpenAIImageSize(process.env.APP_V3_CAROUSEL_SIZE, "1024x1280")
-  }
-  return normalizeOpenAIImageSize(process.env.APP_V3_PORTRAIT_SIZE, "1024x1536")
+  const defaultSize = outputSize(format)
+  const contract = OUTPUT_FORMAT_CONTRACT[format]
+  const override =
+    format === "carousel"
+      ? process.env.APP_V3_CAROUSEL_SIZE || process.env.APP_V3_FOUR_FIVE_SIZE
+      : contract.aspect === "9:16"
+        ? process.env.APP_V3_NINE_SIXTEEN_SIZE
+        : process.env.APP_V3_FOUR_FIVE_SIZE
+  return normalizeOpenAIImageSize(override, defaultSize)
 }

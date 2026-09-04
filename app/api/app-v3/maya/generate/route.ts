@@ -54,16 +54,23 @@ import { getMemory } from "@/lib/app-v3/maya/memory-store"
 import { isContentPolicyError, sanitizePromptForImageSafety } from "@/lib/ai/image-safety"
 import { logAdminError } from "@/lib/admin-error-log"
 import type { CarouselSlide, ShootShotRole } from "@/lib/content-kit/types"
-import type { CreativeBrief, MayaGenerateConceptRequest } from "@/lib/app-v3/maya/concept-types"
+import {
+  CAPTURE_STYLES,
+  type CaptureStyle,
+  type CreativeBrief,
+  type MayaGenerateConceptRequest,
+  type PolishLevel,
+} from "@/lib/app-v3/maya/concept-types"
 import { validatePhotoshootBriefs } from "@/lib/app-v3/maya/semantic-plan-validation"
 import type { OutputFormat } from "@/components/app-v3/types"
+import { OUTPUT_FORMAT_CONTRACT } from "@/lib/app-v3/output-format-contract"
 import { findUnownedIdentityReferences } from "@/lib/app-v3/identity-reference-ownership"
 import {
   resolveVaultMayaInspirationMode,
   VAULT_MAYA_IDENTITY_PRESERVATION,
 } from "@/lib/vault-maya/reference-recreation"
 
-// gpt-image edit calls (1024x1536, medium quality, reference selfie attached) routinely
+// gpt-image edit calls (exact 4:5 or 9:16, medium quality, reference selfie attached) routinely
 // run 60-120s. 60s was killing them with a 504. Match the Pro image route's 300s ceiling.
 export const maxDuration = 300
 
@@ -99,6 +106,8 @@ const SHOOT_SHOT_ROLES = new Set<ShootShotRole>([
   "cover-safe-hero",
   "true-detail",
 ])
+const VALID_CAPTURE_STYLES = new Set<string>(CAPTURE_STYLES)
+const VALID_POLISH_LEVELS = new Set<string>(["everyday", "refined", "campaign"])
 
 // Image quality (low | medium | high). MEASURED 2026-06-10 on real prompts: medium ~82s/$0.06,
 // high ~191s/$0.22 per image. Sandra's call (2026-06-22): the SUITE renders every format at MEDIUM
@@ -482,7 +491,16 @@ function normalizeBrief(brief: unknown): CreativeBrief | null {
   if (typeof b.setting !== "string" || b.setting.trim().length === 0) return null
   const str = (v: unknown) => (typeof v === "string" ? v : "")
   const shotRole = str(b.shotRole) as ShootShotRole
+  const captureStyle = str(b.captureStyle)
+  const polishLevel = str(b.polishLevel)
   return {
+    captureStyle: VALID_CAPTURE_STYLES.has(captureStyle)
+      ? (captureStyle as CaptureStyle)
+      : undefined,
+    polishLevel: VALID_POLISH_LEVELS.has(polishLevel)
+      ? (polishLevel as PolishLevel)
+      : undefined,
+    vaultCollectionId: str(b.vaultCollectionId) || undefined,
     outfit: b.outfit,
     setting: b.setting,
     mood: str(b.mood),
@@ -559,6 +577,7 @@ export async function POST(request: NextRequest) {
       (textOverlayEnabled || requestedTextOverlayMode === "without-text")
     let referenceUrls: string[] = []
     let inspirationReferenceUrl: string | null = null
+    let creativeBriefs: CreativeBrief[] = []
     const baseImageSource: string | null = null
 
     if (baseImageUrl) {
@@ -576,6 +595,7 @@ export async function POST(request: NextRequest) {
       if (!brief) {
         return NextResponse.json({ error: "A complete concept brief is required" }, { status: 400 })
       }
+      creativeBriefs = [brief]
       if (isMultiSlideGraphicFormat(format)) {
         // STORY-GENERATION fix: a story sequence validates as a story sequence (3/5/7
         // emotional beats, one world), never against carousel-only teaching rules.
@@ -645,6 +665,7 @@ export async function POST(request: NextRequest) {
       })
       if (format === "photoshoot") {
         const shootBriefs = normalizeShootBriefs(body.shootBriefs, brief)
+        creativeBriefs = shootBriefs
         const validationErrors = validatePhotoshootBriefs(shootBriefs)
         if (validationErrors.length > 0) {
           logPlanInvalid(user.id, format, validationErrors)
@@ -886,6 +907,13 @@ export async function POST(request: NextRequest) {
         `Model provider: openai`,
         `Model: ${OPENAI_IMAGE_MODEL}`,
         `Format: ${format}`,
+        `Output size: ${size}`,
+        `Output aspect: ${OUTPUT_FORMAT_CONTRACT[format].aspect}`,
+        `Quality: ${IMAGE_QUALITY}`,
+        `Capture style: ${creativeBriefs[index]?.captureStyle ?? creativeBriefs[0]?.captureStyle ?? "legacy-unspecified"}`,
+        `Creative polish: ${creativeBriefs[index]?.polishLevel ?? creativeBriefs[0]?.polishLevel ?? "legacy-unspecified"}`,
+        `Vault collection: ${creativeBriefs[index]?.vaultCollectionId ?? creativeBriefs[0]?.vaultCollectionId ?? body.aestheticId ?? "none"}`,
+        `Likeness memory applied: ${likenessBlock ? "yes" : "no"}`,
         `Generation job: ${jobs[index]?.label ?? graphicJobs[index]?.label ?? `image ${index + 1}`}`,
         `Identity reference URLs used: ${identityReferenceUrls.join(", ") || "none"}`,
         `Inspiration reference URLs used: ${inspirationReferenceUrls.join(", ") || "none"}`,
@@ -1219,6 +1247,12 @@ export async function POST(request: NextRequest) {
               rerun: isRerun,
               mode: baseImageSource ? "retired-base" : "concept",
               aestheticId: body.aestheticId ?? null,
+              vaultCollectionId:
+                creativeBriefs[0]?.vaultCollectionId ?? body.aestheticId ?? null,
+              captureStyle: creativeBriefs[0]?.captureStyle ?? null,
+              polishLevel: creativeBriefs[0]?.polishLevel ?? null,
+              outputSize: size,
+              quality: IMAGE_QUALITY,
               conceptTitle:
                 typeof body.conceptTitle === "string" ? body.conceptTitle.slice(0, 120) : null,
               images: imageCount,

@@ -7,6 +7,21 @@ import type { OutputFormat } from "@/components/app-v3/types"
 import type { CreativePlan, CreativeUseCase } from "@/lib/app-v3/maya/creative-plan"
 import type { ShootShotRole } from "@/lib/content-kit/types"
 
+export const CAPTURE_STYLES = [
+  "candid-phone",
+  "friend-took-it",
+  "documentary",
+  "lifestyle",
+  "street",
+  "polished-brand",
+  "cinematic",
+  "editorial",
+  "photoshoot",
+] as const
+
+export type CaptureStyle = (typeof CAPTURE_STYLES)[number]
+export type PolishLevel = "everyday" | "refined" | "campaign"
+
 /**
  * The structured creative brief Maya produces for ONE concept.
  * Every field feeds the Vault-aligned compiler (see prompt-compiler.compileConceptJobs).
@@ -14,6 +29,12 @@ import type { ShootShotRole } from "@/lib/content-kit/types"
  * body, a named lighting setup — never generic ("luxury sweater", "soft light").
  */
 export interface CreativeBrief {
+  /** The capture treatment chosen for this specific story. */
+  captureStyle?: CaptureStyle
+  /** Amount of creative polish, independent of technical render quality. */
+  polishLevel?: PolishLevel
+  /** Vault collection selected when the member did not explicitly choose one. */
+  vaultCollectionId?: string
   /** 2 — Specific outfit: silhouette, material, color, styling, and brand only when supported. */
   outfit: string
   /** 3 — Setting/environment, e.g. "north-facing London apartment, marble console". */

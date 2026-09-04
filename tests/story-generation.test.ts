@@ -346,18 +346,25 @@ describe("OpenAI image size env normalization", () => {
     expect(normalizeOpenAIImageSize("1024x1825", "1024x1536")).toBe("1024x1536")
   })
 
-  it("uses normalized portrait and carousel env sizes in the Suite generate route", () => {
-    const originalPortrait = process.env.APP_V3_PORTRAIT_SIZE
+  it("uses one format contract with normalized 4:5 and 9:16 overrides", () => {
+    const originalFourFive = process.env.APP_V3_FOUR_FIVE_SIZE
+    const originalNineSixteen = process.env.APP_V3_NINE_SIXTEEN_SIZE
     const originalCarousel = process.env.APP_V3_CAROUSEL_SIZE
     try {
-      process.env.APP_V3_PORTRAIT_SIZE = "1024x1824\r\n"
+      process.env.APP_V3_FOUR_FIVE_SIZE = "1024x1280\r\n"
+      process.env.APP_V3_NINE_SIXTEEN_SIZE = "1008x1792\r\n"
       process.env.APP_V3_CAROUSEL_SIZE = "1024x1280\n"
-      expect(conceptOpenAISize("photo")).toBe("1024x1824")
-      expect(conceptOpenAISize("story-sequence")).toBe("1024x1824")
+      expect(conceptOpenAISize("photo")).toBe("1024x1280")
+      expect(conceptOpenAISize("photoshoot")).toBe("1024x1280")
+      expect(conceptOpenAISize("story-sequence")).toBe("1008x1792")
+      expect(conceptOpenAISize("story-slide")).toBe("1008x1792")
+      expect(conceptOpenAISize("reel-cover")).toBe("1008x1792")
       expect(conceptOpenAISize("carousel")).toBe("1024x1280")
     } finally {
-      if (originalPortrait === undefined) delete process.env.APP_V3_PORTRAIT_SIZE
-      else process.env.APP_V3_PORTRAIT_SIZE = originalPortrait
+      if (originalFourFive === undefined) delete process.env.APP_V3_FOUR_FIVE_SIZE
+      else process.env.APP_V3_FOUR_FIVE_SIZE = originalFourFive
+      if (originalNineSixteen === undefined) delete process.env.APP_V3_NINE_SIXTEEN_SIZE
+      else process.env.APP_V3_NINE_SIXTEEN_SIZE = originalNineSixteen
       if (originalCarousel === undefined) delete process.env.APP_V3_CAROUSEL_SIZE
       else process.env.APP_V3_CAROUSEL_SIZE = originalCarousel
     }

@@ -17,29 +17,27 @@ const FROZEN_PROMPT_SOURCES = {
   "lib/feed-planner/feed-prompt-expert.ts":
     "682148dbea18652332c5dfd03afc6487a5f502d014eadafcb99ca128480d219b",
   "lib/app-v3/prompt-compiler.ts":
-    // Sandra-approved Track B carousel copy contract (2026-07-20).
-    "7e8d25e36014eb0ba089c9b6290ad98e547345b2d0969bb187373e87be36cebc",
+    // Sandra-approved Maya creative-treatment and exact-output contract (2026-09-04).
+    "2748483b02b6638efdc4f06818593291c91a0b3391ee1ed72e576cffda963fbd",
   "lib/app-v3/maya/persona.ts":
-    // Sandra-approved global Maya Hook Intelligence upgrade (2026-07-31).
-    "6d8edd4ae61588b6266d0e3eebcae00be6b1dbe60808b55896cf224f19e87ec2",
+    // Sandra-approved Maya creative-treatment selection (2026-09-04).
+    "b39e9858bed01d14ace7e4337e2400c6d6961edf690b2fae991adbe44b7bac3c",
   "lib/content/hook-intelligence.ts":
     "9a995884f5cea518bd21a72527b279448b6c2b7918c0a23e8c5638dcb430d450",
   "lib/app-v3/maya/visual-rules.ts":
-    "bd53cdf79d1e96dbc0a47cd2ca3e26140c2ffcad3daa369ce5e85d055cdabb27",
+    "9a8f406553d3952af2945c1ecceabc56e05ff51e9a612990f1271f04e9611552",
   "lib/app-v3/maya/ingredients.ts":
-    "aa7df713897336f5c47d427292d36d27cbcc28e9e1dece1151b0ee2cc3ddee05",
+    "2a0c0a3b2fb468668c30d5949a8cc46fdab409874d6b8de2ae054204641338dc",
   "lib/app-v3/maya/creative-plan.ts":
     "0f8019c71c33e17fc5b63e8e40c787c5d022fd61250fe940e62a7a8714e13ac1",
   "lib/app-v3/maya/vault-styles.ts":
     "a6cd5f6b87605de396fa846addb25f6652a914cc6ab9cf459240f087a62100bc",
   "lib/app-v3/maya/vault-styles-server.ts":
-    "c6670ec5a543a36c1f99804300e6e7b57e25505c65026c2bc7277e3ce2fc9c96",
+    "a4da8c2ac8c320c220ac372c3dbc6ac34b08ddc8e96af9478836169e70019877",
   "lib/app-v3/text-bake.ts": "a6783e82ba930b38c69fe8c447aab01a6ce8cd5da7a55fb6591d019e177af1e4",
   "app/api/app-v3/maya/chat/route.ts":
-    // Sandra-approved format confirmation (2026-08-18): neutral Maya recommends one format
-    // through a visible confirmation instead of silently committing it. The dormant Calendar
-    // boundary remains explicit-task-only and is now rechecked against current Calendar access.
-    "56adfeb1ba4e39b040740fdb49aa1edccc9a52f8a38493c680d3efddf4e69894",
+    // Sandra-approved Maya creative-treatment planner fields (2026-09-04).
+    "465e1ebc35a30f761fcc8f4b5ab610bd35e53eab16a95358bc6c6297692e3a26",
   "app/api/app-v3/maya/calendar-agent/route.ts":
     // Sandra-approved API cost controls (2026-07-21): use Haiku and omit repeated captions
     // while preserving the selected post context and existing system prompt.

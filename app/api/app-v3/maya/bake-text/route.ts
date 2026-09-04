@@ -23,7 +23,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
 import { logAdminError } from "@/lib/admin-error-log"
-import { conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
+import { conceptOpenAISize } from "@/lib/app-v3/prompt-compiler"
 import { sanitizeTextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { buildBakePrompt, sanitizeBakeStyleAdjustments } from "@/lib/app-v3/text-bake"
 
@@ -47,10 +47,6 @@ const BAKE_IMAGE_QUALITY: ImgQuality = isImgQuality(BAKE_QUALITY_OVERRIDE)
   : isImgQuality(QUALITY_OVERRIDE)
     ? QUALITY_OVERRIDE
     : "medium"
-
-function toOpenAIEditSize(size: "1024x1024" | "1024x1792"): "1024x1024" | "1024x1536" {
-  return size === "1024x1024" ? "1024x1024" : "1024x1536"
-}
 
 function isAllowedImageUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length === 0) return false
@@ -279,7 +275,7 @@ export async function POST(request: NextRequest) {
     }
 
     const openai = new OpenAI({ apiKey: openaiApiKey })
-    const size = toOpenAIEditSize(conceptRequestSize(spec.format))
+    const size = conceptOpenAISize(spec.format)
     const prompt = buildBakePrompt(spec, styleAdjustments ? { styleAdjustments } : undefined)
 
     // ONE pass on the clean base. No retries, no chained edits: iterative passes degrade the

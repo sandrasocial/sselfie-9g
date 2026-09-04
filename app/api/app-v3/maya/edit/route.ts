@@ -19,7 +19,7 @@ import {
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { isOpenAIImageEnabled } from "@/lib/feature-flags"
-import { conceptRequestSize } from "@/lib/app-v3/prompt-compiler"
+import { conceptOpenAISize } from "@/lib/app-v3/prompt-compiler"
 import { AVOID_LIST, ELEVATION } from "@/lib/app-v3/maya/ingredients"
 import { SSELFIE_ENVIRONMENT_INTEGRATION } from "@/lib/app-v3/maya/visual-rules"
 import {
@@ -99,10 +99,6 @@ async function resolveIdentitySelfieUrl(
 // Vanity-drift doctrine guard ("flawless", "make me slimmer/younger") now lives in
 // lib/app-v3/likeness-memory.ts (VANITY_DRIFT_PATTERN), shared with the note classifier:
 // her at her natural best, never a different face or body. AI should not erase you.
-
-function toOpenAIEditSize(size: "1024x1024" | "1024x1792"): "1024x1024" | "1024x1536" {
-  return size === "1024x1024" ? "1024x1024" : "1024x1536"
-}
 
 function isAllowedImageUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length === 0) return false
@@ -353,7 +349,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const size = toOpenAIEditSize(conceptRequestSize(format))
+    const size = conceptOpenAISize(format)
 
     // BRIDGE-01 Phase D: members and active trials only (same lock as generate).
     const { isAdminEmail } = await import("@/lib/admin-feature-flags")

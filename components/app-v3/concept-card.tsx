@@ -9,6 +9,7 @@
 import type { ConceptCard as ConceptCardData } from "@/lib/app-v3/maya/concept-types"
 import { useState, type ReactNode } from "react"
 import type { OutputFormat } from "./types"
+import { OUTPUT_FORMAT_CONTRACT } from "@/lib/app-v3/output-format-contract"
 import { Spinner } from "./loading"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
 import { retryGeneratedImageOnce } from "./image-retry"
@@ -128,15 +129,9 @@ interface ConceptCardProps {
   disabledReason?: string | null
 }
 
-const FRAME_ASPECT: Record<OutputFormat, string> = {
-  photo: "aspect-[4/5]",
-  photoshoot: "aspect-[4/5]",
-  "reel-cover": "aspect-[9/16]",
-  "story-slide": "aspect-[9/16]",
-  "story-sequence": "aspect-[9/16]",
-  carousel: "aspect-[4/5]",
-  video: "aspect-[9/16]",
-}
+const FRAME_ASPECT: Record<OutputFormat, string> = Object.fromEntries(
+  Object.entries(OUTPUT_FORMAT_CONTRACT).map(([format, contract]) => [format, contract.frameClass]),
+) as Record<OutputFormat, string>
 
 const FRAME_MAX_WIDTH: Record<OutputFormat, string> = {
   photo: "max-w-[19rem]",

@@ -35,6 +35,7 @@ import { sanitizeMayaMessages } from "@/lib/app-v3/maya/message-sanitizer"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getMayaHomeBrandContext } from "@/lib/maya/home-brand-context"
 import { validateEmittedConceptPlan } from "@/lib/app-v3/maya/semantic-plan-validation"
+import { CAPTURE_STYLES } from "@/lib/app-v3/maya/concept-types"
 import { repairSemanticPlan } from "@/lib/app-v3/maya/semantic-plan-repair"
 import type { CreationIntent, CreationIntentSource, OutputFormat } from "@/components/app-v3/types"
 import { NextResponse } from "next/server"
@@ -344,6 +345,20 @@ const conceptSchema = z.object({
     .string()
     .describe("1–2 sentences in Maya's voice describing what the user will see."),
   brief: z.object({
+    captureStyle: z
+      .enum(CAPTURE_STYLES)
+      .describe(
+        "Choose how this specific moment should be captured. Everyday stories should usually be candid-phone, friend-took-it, documentary, lifestyle, or street. Use editorial/photoshoot only when the request calls for it."
+      ),
+    polishLevel: z
+      .enum(["everyday", "refined", "campaign"])
+      .describe("The creative polish for this image, separate from technical render quality."),
+    vaultCollectionId: z
+      .string()
+      .optional()
+      .describe(
+        "When you choose a Vault collection, return its exact id or slug so rendering and diagnostics preserve the choice."
+      ),
     outfit: z
       .string()
       .describe(
@@ -352,7 +367,11 @@ const conceptSchema = z.object({
     setting: z.string().describe("A concrete place with real detail."),
     mood: z.string().describe("The emotional register, in a few words."),
     pose: z.string().describe("One simple, natural pose - a real moment."),
-    cameraSpec: z.string().describe("A NAMED camera body + lens matched to the positioning."),
+    cameraSpec: z
+      .string()
+      .describe(
+        "A camera and lens matched to captureStyle. Phone and friend-took-it treatments use a believable phone or compact camera, never a luxury-camera fallback."
+      ),
     lighting: z.string().describe("A NAMED lighting setup, not 'soft light'."),
     shotRole: z
       .enum(SHOOT_SHOT_ROLES)

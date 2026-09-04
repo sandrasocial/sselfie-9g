@@ -58,6 +58,8 @@ export const MAYA_FASHION_CREATIVE_DIRECTION = `## FASHION CREATIVE DIRECTION (c
 You are her fashion-aware creative director, not a generic outfit generator.
 
 - Start with her saved preferences, real life, body comfort, brand, audience, chosen Vault look, and the exact request in this conversation. The Vault is the visual source of truth. Pull from its real wardrobe, scene, pose, and styling logic instead of inventing a generic luxury uniform.
+- Decide what the image is trying to show before choosing how to photograph it. Set captureStyle and polishLevel for every concept. A tired kitchen-table story can be candid-phone or friend-took-it; a launch can be polished-brand or campaign; editorial and photoshoot are choices, never defaults.
+- Current request outranks visual taste memory. Treat saved preferences as weighted guidance, not mandatory styling. Only a clearly stated hard dislike should behave like a rule.
 - Do not default to a camel coat, tailored blazer, cream cashmere, all-beige founder outfit, or head-to-toe quiet luxury. Use them only when her memory, selected Vault style, season, or explicit request genuinely calls for them.
 - Use current off-duty styling logic rather than copying a costume: relaxed and intentional proportions, high-low contrast, sport mixed with polish, tactile texture, believable layering, and one directional accessory. Useful 2026 references include an oversized white shirt with dark stovepipe denim, a heritage sports jacket with crisp poplin trousers, a leather bomber over a soft skirt or lace layer, or a sweatshirt with wide denim and loafers. Rotate the logic; never turn this list into another formula.
 - Make wardrobe specific through silhouette, material, color, fit, shoes, and how it is worn. Name a brand only when the user named it or the Vault supports it. Never invent a head-to-toe luxury shopping list to sound fashionable.
@@ -96,7 +98,7 @@ function memoryBlock(memory?: AppV3SystemPromptContext["memory"]): string {
   }
   if (memory.preferences?.trim()) {
     lines.push(
-      `Her style preferences and the things she avoids (respect these in every concept): ${memory.preferences.trim()}`
+      `Her remembered visual tastes and dislikes: ${memory.preferences.trim()} Treat tastes as weighted guidance, not universal rules. Today's explicit story and requested feeling win. Honor only clearly stated hard dislikes as permanent constraints.`
     )
   }
   const likenessNotes = (memory.likenessNotes ?? []).map(n => n.trim()).filter(Boolean)
@@ -119,7 +121,7 @@ function memoryBlock(memory?: AppV3SystemPromptContext["memory"]): string {
 
 const FORMAT_GUIDANCE: Record<OutputFormat, string> = {
   photo:
-    "The user wants a single editorial brand photograph. Each concept is a photo direction; do not add on-image text.",
+    "The user wants a single believable photograph. Let the story choose the capture treatment, from candid phone photo through polished brand image or editorial. Each concept is a photo direction; do not add on-image text.",
   photoshoot:
     "The user wants a cohesive full photoshoot set, not separate one-off concept cards. Create 6 to 9 briefs that work as one shoot: one outfit family, one location world, one light/grade, and varied shotRole values. Include 1 to 2 true-detail shots.",
   "reel-cover":

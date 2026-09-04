@@ -19,9 +19,8 @@ export const SSELFIE_GRAPHIC_STYLE_PROMPT = [
 ].join(" ")
 
 export const SSELFIE_PHOTO_STYLE_PROMPT = [
-  SSELFIE_VISUAL_IDENTITY,
-  "Keep the person recognizable from the uploaded reference photos, with natural skin texture, accurate age, accurate proportions, and believable editorial styling.",
-  "The image should feel like a real on-location shoot from the SSELFIE Vault, not studio stock.",
+  "Photographic quality: believable light, natural skin texture, accurate age and proportions, strong composition, and a person who belongs naturally in the scene.",
+  "Keep the person recognizable from the uploaded reference photos. Do not impose an editorial, luxury, cinematic, campaign, or photoshoot look unless the concept's capture treatment asks for it.",
 ].join(" ")
 
 // Shared lighting/integration DNA (SHOOT-PARITY-01). Both admin Shoot Studio and suite Maya
