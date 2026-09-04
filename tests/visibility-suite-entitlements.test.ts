@@ -122,8 +122,8 @@ describe("visibility suite entitlements and routing", () => {
   it("each workbook includes a Maya output panel", () => {
     const workbooks = [
       ["server/academy-workbooks/what_to_say/index.html", "Generate Message Kit"],
-      ["server/academy-workbooks/show_up/index.html", "Generate Content Plan"],
-      ["server/academy-workbooks/get_paid/index.html", "Generate Sales Path"],
+      ["server/academy-workbooks/show_up/index.html", "Create My What To Post PDF"],
+      ["server/academy-workbooks/get_paid/index.html", "Create My Get Paid PDF"],
     ] as const
 
     for (const [file, cta] of workbooks) {
