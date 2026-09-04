@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { sql } from "@/lib/db/client"
 import { requireAcademyPageUser } from "@/app/academy/_lib/course-library"
+import { unlockPromptVaultForMember } from "@/lib/skool/member-product-unlock"
 
 /**
  * Prompt Vault access gate.
@@ -45,6 +46,17 @@ export default async function AcademyPromptVaultAccessPage() {
   // before Prompt Vault was added to Academy entitlements.
   if (token) {
     redirect(`/access/prompt-vault/${encodeURIComponent(token)}`)
+  }
+
+  // Entitled, but no token: she reached the vault through her membership rather
+  // than a purchase, so no webhook ever minted one. Mint it now with the same
+  // function the purchase path uses, then send her in. Without this she would be
+  // bounced to the sales page for something she already owns.
+  if (hasEntitlement) {
+    const mintedToken = await unlockPromptVaultForMember(neonUser.email)
+    if (mintedToken) {
+      redirect(`/access/prompt-vault/${encodeURIComponent(mintedToken)}`)
+    }
   }
 
   redirect("/prompt-vault")

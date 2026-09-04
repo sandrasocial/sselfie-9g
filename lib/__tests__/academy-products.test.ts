@@ -33,7 +33,10 @@ describe("getAcademyProducts", () => {
     expect(neonFactoryMock).toHaveBeenCalledWith("postgres://unit-test", {
       disableWarningInBrowsers: true,
     })
-    expect(products).toHaveLength(18)
+    // 21 = 18 original + the three products the Skool membership unlocks
+    // (selfie_ai_photos_kit, presets_bundle, presets_single), which have no
+    // academy_products row and so come from the registry defaults.
+    expect(products).toHaveLength(21)
     expect(products.find(p => p.id === "what_to_say")?.name).toBe("What To Say")
     expect(products.find(p => p.id === "starter_kit")).toMatchObject({
       deliveryKind: "direct_private",
