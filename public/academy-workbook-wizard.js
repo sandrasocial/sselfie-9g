@@ -60,9 +60,63 @@
   function values(){var result={};questions.forEach(function(block){block.querySelectorAll('[data-wizard-key]').forEach(function(field){result[field.dataset.wizardKey]=field.value})});return result}
   function save(){localStorage.setItem(storageKey,JSON.stringify({screen:current,values:values()}))}
   function addSuggestion(field,value,button){if(!field)return;var existing=field.value.trim();if(existing.toLowerCase().indexOf(value.toLowerCase())>-1){field.focus();return}field.value=existing?(existing+(field.tagName==='TEXTAREA'?'\n':' ')+value):value;field.dispatchEvent(new Event('input',{bubbles:true}));field.focus();button.classList.add('sw-added');setTimeout(function(){button.classList.remove('sw-added')},500)}
+  function answerEntries(){return questions.map(function(block){var answers=Array.from(block.querySelectorAll('[data-wizard-key]')).map(function(field){return field.value.trim()}).filter(Boolean);return {question:promptFor(block).title,answer:answers.join('\n')}})}
+  function short(value,fallback){var clean=(value||'').replace(/\s+/g,' ').trim();return clean?clean.slice(0,360):fallback}
+  function answerAt(entries,index,fallback){return short(entries[index]&&entries[index].answer,fallback)}
+  function answerNamed(entries,words,fallback){var found=entries.find(function(entry){var question=entry.question.toLowerCase();return words.some(function(word){return question.indexOf(word)>-1})});return short(found&&found.answer,fallback)}
+  function revealFor(){
+    var entries=answerEntries(),a=function(index,fallback){return answerAt(entries,index,fallback)},named=function(words,fallback){return answerNamed(entries,words,fallback)};
+    if(slug==='show_up')return {title:'Your show-up plan',intro:'You don’t need more random ideas. You need a rhythm you can keep. I pulled your answers into one simple plan.',sections:[
+      {title:'The job of your content',body:named(['content to do'],'Choose one clear goal for this month.')},
+      {title:'What you’ll talk about',body:named(['four things'],'Pick four subjects you know from real life. Repeat them until people remember you.')},
+      {title:'Your easiest way to show up',body:named(['feels easiest'],'Choose the format you can make on a tired Tuesday.')},
+      {title:'Your weekly rhythm',body:'Make '+named(['how many posts'],'three posts')+' each week. Use '+named(['quiet hour'],'one quiet hour')+' to get them ready. Keep one post useful, one personal, and one connected to what you sell.'},
+      {title:'Post 1: the real story',body:'I used to think I had to have everything figured out before I posted. The truth is, '+named(['real life right now'],'I’m still building this in real life')+'. If you’re figuring it out too, you’re not behind.'},
+      {title:'Post 2: the useful one',body:'A simple thing that’s helping me right now: '+named(['four things'],'focus on one clear topic instead of trying to say everything')+'. Save this for the next time you’re staring at a blank screen.'},
+      {title:'Post 3: the invitation',body:'If you want '+named(['content to do'],'a clearer way to show up')+', I can help. '+named(['ask her to do'],'Send me a DM and I’ll show you the next step')+'.'}
+    ],tips:['Put the three posts into your calendar before you close this page.','Use the same idea more than once. Most people didn’t see it the first time.','Keep the format that feels easiest. The goal is to stay visible, not exhausted.']};
+    if(slug==='get_paid')return {title:'Your simple sales plan',intro:'This is the part that turns good work into something people can actually buy. I cleaned up your answers and gave them a clear path.',sections:[
+      {title:'The result you sell',body:named(['exact result'],'Name one useful result your buyer can understand quickly.')},
+      {title:'The promise',body:'I help you '+named(['exact result'],'get one clear result')+' '+named(['how long'],'in a realistic amount of time')+'.'},
+      {title:'The before and after',body:named(['changes from before'],'Show what feels hard before and what becomes easier after.')},
+      {title:'Who it’s for',body:a(4,'Describe the person who already knows she needs this help.')},
+      {title:'The way she buys',body:named(['simplest path'],'Use one direct path from your content to a conversation or checkout.')},
+      {title:'Your sales post',body:'You don’t need to keep trying to figure out '+a(10,'this problem')+' alone. I created this for the woman who wants to '+named(['exact result'],'get a clear result')+' without making it more complicated. '+named(['simplest path'],'Send me a DM for the details')+'.'},
+      {title:'Your personal invitation',body:'Hey, I thought of you because you mentioned '+a(10,'this problem')+'. I made something to help you '+named(['exact result'],'reach this result')+'. Want me to send you the details?'}
+    ],tips:['Say the result before you explain what’s inside.','Make one clear invitation this week. Don’t hide it at the bottom of a long post.','Use the buyer’s words. Clear beats clever every time.']};
+    return {title:'Your message, ready to use',intro:'You gave me the raw pieces. I pulled them into a message you can use in your bio, your posts, and the way you talk about your work.',sections:[
+      {title:'The woman you’re talking to',body:a(6,'Picture one real woman and what she’s trying to change.')},
+      {title:'What she’s feeling',body:a(7,a(0,'Use the words she already says in DMs and comments.'))},
+      {title:'What you help her do',body:a(8,'Name one result she can see, feel, or use.')},
+      {title:'Why she can trust you',body:a(9,'Use the part of your story that proves you understand this.')},
+      {title:'Your clear message',body:'I help '+a(6,'one specific woman')+' go from '+a(7,'feeling stuck')+' to '+a(8,'a result she really wants')+'. I know this because '+a(9,'I’ve lived it and built it myself')+'.'},
+      {title:'Your bio line',body:'Helping '+a(6,'women like you')+' '+a(8,'get a clear result')+'. Real help, from someone who’s been there.'},
+      {title:'Your next post',body:'If you’ve been telling yourself, “'+a(7,'maybe I’m too late')+'”, this is for you. '+a(9,'I know that feeling because I’ve lived it')+'. Here’s what I want you to know: '+a(8,'you can take one clear step from where you are')+'.'}
+    ],tips:['Read the message out loud. Change any word you wouldn’t say to a friend.','Use the same clear message for 30 days before you decide it isn’t working.','Turn one real answer from this workbook into a post every week.']};
+  }
+  function revealHtml(reveal){var sections=reveal.sections.map(function(section){return '<section class="sw-reveal-section"><h2>'+escapeHtml(section.title)+'</h2><p>'+escapeHtml(section.body)+'</p></section>'}).join('');var tips=reveal.tips.map(function(tip){return '<li>'+escapeHtml(tip)+'</li>'}).join('');return '<div class="sw-meta"><span>'+escapeHtml(title)+'</span><span>Your reveal</span></div><div class="sw-reveal-hero"><span class="sw-reveal-mark">Maya made this from your answers</span><h1>'+escapeHtml(reveal.title)+'</h1><p>'+escapeHtml(reveal.intro)+'</p></div><div class="sw-reveal-grid">'+sections+'</div><aside class="sw-reveal-tips"><span class="sw-maya-mark">M</span><div><h2>How to use this</h2><ol>'+tips+'</ol></div></aside><div class="sw-reveal-actions"><button class="sw-download">Download styled PDF</button><button class="sw-review">Edit my answers</button><a href="'+classroom+'">Back to classroom</a></div>'}
+  function ascii(value){return String(value).normalize('NFKD').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/[^\x20-\x7E\n]/g,'')}
+  function wrap(value,limit){var out=[];ascii(value).split(/\n+/).forEach(function(paragraph){var line='';paragraph.split(/\s+/).forEach(function(word){if((line+' '+word).trim().length>limit&&line){out.push(line);line=word}else line=(line+' '+word).trim()});if(line)out.push(line)});return out}
+  function pdfEscape(value){return value.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)')}
+  function downloadPdf(reveal){
+    var pages=[],commands=[],y=755,pageNumber=1;
+    function startPage(){commands=['0 0 0 rg 48 790 499 1 re f','BT /F3 8 Tf 48 807 Td (SSELFIE  /  MAYA) Tj ET'];y=755}
+    function endPage(){commands.push('BT /F2 8 Tf 500 28 Td ('+pageNumber+') Tj ET');pages.push(commands.join('\n'));pageNumber++}
+    function ensure(height){if(y-height<55){endPage();startPage()}}
+    function addText(value,font,size,leading,indent){var lines=wrap(value,Math.floor((505-(indent||0))/(size*.52)));ensure(lines.length*leading+12);lines.forEach(function(line){commands.push('BT /'+font+' '+size+' Tf '+(48+(indent||0))+' '+y+' Td ('+pdfEscape(line)+') Tj ET');y-=leading});y-=10}
+    startPage();addText(reveal.title,'F1',30,32);addText(reveal.intro,'F2',11,17);y-=8;
+    reveal.sections.forEach(function(section){ensure(75);commands.push('0.72 0.68 0.61 RG 48 '+(y+7)+' m 547 '+(y+7)+' l S');addText(section.title.toUpperCase(),'F3',8,12);addText(section.body,'F2',10,15)});
+    ensure(120);addText('HOW TO USE THIS','F3',8,12);reveal.tips.forEach(function(tip,index){addText((index+1)+'. '+tip,'F2',10,15,10)});endPage();
+    var objects=[],firstPage=6,kids=pages.map(function(_,index){return (firstPage+index*2)+' 0 R'}).join(' ');
+    objects[1]='<< /Type /Catalog /Pages 2 0 R >>';objects[2]='<< /Type /Pages /Kids ['+kids+'] /Count '+pages.length+' >>';objects[3]='<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>';objects[4]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';objects[5]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>';
+    pages.forEach(function(stream,index){var pageId=firstPage+index*2,contentId=pageId+1;objects[pageId]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents '+contentId+' 0 R >>';objects[contentId]='<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'});
+    var pdf='%PDF-1.4\n',offsets=[0];for(var i=1;i<objects.length;i++){offsets[i]=pdf.length;pdf+=i+' 0 obj\n'+objects[i]+'\nendobj\n'}var xref=pdf.length;pdf+='xref\n0 '+objects.length+'\n0000000000 65535 f \n';for(var j=1;j<objects.length;j++)pdf+=String(offsets[j]).padStart(10,'0')+' 00000 n \n';pdf+='trailer\n<< /Size '+objects.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+    var url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'})),link=document.createElement('a');link.href=url;link.download=slug.replaceAll('_','-')+'-maya-plan.pdf';link.click();setTimeout(function(){URL.revokeObjectURL(url)},1000)
+  }
   function render(){
     copy.innerHTML='';bar.style.width=Math.round((current/questions.length)*100)+'%';
-    if(current>=questions.length){copy.className='sw-copy sw-finish';copy.innerHTML='<div class="sw-meta"><span>'+escapeHtml(title)+'</span><span>Complete</span></div><h1>You did the work. Keep it close.</h1><p>Your answers are saved on this device. Download them, then use them the next time you sit down to post or sell.</p><button class="sw-download">Download my answers</button><button class="sw-review">Go through it again</button>';copy.querySelector('.sw-review').onclick=function(){current=0;render()};copy.querySelector('.sw-download').onclick=download;save();return}
+    if(current>=questions.length){var reveal=revealFor();copy.className='sw-copy sw-reveal';shell.querySelector('.sw-stage').classList.add('sw-reveal-stage');copy.innerHTML=revealHtml(reveal);copy.querySelector('.sw-review').onclick=function(){current=0;shell.querySelector('.sw-stage').classList.remove('sw-reveal-stage');render()};copy.querySelector('.sw-download').onclick=function(){downloadPdf(reveal)};save();return}
+    shell.querySelector('.sw-stage').classList.remove('sw-reveal-stage');
     copy.className='sw-copy';var meta=document.createElement('div');meta.className='sw-meta';meta.innerHTML='<span>'+escapeHtml(title)+'</span><span>'+(current+1)+' / '+questions.length+'</span>';copy.appendChild(meta);
     var question=questions[current],prompt=promptFor(question);question.classList.add('sw-original-question');Array.from(question.children).forEach(function(child){if(!child.matches('textarea,input,select')&&!child.querySelector('textarea,input,select'))child.classList.add('sw-legacy-copy')});
     var heading=document.createElement('div');heading.className='sw-heading';heading.innerHTML='<p class="sw-kicker"><span class="sw-number">'+String(current+1).padStart(2,'0')+'</span> '+escapeHtml(prompt.kicker)+'</p><h1 class="sw-title">'+escapeHtml(prompt.title)+'</h1><p class="sw-helper">'+escapeHtml(prompt.helper)+'</p>';copy.appendChild(heading);copy.appendChild(question);
@@ -70,6 +124,5 @@
     var wrap=maya.querySelector('.sw-suggestions'),field=question.querySelector('textarea,input[type=text]');prompt.suggestions.forEach(function(value){var button=document.createElement('button');button.type='button';button.className='sw-suggestion';button.textContent=value;button.onclick=function(){addSuggestion(field,value,button)};wrap.appendChild(button)});copy.appendChild(maya);
     var actions=document.createElement('div');actions.className='sw-actions';actions.innerHTML='<button class="sw-back">Back</button><button class="sw-next">'+(current===questions.length-1?'Finish my plan':'Continue')+'</button>';copy.appendChild(actions);actions.querySelector('.sw-back').onclick=function(){if(current>0){save();current--;render()}else location.href=classroom};actions.querySelector('.sw-next').onclick=function(){save();current++;render()};question.querySelectorAll('textarea,input,select').forEach(function(input){input.addEventListener('input',save)});window.scrollTo(0,0)
   }
-  function download(){var lines=[title.toUpperCase(),''];questions.forEach(function(block){var prompt=promptFor(block);lines.push(prompt.title);block.querySelectorAll('[data-wizard-key]').forEach(function(field){lines.push(field.value||'Not answered')});lines.push('')});var url=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}));var link=document.createElement('a');link.href=url;link.download=slug.replaceAll('_','-')+'-answers.txt';link.click();URL.revokeObjectURL(url)}
   render();
 })();
