@@ -111,7 +111,7 @@ describe("Maya guidance result contract", () => {
       safestSource: sources[0],
     })
 
-    expect(result.recommendation).toMatch(/don.t have enough Sandra teaching/i)
+    expect(result.recommendation).toMatch(/don.t have enough of Sandra.s teaching/i)
     expect(result.sourceRefs).toHaveLength(1)
     expect(result.nextAction.kind).toBe("continue_lesson")
   })
@@ -170,7 +170,7 @@ describe("Maya guidance result contract", () => {
     })
 
     expect(result.recommendation).toBe(
-      "Plan a quick selfie shoot using your space, lighting, settings, pose, and intended use for the photos."
+      "Here's the move: plan a quick selfie shoot using your space, lighting, settings, pose, and intended use for the photos."
     )
     expect(result.recommendation).not.toMatch(/help the user/i)
     expect(result.sourceRefs).toEqual([expect.objectContaining({ courseId: 1, lessonId: 12 })])
@@ -192,7 +192,38 @@ describe("Maya guidance result contract", () => {
       userId: "qa-user",
     })
 
-    expect(result.recommendation).toBe("Publish one useful post this week.")
+    expect(result.recommendation).toBe("Here's the move: publish one useful post this week.")
     expect(result.recommendation).not.toBe("")
+  })
+
+  it("uses Maya's shared voice in course guidance", async () => {
+    mocks.generateText.mockResolvedValueOnce({
+      output: {
+        recommendation: "Here's the move: publish the useful post before it feels perfect.",
+        reason: "You'll build confidence by showing up, not by waiting for it.",
+        sourceIds: [sources[0].id],
+      },
+    })
+
+    await generateMayaGuidance({
+      request: {
+        taskId: "maya-task-course-voice",
+        job: "learn_next",
+        question: "I keep waiting until my post feels perfect. What should I do?",
+      },
+      sources,
+      hasQuestionMatch: true,
+      userId: "qa-user",
+    })
+
+    expect(mocks.generateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        system: expect.stringContaining("Sound like a supportive creative director"),
+        temperature: 0.45,
+      })
+    )
+    const call = mocks.generateText.mock.calls.at(-1)?.[0]
+    expect(call.system).toContain("You are Maya")
+    expect(call.system).not.toContain("non-creative Sandra guidance capability")
   })
 })

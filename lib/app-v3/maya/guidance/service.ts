@@ -8,13 +8,14 @@ import {
   mayaActionIdempotencyKey,
   type MayaActionKind,
 } from "@/lib/app-v3/maya/action-protocol"
+import { MAYA_VOICE } from "@/lib/maya/core-personality"
 import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import type { MayaGuidanceSource } from "./source-registry"
 import type { MayaGuidanceRequest, MayaGuidanceResult } from "./types"
 
 export const mayaGuidanceModelOutputSchema = z.object({
-  recommendation: z.string().min(1).max(320),
-  reason: z.string().min(1).max(320),
+  recommendation: z.string().min(1).max(500),
+  reason: z.string().min(1).max(400),
   sourceIds: z.array(z.string().min(1).max(160)).min(1).max(4),
 })
 
@@ -150,9 +151,9 @@ export function buildMayaGuidanceResult(input: {
     input.modelOutput.sourceIds,
     input.request.job === "learn_next"
   )
-  const reason = clipped(input.modelOutput.reason, 320)
+  const reason = clipped(input.modelOutput.reason, 400)
   return {
-    recommendation: clipped(input.modelOutput.recommendation, 320),
+    recommendation: clipped(input.modelOutput.recommendation, 500),
     reason,
     sourceRefs: sources.map(source => ({
       kind: source.kind,
@@ -170,8 +171,8 @@ export function buildMayaGuidanceLimitation(input: {
   safestSource: MayaGuidanceSource
 }): MayaGuidanceResult {
   const recommendation =
-    "I don't have enough Sandra teaching on that specific question to answer it honestly. Start with the closest proven SSELFIE step instead."
-  const reason = "This keeps Maya inside Sandra's approved method instead of inventing advice."
+    "I don't have enough of Sandra's teaching on that specific question to answer it honestly. Let's stay with the closest proven SSELFIE step instead."
+  const reason = "That keeps us inside what Sandra actually teaches, without making anything up."
   return buildMayaGuidanceResult({
     request: input.request,
     sources: [input.safestSource],
@@ -202,7 +203,7 @@ function deterministicFallback(
     sources,
     modelOutput: {
       recommendation,
-      reason: `This is the closest next step in ${source.title}.`,
+      reason: `This is the clearest next move from ${source.title}. Keep it simple and do this part first.`,
       sourceIds: [source.id],
     },
   })
@@ -217,8 +218,8 @@ function memberFacingFallbackText(value: string): string {
     .replace(/\bshe\b/gi, "you")
     .trim()
   return cleaned
-    ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
-    : "Choose one useful next step."
+    ? `Here's the move: ${cleaned.charAt(0).toLowerCase()}${cleaned.slice(1)}`
+    : "Here's the move: choose one useful next step and do that first."
 }
 
 export async function generateMayaGuidance(input: {
@@ -239,13 +240,18 @@ export async function generateMayaGuidance(input: {
   }
 
   const system = [
-    "You are the non-creative Sandra guidance capability inside SSELFIE.",
+    MAYA_VOICE,
+    "## COURSE GUIDANCE MODE",
+    "You are Maya, the member's warm, direct creative partner inside a SSELFIE course.",
     "Use only the supplied teaching fragments. Do not add general internet advice or unsupported claims.",
-    "Return one practical recommendation, one short reason, and the IDs of the fragments that support the answer.",
+    "Sound like Maya talking to one woman, not a course platform, support bot, teacher, or report.",
+    "Lead with the useful answer. Make it feel personal and natural, while staying faithful to Sandra's teaching.",
+    "Return one practical recommendation, one natural follow-through, and the IDs of the fragments that support the answer.",
+    "The recommendation and reason are displayed together as Maya's reply. Do not use labels such as Recommendation, Reason, or Source.",
     "Prefer one useful action over a list. If the fragments do not support the question, say that clearly.",
     "You cannot create images, spend credits, modify Calendar data, publish, or call any tool.",
     "Match the step to where the member already is. When her activity shows real creation history, never recommend starter setup or 'first step' foundation work such as defining her identity or completing a planner. Choose the closest next step that builds on what she is already doing.",
-    "Keep the answer warm, direct, and concise. Do not use an em dash.",
+    "Keep the answer concise enough for an in-course conversation. Do not repeat the question or over-explain.",
   ].join("\n")
   const fragmentText = input.sources
     .map(source => `[${source.id}] ${source.title}\n${source.text}`)
@@ -271,8 +277,8 @@ export async function generateMayaGuidance(input: {
       output: Output.object({ schema: mayaGuidanceProviderOutputSchema }),
       system,
       prompt,
-      temperature: 0.2,
-      maxOutputTokens: 500,
+      temperature: 0.45,
+      maxOutputTokens: 650,
     })
     return buildMayaGuidanceResult({
       request: input.request,
