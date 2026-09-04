@@ -10,7 +10,7 @@
 // Reuses the lean primitives only (ConceptCard, concierge-context). It does NOT port the
 // 2,237-line legacy chat interface or any Flux/Pro-mode wiring.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import dynamic from "next/dynamic"
 import { ArrowUp, MoreHorizontal, Paperclip, SquarePen } from "lucide-react"
@@ -139,7 +139,7 @@ const MAYA_PHOTO_REQUEST =
   "Create one believable photo for what I want to show today. Use what you know about me, but let this specific story decide whether it should feel candid, everyday, polished, or like a proper shoot. Direct the strongest concept yourself and start; do not ask me to choose a style unless something essential is missing."
 
 /** Editorial portrait for Maya; member avatars remain deliberately quieter. */
-function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
+const Avatar = memo(function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
   const isMaya = src === MAYA_AVATAR
   return (
     <div
@@ -164,7 +164,7 @@ function Avatar({ src, fallback }: { src: string | null; fallback: string }) {
       )}
     </div>
   )
-}
+})
 function compactInlineAestheticForMaya(
   aesthetic: Aesthetic,
   selectedShot: AestheticShot
@@ -417,7 +417,7 @@ const MAYA_WORKSPACE_PATHS: readonly {
 // visual-world thumbnails the member chose during onboarding.
 const EDITORIAL_DIRECTION_IMAGES: readonly string[] = []
 
-function MayaPathTabs({
+const MayaPathTabs = memo(function MayaPathTabs({
   activePath,
   disabled,
   onPick,
@@ -459,9 +459,9 @@ function MayaPathTabs({
       })}
     </nav>
   )
-}
+})
 
-function MayaJourneySteps({ current }: { current: 1 | 2 | 3 | 4 }) {
+const MayaJourneySteps = memo(function MayaJourneySteps({ current }: { current: 1 | 2 | 3 | 4 }) {
   const steps = ["Choose a path", "Answer Maya", "Review", "Edit or post"] as const
   return (
     <ol
@@ -492,7 +492,7 @@ function MayaJourneySteps({ current }: { current: 1 | 2 | 3 | 4 }) {
       })}
     </ol>
   )
-}
+})
 
 function MayaPathChooser({
   activePath,
@@ -644,6 +644,12 @@ const CTA_LABEL: Record<OutputFormat, string> = {
 
 const IMAGE_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp"
 const DEFAULT_GRAPHIC_OVERLAY_STYLE: OverlayStyleId = "editorial-serif-center"
+
+/** Let the browser paint the pressed/menu-closed state before mounting a large overlay.
+ * This keeps image and header interactions out of Maya's expensive workspace render. */
+function afterInteractionPaint(update: () => void) {
+  window.requestAnimationFrame(() => startTransition(update))
+}
 
 type UploadSlot = "face" | "angle" | "side" | "body" | "inspiration" | "video"
 
@@ -1078,7 +1084,7 @@ export function MayaConcierge({
   const hiddenBakedTextRef = useRef<Record<string, Array<string | null>>>({})
   const hiddenBakedImageIdsRef = useRef<Record<string, Array<number | null>>>({})
   // Fullscreen viewer: the set of image urls currently open (null = closed).
-  const [lightbox, setLightbox] = useState<{
+  type LightboxState = {
     key?: string
     format?: OutputFormat
     images: string[]
@@ -1090,7 +1096,11 @@ export function MayaConcierge({
     startIndex?: number
     /** Names the "Download all" zip. */
     conceptTitle?: string | null
-  } | null>(null)
+  }
+  const [lightbox, setLightbox] = useState<LightboxState | null>(null)
+  const openLightbox = useCallback((next: LightboxState) => {
+    afterInteractionPaint(() => setLightbox(next))
+  }, [])
   // The lightbox freezes assetIds/bakedAssetIds at open time (asset-lineage contract: id and
   // format arrays must come from one consistent read, never mixed live/frozen per field - see
   // tests/app-v3-asset-lineage.test.tsx). But a with-text carousel can still be baking slides
@@ -1156,8 +1166,10 @@ export function MayaConcierge({
     "face" | "inspiration"
   >("face")
   const openSelfieManager = useCallback((initialFocus: "face" | "inspiration" = "face") => {
-    setSelfieManagerInitialFocus(initialFocus)
-    setSelfieManagerOpen(true)
+    afterInteractionPaint(() => {
+      setSelfieManagerInitialFocus(initialFocus)
+      setSelfieManagerOpen(true)
+    })
   }, [])
   // Header overflow menu (New chat / History / Memory live here, not as stacked buttons).
   const [menuOpen, setMenuOpen] = useState(false)
@@ -5368,7 +5380,7 @@ export function MayaConcierge({
                     onClick={() => {
                       setMenuOpen(false)
                       setNewChatConfirming(false)
-                      setHistoryOpen(true)
+                      afterInteractionPaint(() => setHistoryOpen(true))
                     }}
                     disabled={workspaceBusy}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10] disabled:opacity-40"
@@ -5380,7 +5392,7 @@ export function MayaConcierge({
                     onClick={() => {
                       setMenuOpen(false)
                       setNewChatConfirming(false)
-                      setMemoryOpen(true)
+                      afterInteractionPaint(() => setMemoryOpen(true))
                     }}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:bg-[#F1F2F2] hover:text-[#0D0E10]"
                   >
@@ -6259,7 +6271,7 @@ export function MayaConcierge({
                           )
                         }
                         onOpen={(urls, startIndex) =>
-                          setLightbox({
+                          openLightbox({
                             key,
                             format: conceptFormat,
                             images: urls,
@@ -6611,7 +6623,7 @@ export function MayaConcierge({
                             const urls = gen.imageUrls ?? []
                             const shootTitle = `Photoshoot · ${urls.length} shots`
                             const openPhotoshootLightbox = (startIndex?: number) =>
-                              setLightbox({
+                              openLightbox({
                                 key,
                                 format: "photoshoot",
                                 images: urls,
