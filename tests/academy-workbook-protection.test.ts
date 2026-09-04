@@ -33,14 +33,14 @@ const WORKBOOKS: Array<{
     id: "show_up",
     path: "/academy/show_up",
     privateSource: "server/academy-workbooks/show_up/index.html",
-    sha256: "ae8907f3157f491d8be6eeb72a049d656cd6fa1fecf3ef596d7520a38e1fa91f",
+    sha256: "66f1ad451c54fe4514fbf9c8664c0a84fa99d401b3f6ae14383dc96b560fbd82",
     marker: "const MAYA_PRODUCT_ID = 'show_up'",
   },
   {
     id: "get_paid",
     path: "/academy/get_paid",
     privateSource: "server/academy-workbooks/get_paid/index.html",
-    sha256: "63ec48f93345ced33172efe666678daceb7ec36e0a7d49c57209b98996e37e32",
+    sha256: "220c4c312c96446b3f5fc7eda85445a6f2aa52d587672c8e5ff81fd7bccc1a0d",
     marker: "const MAYA_PRODUCT_ID = 'get_paid'",
   },
 ]

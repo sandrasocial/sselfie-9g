@@ -5,6 +5,18 @@ import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-s
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import {
+  isCompleteGetPaidSalesPlan,
+  isCompleteShowUpContentPlan,
+  parseGetPaidSalesPlan,
+  parseShowUpContentPlan,
+  type GetPaidSalesPlan,
+  type ShowUpContentPlan,
+} from "@/lib/academy/follow-up-workbook-output"
+import {
+  buildGetPaidSalesPlanPrompt,
+  buildShowUpContentPlanPrompt,
+} from "@/lib/academy/follow-up-workbook-prompts"
+import {
   isCompleteWhatToSayMessageKit,
   parseWhatToSayMessageKit,
   type WhatToSayMessageKit,
@@ -52,6 +64,37 @@ async function ensureWorkbookOutputTable() {
   }
 
   await ensureOutputTablePromise
+}
+
+async function saveWorkbookOutput(input: {
+  userId: string
+  productId: ProductId
+  output: unknown
+  answers: WorkbookAnswer[]
+}) {
+  await ensureWorkbookOutputTable()
+  const rows = (await sql`
+    INSERT INTO academy_workbook_outputs (
+      user_id,
+      product_id,
+      output_json,
+      source_answers,
+      created_at,
+      updated_at
+    ) VALUES (
+      ${input.userId},
+      ${input.productId},
+      ${JSON.stringify(input.output)}::jsonb,
+      ${JSON.stringify(input.answers)}::jsonb,
+      NOW(),
+      NOW()
+    )
+    RETURNING access_token::text
+  `) as Array<{ access_token: string }>
+
+  const token = rows[0]?.access_token
+  if (!token) throw new Error(`${input.productId} document was not saved`)
+  return token
 }
 
 const PRODUCT_CONTEXT: Record<
@@ -129,15 +172,15 @@ function buildActionInstruction(
 }
 
 function getCreatedFor(email?: string | null) {
-  const emailName = email?.split("@")[0]?.replace(/[._-]+/g, " ").trim()
+  const emailName = email
+    ?.split("@")[0]
+    ?.replace(/[._-]+/g, " ")
+    .trim()
   if (!emailName) return "Friend"
   return emailName.replace(/\b\w/g, letter => letter.toUpperCase()).slice(0, 80)
 }
 
-function buildWhatToSayPrompt(input: {
-  answers: WorkbookAnswer[]
-  createdFor: string
-}) {
+function buildWhatToSayPrompt(input: { answers: WorkbookAnswer[]; createdFor: string }) {
   const answerText = input.answers
     .map((answer, index) => `${index + 1}. ${answer.label}\n${answer.value}`)
     .join("\n\n")
@@ -229,7 +272,9 @@ async function generateWhatToSayOutput(input: {
       }),
       temperature: retry ? 0.2 : 0.32,
       maxOutputTokens: 5200,
-      prompt: retry ? `${prompt}\n\nIMPORTANT: Return only the complete valid JSON object.` : prompt,
+      prompt: retry
+        ? `${prompt}\n\nIMPORTANT: Return only the complete valid JSON object.`
+        : prompt,
     })
 
     const parsed = parseWhatToSayMessageKit(result.text, input.createdFor)
@@ -258,33 +303,99 @@ async function generateWhatToSayOutput(input: {
     throw new Error("Maya returned an incomplete What To Say document")
   }
 
-  await ensureWorkbookOutputTable()
-  const rows = (await sql`
-    INSERT INTO academy_workbook_outputs (
-      user_id,
-      product_id,
-      output_json,
-      source_answers,
-      created_at,
-      updated_at
-    ) VALUES (
-      ${input.userId},
-      'what_to_say',
-      ${JSON.stringify(output)}::jsonb,
-      ${JSON.stringify(input.answers)}::jsonb,
-      NOW(),
-      NOW()
-    )
-    RETURNING access_token::text
-  `) as Array<{ access_token: string }>
-
-  const token = rows[0]?.access_token
-  if (!token) throw new Error("What To Say document was not saved")
+  const token = await saveWorkbookOutput({
+    userId: input.userId,
+    productId: "what_to_say",
+    output,
+    answers: input.answers,
+  })
 
   return {
     output,
     token,
     url: `/academy/what-to-say-result/${token}`,
+  }
+}
+
+type FollowUpProductId = "show_up" | "get_paid"
+
+async function generateFollowUpWorkbookOutput(input: {
+  userId: string
+  productId: FollowUpProductId
+  createdFor: string
+  answers: WorkbookAnswer[]
+}) {
+  const isShowUp = input.productId === "show_up"
+  const prompt = isShowUp ? buildShowUpContentPlanPrompt(input) : buildGetPaidSalesPlanPrompt(input)
+
+  async function run(retry = false): Promise<ShowUpContentPlan | GetPaidSalesPlan> {
+    const result = await generateText({
+      model: createMayaOpenRouterModel("chat_pro", {
+        userId: input.userId,
+        feature: `${input.productId}_complete_pdf${retry ? "_retry" : ""}`,
+        metadata: { action: "generate", productId: input.productId },
+      }),
+      temperature: retry ? 0.18 : 0.3,
+      maxOutputTokens: isShowUp ? 7600 : 6200,
+      prompt: retry
+        ? `${prompt}\n\nIMPORTANT: Return only the complete valid JSON object.`
+        : prompt,
+    })
+
+    if (isShowUp) {
+      const parsed = parseShowUpContentPlan(result.text, input.createdFor)
+      return {
+        ...parsed,
+        cover: {
+          ...parsed.cover,
+          title: "What To Post",
+          createdFor: input.createdFor,
+        },
+      }
+    }
+
+    const parsed = parseGetPaidSalesPlan(result.text, input.createdFor)
+    return {
+      ...parsed,
+      cover: {
+        ...parsed.cover,
+        title: "Get Paid",
+        createdFor: input.createdFor,
+      },
+    }
+  }
+
+  let output: ShowUpContentPlan | GetPaidSalesPlan
+  try {
+    output = await run()
+  } catch {
+    output = await run(true)
+  }
+
+  const isComplete = isShowUp
+    ? isCompleteShowUpContentPlan(output as ShowUpContentPlan)
+    : isCompleteGetPaidSalesPlan(output as GetPaidSalesPlan)
+
+  if (!isComplete) output = await run(true)
+
+  const retryIsComplete = isShowUp
+    ? isCompleteShowUpContentPlan(output as ShowUpContentPlan)
+    : isCompleteGetPaidSalesPlan(output as GetPaidSalesPlan)
+
+  if (!retryIsComplete) {
+    throw new Error(`Maya returned an incomplete ${input.productId} document`)
+  }
+
+  const token = await saveWorkbookOutput({
+    userId: input.userId,
+    productId: input.productId,
+    output,
+    answers: input.answers,
+  })
+
+  return {
+    token,
+    url: `/academy/workbook-result/${token}`,
   }
 }
 
@@ -347,6 +458,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         label: "Your Complete What To Say PDF",
         answer: "Your personalized Message Kit is ready.",
+        token: generated.token,
+        url: generated.url,
+      })
+    }
+
+    if ((productId === "show_up" || productId === "get_paid") && action === "generate") {
+      const generated = await generateFollowUpWorkbookOutput({
+        userId: neonUser.id,
+        productId,
+        createdFor: getCreatedFor(authUser.email || neonUser.email),
+        answers,
+      })
+
+      await logAnalyticsEvent({
+        eventName: "visibility_suite_workbook_maya_used",
+        userId: neonUser.id,
+        path: `/academy/${productId}`,
+        properties: {
+          product_id: productId,
+          action,
+          answer_count: answers.length,
+          output_type: "complete_pdf",
+        },
+      })
+
+      return NextResponse.json({
+        label:
+          productId === "show_up" ? "Your Complete What To Post PDF" : "Your Complete Get Paid PDF",
+        answer: "Your personalized workbook result is ready.",
         token: generated.token,
         url: generated.url,
       })
