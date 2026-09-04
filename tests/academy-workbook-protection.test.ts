@@ -26,7 +26,7 @@ const WORKBOOKS: Array<{
     id: "what_to_say",
     path: "/academy/what_to_say",
     privateSource: "server/academy-workbooks/what_to_say/index.html",
-    sha256: "4c33ac88ef72768bf0cb550c376963bddf02c3e97e5f34f8c661673bfd74c1bc",
+    sha256: "9f550acdf6aea1d1b96b5b3fcbab60f4b56a138fe9cab1fc1e0f82589e4cdeb1",
     marker: "const MAYA_PRODUCT_ID = 'what_to_say'",
   },
   {

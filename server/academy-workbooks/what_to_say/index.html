@@ -738,11 +738,11 @@
   <section>
     <div class="maya-output-panel" id="maya-panel">
       <span class="label">Maya Output</span>
-      <h2>Turn This Into<br>Your Message Kit</h2>
-      <p>You filled in the thinking. Now let Maya turn your answers into the exact words to start posting and selling: positioning, bio copy, message pillars, hooks, captions, your soft CTA, and the message input for Show Up.</p>
+      <h2>Turn This Into<br>Your Complete Message Kit</h2>
+      <p>You filled in the thinking. Now Maya will rewrite your answers into a complete personal document: your positioning, bio, story, message pillars, hooks, finished captions, soft CTA, and content-to-offer bridge. You can save the finished result as a PDF.</p>
       <div class="maya-actions">
         <button class="maya-action-btn" data-maya-action="review">Review My Answers</button>
-        <button class="maya-action-btn primary" data-maya-action="generate">Generate Message Kit</button>
+        <button class="maya-action-btn primary" data-maya-action="generate">Create My Complete PDF</button>
         <button class="maya-action-btn" data-maya-action="next">What Do I Do Next?</button>
       </div>
       <p class="maya-status" id="maya-status"></p>
@@ -1045,7 +1045,9 @@ async function runMayaAction(action) {
   }
 
   buttons.forEach(btn => btn.disabled = true);
-  status.textContent = 'Maya is reading your workbook...';
+  status.textContent = action === 'generate'
+    ? 'Maya is rewriting your workbook into your personal PDF...'
+    : 'Maya is reading your workbook...';
   output.classList.remove('visible');
 
   try {
@@ -1057,6 +1059,17 @@ async function runMayaAction(action) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Maya could not help right now.');
+    if (action === 'generate' && data.url) {
+      try {
+        sessionStorage.setItem('sselfie.whatToSay.latestResult', JSON.stringify({
+          token: data.token || null,
+          url: data.url,
+          createdAt: new Date().toISOString()
+        }));
+      } catch (error) {}
+      window.location.href = data.url;
+      return;
+    }
     title.textContent = data.label || 'Maya Output';
     body.innerHTML = renderMayaMarkdown(data.answer || '');
     output.classList.add('visible');
