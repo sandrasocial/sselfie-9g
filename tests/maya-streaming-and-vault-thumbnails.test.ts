@@ -12,6 +12,10 @@ const inline = readFileSync(
   resolve(process.cwd(), "components/app-v3/maya-inline-components.tsx"),
   "utf8"
 )
+const conceptCard = readFileSync(
+  resolve(process.cwd(), "components/app-v3/concept-card.tsx"),
+  "utf8"
+)
 
 describe("Maya streaming stability and inline Vault thumbnails", () => {
   it("keeps completed concepts visible while the next concept is still streaming", () => {
@@ -26,5 +30,9 @@ describe("Maya streaming stability and inline Vault thumbnails", () => {
     expect(inline).not.toContain(
       'sizes="160px"\n                  className="object-cover transition-transform'
     )
+    expect(conceptCard).toContain('className="suite-concept-visual flex w-full justify-start')
+    expect(conceptCard).toContain('className="group relative aspect-[3/4] w-36')
+    expect(conceptCard).toContain('h-full w-full object-contain grayscale-[18%]')
+    expect(conceptCard).not.toContain('suite-concept-visual relative aspect-[4/3]')
   })
 })

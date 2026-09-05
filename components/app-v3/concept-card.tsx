@@ -393,20 +393,20 @@ export function ConceptCard({
     >
       {/* Visual area ONLY exists once we're generating or done - never an empty placeholder box. */}
       {isDirectionChoice && directionImageUrl ? (
-        <div className="suite-concept-visual relative aspect-[4/3] w-full bg-[#F1F2F2]">
+        <div className="suite-concept-visual flex w-full justify-start bg-[#F1F2F2] p-3">
           <button
             type="button"
             onClick={() => onGenerate(hasEditableCopy ? editedCopy : undefined)}
             disabled={disabled}
             aria-label={`Choose direction ${directionIndex}: ${concept.title}`}
-            className="group absolute inset-0 text-left disabled:cursor-not-allowed disabled:opacity-45"
+            className="group relative aspect-[3/4] w-36 max-w-full shrink-0 overflow-hidden bg-[#E7E8E8] text-left sm:w-40 disabled:cursor-not-allowed disabled:opacity-45"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={directionImageUrl}
               alt=""
               decoding="async"
-              className="absolute inset-0 h-full w-full object-cover grayscale-[18%] transition-[filter,transform] duration-300 group-hover:grayscale-0 group-hover:scale-[1.015] motion-reduce:transition-none"
+              className="absolute inset-0 h-full w-full object-contain grayscale-[18%] transition-[filter] duration-300 group-hover:grayscale-0 motion-reduce:transition-none"
             />
             <span className="absolute inset-x-0 bottom-0 flex min-h-11 items-center justify-between gap-3 bg-[#050505] px-3 py-2 text-white">
               <span className="min-w-0 truncate text-[10px] uppercase tracking-[0.16em]">
