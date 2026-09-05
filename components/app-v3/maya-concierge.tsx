@@ -6275,16 +6275,19 @@ export function MayaConcierge({
                         directionIndex={directionIndex + 1}
                         onDownloaded={() => setValueUsed(true)}
                         onGenerate={editedCopy =>
-                          void generateConcept(
-                            key,
-                            concept,
-                            conceptFormat,
-                            isGraphicOutputFormat(conceptFormat) && textOverlayMode === "with-text"
-                              ? textStyleChoice
-                              : null,
-                            editedCopy,
-                            gen.status === "done" ? undefined : creationActionIdempotencyKey
-                          )
+                          afterInteractionPaint(() => {
+                            void generateConcept(
+                              key,
+                              concept,
+                              conceptFormat,
+                              isGraphicOutputFormat(conceptFormat) &&
+                                textOverlayMode === "with-text"
+                                ? textStyleChoice
+                                : null,
+                              editedCopy,
+                              gen.status === "done" ? undefined : creationActionIdempotencyKey
+                            )
+                          })
                         }
                         onOpen={(urls, startIndex) =>
                           openLightbox({

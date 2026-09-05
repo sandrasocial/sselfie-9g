@@ -29,5 +29,8 @@ describe("Maya interaction performance", () => {
     expect(source).toContain(
       'onClick={() => afterInteractionPaint(() => onPickFormat("carousel"))}'
     )
+    expect(source).toMatch(
+      /onGenerate=\{editedCopy =>\s*afterInteractionPaint\(\(\) => \{\s*void generateConcept\(/
+    )
   })
 })
