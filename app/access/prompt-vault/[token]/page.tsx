@@ -803,6 +803,7 @@ export default async function PromptVaultAccessPage({
         /* Accordion content */
         .pva-details-content {
           border-top: 1px solid rgba(197,198,200,0.35);
+          contain: layout paint style;
         }
 
         /* Thumbnail strip */
@@ -834,6 +835,8 @@ export default async function PromptVaultAccessPage({
           overflow: hidden;
           display: flex;
           flex-direction: column;
+          content-visibility: auto;
+          contain-intrinsic-size: auto 760px;
         }
         .pva-card-image-wrap {
           width: 100%;
