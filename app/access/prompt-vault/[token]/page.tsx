@@ -9,7 +9,7 @@ import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getSuiteAccess } from "@/lib/trial/suite-trial"
 import { buildAppV3AestheticHref } from "@/lib/app-v3/navigation"
 import { CopyButton } from "@/components/ai-prompts/copy-button"
-import { PromptViewTracker } from "@/components/prompt-vault/prompt-view-tracker"
+import { DeferredVaultCollection } from "@/components/prompt-vault/deferred-vault-collection"
 import { SuiteDoor } from "@/components/marketing/suite-door"
 import { VaultPostPurchaseOffer } from "@/components/prompt-vault/vault-post-purchase-offer"
 import { getPaidPromptVaultAccess } from "@/lib/prompt-vault/paid-access"
@@ -177,8 +177,6 @@ async function resolveViewerAccess(): Promise<ViewerAccess> {
   }
 }
 
-// ── Prompt card component ────────────────────────────────────────────────────
-
 function PromptActions({
   card,
   aestheticId,
@@ -223,57 +221,6 @@ function PromptActions({
         />
       </div>
     </div>
-  )
-}
-
-function PromptCardEl({
-  card,
-  aestheticId,
-  isActiveMember,
-}: {
-  card: PromptCard
-  aestheticId: string
-  isActiveMember: boolean
-}) {
-  return (
-    <article id={card.id} className="pva-card">
-      <PromptViewTracker
-        promptId={card.id}
-        promptTitle={card.title}
-        promptNumber={card.number}
-        mood={card.mood}
-      />
-      {card.exampleImage && (
-        <div className="pva-card-image-wrap">
-          <Image
-            src={card.exampleImage}
-            alt={`Example result for ${card.title}`}
-            width={600}
-            height={900}
-            className="pva-card-image"
-          />
-        </div>
-      )}
-      <div className="pva-card-body">
-        <div className="pva-card-header">
-          <span className="pva-card-number">{card.number}</span>
-          <h3 className={`pva-card-title ${cormorant.className}`}>{card.title}</h3>
-        </div>
-        {card.whenToUse && (
-          <>
-            <p className="pva-when-label">When to use it</p>
-            <p className="pva-when">{card.whenToUse}</p>
-          </>
-        )}
-        <p className="pva-mood">{card.mood}</p>
-        <div className="pva-prompt-wrap">
-          <p className="pva-prompt-text">{card.prompt}</p>
-          <div className="pva-copy-row">
-            <PromptActions card={card} aestheticId={aestheticId} isActiveMember={isActiveMember} />
-          </div>
-        </div>
-      </div>
-    </article>
   )
 }
 
@@ -496,77 +443,14 @@ export default async function PromptVaultAccessPage({
               const thumbs = meta?.thumbnails.slice(0, 6) ?? []
 
               return (
-                <details key={collection.id} id={collection.id} className="pva-details">
-                  <summary className="pva-summary">
-                    <div className="pva-summary-preview" aria-hidden>
-                      {(thumbs.length > 0
-                        ? thumbs.slice(0, 3)
-                        : collection.heroImage
-                          ? [collection.heroImage]
-                          : []
-                      ).map((src, index) => (
-                        <div key={`${src}-${index}`} className="pva-summary-thumb">
-                          <Image
-                            src={src}
-                            alt=""
-                            fill
-                            aria-hidden
-                            sizes="(max-width: 640px) 30vw, 12vw"
-                            style={{ objectFit: "cover", objectPosition: "center top" }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="pva-summary-text">
-                      <span className="pva-series-eyebrow">
-                        {collection.eyebrow === "NEW PHOTOSHOOT" ? "NEW · " : ""}
-                        {collection.cards.length} prompts
-                      </span>
-                      <span className={`pva-series-title ${cormorant.className}`}>
-                        {collection.title.replace(/\s*Editorial\s*$/i, "")}
-                      </span>
-                      <span className="pva-series-note">{collection.note}</span>
-                    </div>
-                    <span className="pva-open-label">
-                      <span className="pva-open-text">Open shoot</span>
-                      <span className="pva-close-text">Close shoot</span>
-                    </span>
-                  </summary>
-
-                  <div className="pva-details-content">
-                    {/* Thumbnail strip */}
-                    {thumbs.length > 0 && (
-                      <div className="pva-thumb-strip">
-                        {thumbs.map((src, i) => (
-                          <div key={i} className="pva-thumb-item">
-                            <Image
-                              src={src}
-                              alt=""
-                              fill
-                              aria-hidden
-                              style={{
-                                objectFit: "cover",
-                                objectPosition: "center top",
-                              }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Prompt cards */}
-                    <div className="pva-cards">
-                      {collection.cards.map(card => (
-                        <PromptCardEl
-                          key={card.id}
-                          card={card}
-                          aestheticId={toAestheticId(collection.title)}
-                          isActiveMember={viewerAccess.isActiveMember}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </details>
+                <DeferredVaultCollection
+                  key={collection.id}
+                  collection={collection}
+                  thumbnails={thumbs}
+                  aestheticId={toAestheticId(collection.title)}
+                  isActiveMember={viewerAccess.isActiveMember}
+                  serifClassName={cormorant.className}
+                />
               )
             })}
           </div>
