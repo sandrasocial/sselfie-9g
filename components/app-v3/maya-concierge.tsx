@@ -661,7 +661,10 @@ type UploadSlot = "face" | "angle" | "side" | "body" | "inspiration" | "video"
  *  without this fallback the cards a user watched stream in would vanish when Maya finishes.
  *  When the tool JSON was CUT mid-stream (token ceiling - the story-sequence/story-slide killer,
  *  2026-07-03), rawInput is a raw STRING: salvageConceptsPayload rescues every complete concept. */
-function extractConcepts(part: any): ConceptCardData[] | null {
+function extractConcepts(
+  part: any,
+  options: { allowReadySubset?: boolean } = {}
+): ConceptCardData[] | null {
   if (!part || typeof part !== "object") return null
   if (part.type !== "tool-emit_concepts" && part.type !== "dynamic-tool") return null
   const payload =
@@ -697,6 +700,13 @@ function extractConcepts(part: any): ConceptCardData[] | null {
     })
   const format = extractConceptFormat(part)
   if (format && validateConceptCardReadiness({ format, concepts: normalized }).length > 0) {
+    if (options.allowReadySubset) {
+      const ready = normalized.filter(
+        concept =>
+          validateConceptCardReadiness({ format, concepts: [concept] }).length === 0
+      )
+      return ready.length > 0 ? ready : null
+    }
     return null
   }
   return normalized
@@ -6165,9 +6175,13 @@ export function MayaConcierge({
                     .filter((p: any) => p?.type === "text" && typeof p.text === "string")
                     .map((p: any) => p.text)
                     .join("")
-                  const conceptToolPart = parts.find((part: any) => Boolean(extractConcepts(part)))
+                  const conceptToolPart = parts.find((part: any) =>
+                    Boolean(extractConcepts(part, { allowReadySubset: isThinking }))
+                  )
                   const conceptPart = conceptToolPart
-                    ? (extractConcepts(conceptToolPart) as ConceptCardData[] | null)
+                    ? (extractConcepts(conceptToolPart, {
+                        allowReadySubset: isThinking,
+                      }) as ConceptCardData[] | null)
                     : null
                   const conceptFormat =
                     (parts.map(extractConceptFormat).find(Boolean) as OutputFormat | undefined) ??

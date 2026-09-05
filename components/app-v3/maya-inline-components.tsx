@@ -145,7 +145,7 @@ export function InlineVibePicker({
           )}
         </div>
       )}
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         {visibleAesthetics.map(aesthetic => (
           <button
             key={aesthetic.id}
@@ -154,14 +154,14 @@ export function InlineVibePicker({
             onClick={() => onPick(aesthetic)}
             className="group overflow-hidden rounded-[6px] border border-[#C5C6C8]/70 bg-[#F8FAFA] text-left disabled:opacity-45"
           >
-            <div className="relative aspect-[4/5] bg-[#E9EAEB]">
+            <div className="relative aspect-[3/4] bg-[#E9EAEB]">
               {aesthetic.coverImage && (
                 <Image
                   src={aesthetic.coverImage}
                   alt=""
                   fill
-                  sizes="160px"
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  sizes="(max-width: 640px) 30vw, 120px"
+                  className="object-contain"
                 />
               )}
             </div>
@@ -194,7 +194,7 @@ export function InlineShotPicker({
   return (
     <div className="min-w-0 rounded-[8px] border border-[#C5C6C8]/60 bg-white p-4 [overflow-x:clip]">
       <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">Choose the shot</p>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         {shots.slice(0, 8).map((shot, index) => (
           <button
             key={shot.id || `${shot.title}-${index}`}
@@ -203,13 +203,13 @@ export function InlineShotPicker({
             onClick={() => onPick(shot)}
             className="group overflow-hidden rounded-[6px] border border-[#C5C6C8]/70 bg-[#F8FAFA] text-left disabled:opacity-45"
           >
-            <div className="relative aspect-[4/5] bg-[#E9EAEB]">
+            <div className="relative aspect-[3/4] bg-[#E9EAEB]">
               <Image
                 src={shot.image}
                 alt=""
                 fill
-                sizes="160px"
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                sizes="(max-width: 640px) 30vw, 120px"
+                className="object-contain"
               />
             </div>
             <p className="line-clamp-2 px-2.5 py-2 text-[12px] leading-snug text-[#0D0E10]">
@@ -245,7 +245,7 @@ export function InlineShotDirectorCard({
       <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">Choose the next step</p>
       <div className="mt-3 flex gap-3">
         <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[6px] bg-[#E9EAEB]">
-          <Image src={shot.image} alt="" fill sizes="80px" className="object-cover" />
+          <Image src={shot.image} alt="" fill sizes="80px" className="object-contain" />
         </div>
         <div className="min-w-0">
           <p className="font-serif text-[20px] font-light leading-tight text-[#0D0E10]">
