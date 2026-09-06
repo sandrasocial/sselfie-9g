@@ -1,4 +1,5 @@
 import sharp from "sharp"
+import path from "node:path"
 import OpenAI, { toFile } from "openai"
 import type { CreativePlanOutput } from "./creative-plan"
 import type { TextOverlaySpec } from "@/lib/app-v3/text-overlay"
@@ -26,10 +27,12 @@ const escape = (s: string) =>
 
 /** Pango wraps real glyphs. Oversized copy fails instead of being clipped or silently shortened. */
 async function textLayer(text: string, width: number, font: string, color: string) {
+  const sans = font.startsWith("sans ")
   return sharp({
     text: {
       text: `<span foreground="${escape(color)}">${escape(text.replace(/\*/g, ""))}</span>`,
-      font,
+      font: font.replace(/^(sans|serif)/, sans ? "Inter" : "Cormorant Garamond"),
+      fontfile: path.join(process.cwd(), "assets", "fonts", sans ? "inter-400.ttf" : "cormorant-garamond-500.ttf"),
       width,
       rgba: true,
       dpi: 72,

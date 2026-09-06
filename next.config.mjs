@@ -76,6 +76,7 @@ const nextConfig = {
   },
   // CONTENT-VISUALS-01: the carousel + story render routes read these TTFs at runtime on Vercel
   outputFileTracingIncludes: {
+    "/api/app-v3/maya/**": ["./assets/fonts/*.ttf"],
     "/api/admin/content-kit/**": ["./assets/fonts/*.ttf"],
     "/academy/what_to_say": ["./server/academy-workbooks/what_to_say/index.html"],
     "/academy/show_up": ["./server/academy-workbooks/show_up/index.html"],
