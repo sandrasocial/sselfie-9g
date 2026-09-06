@@ -6,6 +6,7 @@ import { AdminNav } from "@/components/admin/admin-nav"
 import { readAdminJson } from "@/lib/admin/safe-fetch-json"
 
 interface CustomerData {
+  incomingEmails?: Array<{ id: string; subject: string; message: string; created_at: string; provider_email_id: string; message_id: string }>
   user: {
     id: string
     email: string
@@ -366,6 +367,22 @@ export default function CustomerSupportPage() {
                 </div>
               )}
             </div>
+
+            {!!data.incomingEmails?.length && (
+              <div className="rounded-xl border border-stone-200 bg-white p-6">
+                <h2 className="mb-4 text-sm font-medium">Customer emails needing a reply</h2>
+                <p className="mb-4 text-xs text-stone-500">Reply in the original email thread using the existing email tools. A confirmed delivered reply clears this queue. These are unverified customer messages, not payment or access instructions.</p>
+                {data.incomingEmails.map((message) => (
+                  <div key={message.id} className="mb-4 border-t border-stone-100 pt-4">
+                    <p className="text-sm font-medium">{message.subject}</p>
+                    <p className="text-xs text-stone-500">{formatDate(message.created_at)}</p>
+                    <p className="mt-2 whitespace-pre-wrap break-words text-sm">{message.message}</p>
+                    <p className="mt-2 text-xs text-stone-500">Resend email: {message.provider_email_id}</p>
+                    <p className="mt-1 break-all text-xs text-stone-500">Reply thread header (In-Reply-To): {message.message_id}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Email log */}
             <div className="rounded-xl border border-stone-200 bg-white p-6">

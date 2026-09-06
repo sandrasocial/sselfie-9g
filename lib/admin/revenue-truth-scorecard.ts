@@ -233,8 +233,14 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
     `.catch(() => []),
     sql`
       SELECT hook_line, views, comments, saves, shares, permalink
-      FROM ig_media_snapshots
-      WHERE captured_on >= CURRENT_DATE - INTERVAL '30 days'
+      FROM (
+        SELECT DISTINCT ON (media_id)
+          hook_line, views, comments, saves, shares, permalink
+        FROM ig_media_snapshots
+        WHERE captured_on >= CURRENT_DATE - INTERVAL '30 days'
+          AND posted_at >= NOW() - INTERVAL '30 days'
+        ORDER BY media_id, captured_on DESC, id DESC
+      ) latest_posts
       ORDER BY COALESCE(saves, 0) DESC, COALESCE(shares, 0) DESC, COALESCE(comments, 0) DESC
       LIMIT 5
     `.catch(() => []),
@@ -259,7 +265,9 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       GROUP BY email_type
       HAVING COUNT(*) FILTER (WHERE clicked_at IS NOT NULL OR clicked = TRUE OR status IN ('clicked', 'converted')) > 0
           OR COUNT(*) FILTER (WHERE converted_at IS NOT NULL OR converted = TRUE OR status = 'converted') > 0
-      ORDER BY conversions DESC, clicks DESC
+      -- Conversion flags can include renewals credited to multiple emails. Do not
+      -- use them to rank acquisition performance without a joined purchase cohort.
+      ORDER BY clicks DESC, email_type ASC
       LIMIT 8
     `.catch(() => []),
   ])
@@ -460,6 +468,8 @@ export async function getRevenueTruthScorecard(): Promise<RevenueTruthScorecard>
       "Payments are charge rows, not active members.",
       "Members are active Stripe subscriptions only.",
       "MRR is net of discounts.",
+      "Skool billing is not included. Suite access grants are not payment evidence.",
+      "Email conversion flags are unverified attribution and can include renewals; email signals are ranked by click-marked records, not proven sales.",
       "Historical revenue uses stripe_payments.",
       "SUITE page views and CTA clicks are event counts, not unique people.",
     ],

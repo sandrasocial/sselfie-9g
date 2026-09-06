@@ -9,6 +9,7 @@ import {
   isVaultMayaLaunchCampaignKey,
 } from "@/lib/email/campaigns/vault-maya-launch-segments"
 import { assessDeliverabilityWindow } from "@/lib/email/deliverability-alerts"
+import { receiveCustomerEmail, markCustomerEmailAnswered } from "@/lib/email/received-email"
 
 const WEBHOOK_EVENT_TYPES = new Set([
   "email.sent",
@@ -807,6 +808,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
     }
 
+    if (body?.type === "email.received") {
+      const result = await receiveCustomerEmail(body.data)
+      return NextResponse.json({ received: true, eventType: body.type, ...result })
+    }
+
     const context = await buildContext(body)
     const isProviderUnsubscribe =
       context.eventType === "contact.updated" && context.eventData?.unsubscribed === true
@@ -850,6 +856,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await updateEmailLog(context)
+    await markCustomerEmailAnswered(context.eventType, context.eventData)
     await updateABTestIfNeeded(result.rows, context.eventType)
     await maybeSendDeliverabilityAlert(context.eventType)
 

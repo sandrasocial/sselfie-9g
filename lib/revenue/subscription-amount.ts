@@ -53,3 +53,20 @@ export function calculateSubscriptionAmount(subscription: any): number {
   }
   return 0
 }
+
+/** Sum before rounding so five $49.50 subscriptions stay $247.50, not $250. */
+export function subscriptionMrrByCurrency(subscriptions: any[], gross = false): Record<string, number> {
+  const totals: Record<string, number> = {}
+  for (const subscription of subscriptions) {
+    const price = subscription.items?.data?.[0]?.price
+    if (!price?.recurring) continue
+    const currency = String(price.currency || "unknown").toUpperCase()
+    const amount = calculateSubscriptionAmount(gross
+      ? { ...subscription, discount: null, discounts: [] }
+      : subscription)
+    totals[currency] = (totals[currency] || 0) + amount
+  }
+  return Object.fromEntries(Object.entries(totals).map(([currency, total]) =>
+    [currency, Math.round((total + Number.EPSILON) * 100) / 100],
+  ))
+}
