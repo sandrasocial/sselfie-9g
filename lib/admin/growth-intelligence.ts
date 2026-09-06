@@ -15,7 +15,7 @@ export type GrowthIntelligenceReport = Awaited<ReturnType<typeof getGrowthIntell
 export async function getGrowthIntelligenceReport(windowDays: number) {
   const interval = `${windowDays} days`
 
-  const [eventCountsRows, truthSnapshot, revenueScorecard] = await Promise.all([
+  const [eventCountsRows, truthSnapshot, revenueScorecard, commercialJobRows] = await Promise.all([
     sql`
     WITH analytics AS (
       SELECT
@@ -61,12 +61,22 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     )
     SELECT * FROM analytics, checkout
   `,
-    getGrowthTruthSnapshot(Math.max(windowDays, 90)).catch((error) => {
+    getGrowthTruthSnapshot(windowDays).catch((error) => {
       console.error("[growth-intelligence] growth truth snapshot failed:", error)
       return null
     }),
     getRevenueTruthScorecard().catch((error) => {
       console.error("[growth-intelligence] revenue truth scorecard failed:", error)
+      return null
+    }),
+    sql`
+      SELECT DISTINCT ON (job_name) job_name AS job, status, started_at, summary
+      FROM admin_cron_runs
+      WHERE job_name IN ('paid-product-membership-bridge', 'high-intent-click-recovery')
+        AND started_at >= NOW() - INTERVAL '48 hours'
+      ORDER BY job_name, started_at DESC
+    `.catch((error) => {
+      console.error("[growth-intelligence] commercial job evidence unavailable:", error)
       return null
     }),
   ])
@@ -250,6 +260,10 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     windowDays,
     truthSnapshot,
     revenueScorecard,
+    commercialJobs: commercialJobRows as Array<{
+      job: string; status: string; started_at: string | Date;
+      summary: { enabled?: boolean; retired?: boolean; found?: number; reason?: string } | null;
+    }> | null,
     eventCounts,
     paymentCounts,
     buyerCounts,

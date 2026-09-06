@@ -145,12 +145,61 @@ const revenueScorecard = {
 } as const
 
 describe("daily Sandra briefing", () => {
+  it("surfaces a successful no-op ahead of old acquisition advice without enabling it", () => {
+    const briefing = buildDailySandraBriefing({ ...baseReport, truthSnapshot, commercialJobs: [
+      { job: "paid-product-membership-bridge", status: "ok", started_at: "2026-09-06", summary: { retired: true, enabled: false } },
+      { job: "high-intent-click-recovery", status: "ok", started_at: "2026-09-06", summary: { enabled: false, found: 2 } },
+    ] })
+    expect(briefing.leaking[0]).toContain("buyer-to-membership job is retired or disabled")
+    expect(briefing.leaking.join(" ")).toContain("report-only (2 candidates reported)")
+    expect(briefing.codexNext[0]).toContain("Keep the retired bridge disabled")
+    expect(generateDailySandraBriefingEmail(briefing).text).toContain("buyer-to-membership job")
+  })
+
+  it("labels missing commercial evidence as a gap, not a healthy job", () => {
+    for (const commercialJobs of [null, []]) {
+      const briefing = buildDailySandraBriefing({ ...baseReport, commercialJobs })
+      expect(briefing.leaking[0]).toContain("GAP:")
+    }
+  })
+
+  it("does not mix USD and EUR or label rolling ledger dates as yesterday", () => {
+    const briefing = buildDailySandraBriefing(baseReport, { money: {
+      yesterdayPayments: 0, yesterdayRevenueByCurrency: { USD: 0, EUR: 0 },
+      monthPayments: 6, monthRevenueByCurrency: { USD: 49.5, EUR: 97 },
+    } })
+    expect(briefing.moneyHeader).toContain("€97 + $49.50")
+    expect(briefing.moneyHeader).toContain("Last 30 days")
+    expect(briefing.moneyHeader).not.toContain("$147")
+    expect(briefing.moneyHeader).not.toContain("Yesterday:")
+  })
+
+  it("does not call unverified email conversion flags proven sales", () => {
+    const email = generateDailySandraBriefingEmail(buildDailySandraBriefing({ ...baseReport, revenueScorecard }))
+    expect(email.text).toContain("unverified conversion flags")
+    expect(email.html).toContain("Renewals and duplicate attribution")
+    expect(email.text).not.toContain("Best email:")
+    expect(email.html).toContain("exclude Skool billing")
+  })
+
+  it("reads real cron schema and keeps the report window explicit", () => {
+    const reportSource = fs.readFileSync(path.join(process.cwd(), "lib/admin/growth-intelligence.ts"), "utf8")
+    expect(reportSource).toContain("job_name AS job")
+    expect(reportSource).toContain("getGrowthTruthSnapshot(windowDays)")
+    expect(reportSource).not.toContain("Math.max(windowDays, 90)")
+    const scorecard = fs.readFileSync(path.join(process.cwd(), "lib/admin/revenue-truth-scorecard.ts"), "utf8")
+    expect(scorecard).toContain("DISTINCT ON (media_id)")
+    expect(scorecard).toContain("posted_at >= NOW() - INTERVAL '30 days'")
+    expect(scorecard).toContain("ORDER BY clicks DESC, email_type ASC")
+  })
+
   it("builds the four-section morning brief", () => {
     const briefing = buildDailySandraBriefing(baseReport)
 
-    expect(briefing.working.join(" ")).toContain("661 women joined")
+    expect(briefing.working.join(" ")).toContain("661 opt-in events")
     expect(briefing.postToday.join(" ")).toContain("Dark Balcony Reel Cover Hero")
-    expect(briefing.postToday.join(" ")).toContain("PROMPT")
+    expect(briefing.postToday.join(" ")).not.toContain("Use PROMPT")
+    expect(briefing.postToday.join(" ")).toContain("approved offer's CTA")
     expect(briefing.codexNext.length).toBeGreaterThan(0)
     expect(briefing.sandraNext.length).toBeGreaterThan(0)
   })
@@ -191,7 +240,7 @@ describe("daily Sandra briefing", () => {
 
     expect(email.subject).toBe("today's SSELFIE briefing")
     expect(email.html).toContain("Today's move")
-    expect(email.html).toContain("661 women joined")
+    expect(email.html).toContain("661 opt-in events")
     expect(email.text).toContain("Today's move")
   })
 
@@ -219,7 +268,7 @@ describe("daily Sandra briefing", () => {
     expect(email.text).not.toContain("Customer threads")
   })
 
-  it("puts the truth snapshot and real leak ahead of generic advice", () => {
+  it("keeps historical snapshot advice from overriding the current window", () => {
     const briefing = buildDailySandraBriefing({
       ...baseReport,
       truthSnapshot,
@@ -227,8 +276,8 @@ describe("daily Sandra briefing", () => {
     const email = generateDailySandraBriefingEmail(briefing)
 
     expect(briefing.working.join(" ")).toContain("110,830 followers")
-    expect(briefing.leaking[0]).toContain("2960 ManyChat/email captures")
-    expect(briefing.codexNext.join(" ")).toContain("ManyChat PROMPT path")
+    expect(briefing.leaking.join(" ")).not.toContain("2960 ManyChat/email captures")
+    expect(briefing.codexNext.join(" ")).not.toContain("ManyChat PROMPT path")
     expect(email.html).toContain("Growth truth")
     expect(email.text).toContain("Email: 6,839 subscribed")
     expect(email.text).toContain("Sum of latest per-post reach snapshots")

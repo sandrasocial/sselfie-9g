@@ -1,7 +1,7 @@
 import { getStripe } from "@/lib/stripe"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 import { CACHE_TTL, getCache, setCache } from "@/lib/cache"
-import { calculateSubscriptionAmount, getSubscriptionCoupon } from "@/lib/revenue/subscription-amount"
+import { calculateSubscriptionAmount, getSubscriptionCoupon, subscriptionMrrByCurrency } from "@/lib/revenue/subscription-amount"
 import { getConfiguredMembershipPriceIds, isMembershipSubscription } from "@/lib/revenue/membership-subscription-filter"
 
 export interface SingleSourceRevenueMetrics {
@@ -93,12 +93,7 @@ async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
     activeMembershipSubs.reduce((sum, sub) => sum + calculateSubscriptionAmount(sub), 0),
   )
 
-  const mrrByCurrency = activeMembershipSubs.reduce<Record<string, number>>((acc, sub) => {
-    const item = sub.items?.data?.[0]
-    const currency = String(item?.price?.currency || "unknown").toUpperCase()
-    acc[currency] = Math.round((acc[currency] || 0) + calculateSubscriptionAmount(sub))
-    return acc
-  }, {})
+  const mrrByCurrency = subscriptionMrrByCurrency(activeMembershipSubs)
 
   const grossMrr = Math.round(
     activeMembershipSubs.reduce((sum, sub) => {
@@ -110,16 +105,7 @@ async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
     }, 0),
   )
 
-  const grossMrrByCurrency = activeMembershipSubs.reduce<Record<string, number>>((acc, sub) => {
-    const item = sub.items?.data?.[0]
-    const price = item?.price
-    if (!price?.recurring) return acc
-    const currency = String(price.currency || "unknown").toUpperCase()
-    const base = (Number(price.unit_amount || 0) * Number(item?.quantity || 1)) / 100
-    const monthlyBase = price.recurring.interval === "year" ? base / 12 : base
-    acc[currency] = Math.round((acc[currency] || 0) + monthlyBase)
-    return acc
-  }, {})
+  const grossMrrByCurrency = subscriptionMrrByCurrency(activeMembershipSubs, true)
 
   const discountedMembers = activeMembershipSubs.filter((sub) => {
     const coupon = getSubscriptionCoupon(sub)

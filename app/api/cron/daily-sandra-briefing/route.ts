@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     const [moneyRows, approvalActions] = await Promise.all([
       sql`
         SELECT
+          UPPER(COALESCE(NULLIF(currency, ''), 'unknown')) AS currency,
           COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '1 day')::int AS yesterday_payments,
           COALESCE(SUM(amount_cents) FILTER (WHERE payment_date > NOW() - INTERVAL '1 day'), 0)::bigint AS yesterday_cents,
           COUNT(*) FILTER (WHERE payment_date > NOW() - INTERVAL '30 days')::int AS month_payments,
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
         WHERE status IN ('succeeded', 'paid')
           AND (is_test_mode = FALSE OR is_test_mode IS NULL)
           AND payment_date > NOW() - INTERVAL '30 days'
+        GROUP BY 1
       ` as unknown as Promise<any[]>,
       syncApprovalActions().catch((error) => {
         console.error("[daily-sandra-briefing] approval sync failed:", error)
@@ -51,12 +53,11 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
-    const money = moneyRows[0] || {}
     const moneyInput = {
-      yesterdayPayments: Number(money.yesterday_payments || 0),
-      yesterdayRevenue: Number(money.yesterday_cents || 0) / 100,
-      monthPayments: Number(money.month_payments || 0),
-      monthRevenue: Number(money.month_cents || 0) / 100,
+      yesterdayPayments: moneyRows.reduce((sum, row) => sum + Number(row.yesterday_payments || 0), 0),
+      yesterdayRevenueByCurrency: Object.fromEntries(moneyRows.map(row => [row.currency, Number(row.yesterday_cents || 0) / 100])),
+      monthPayments: moneyRows.reduce((sum, row) => sum + Number(row.month_payments || 0), 0),
+      monthRevenueByCurrency: Object.fromEntries(moneyRows.map(row => [row.currency, Number(row.month_cents || 0) / 100])),
     }
     const briefing = buildDailySandraBriefing(report, {
       money: moneyInput,

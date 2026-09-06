@@ -64,14 +64,20 @@ type GrowthReportLike = {
   attributionRows: ReportRow[]
   truthSnapshot?: GrowthTruthSnapshot | null
   revenueScorecard?: RevenueTruthScorecard | null
+  commercialJobs?: Array<{
+    job: string
+    status: string
+    started_at: string | Date
+    summary: { enabled?: boolean; retired?: boolean; found?: number; reason?: string } | null
+  }> | null
 }
 
 export type DailyBriefingExtras = {
   money?: {
     yesterdayPayments: number
-    yesterdayRevenue: number
+    yesterdayRevenueByCurrency: Record<string, number>
     monthPayments: number
-    monthRevenue: number
+    monthRevenueByCurrency: Record<string, number>
   }
   approvalActions?: ApprovalActionSummary[]
 }
@@ -121,12 +127,12 @@ function money(cents: number): string {
 function currencyMoney(value: number, currency: string): string {
   const normalized = currency.toUpperCase()
   const symbol = normalized === "EUR" ? "€" : normalized === "USD" ? "$" : `${normalized} `
-  return `${symbol}${value.toFixed(0)}`
+  return `${symbol}${value.toFixed(Number.isInteger(value) ? 0 : 2)}`
 }
 
 function currencyBreakdown(values: Record<string, number> | null | undefined): string {
   const entries = Object.entries(values || {}).filter(([, value]) => Number(value) > 0)
-  if (entries.length === 0) return "$0"
+  if (entries.length === 0) return "0"
   return entries
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([currency, value]) => currencyMoney(value, currency))
@@ -178,7 +184,6 @@ export function buildDailySandraBriefing(
   )
   const distinctAccessOpeners = report.eventCounts.vaultAccessOpeners || 0
   const accessRate = percent(distinctAccessOpeners, buyers)
-  const copiesPerBuyer = buyers ? report.eventCounts.vaultPromptCopies / buyers : 0
   const topPaidPrompt = report.topPromptSignals[0]
   const topFreePrompt = report.freePromptSignals[0]
   const topAttribution = report.attributionRows[0]
@@ -211,7 +216,7 @@ export function buildDailySandraBriefing(
   const sandraNext: string[] = []
 
   if (report.eventCounts.aiPromptOptins > 0) {
-    working.push(`${report.eventCounts.aiPromptOptins} women joined the AI prompt funnel in the last ${report.windowDays} days.`)
+    working.push(`${report.eventCounts.aiPromptOptins} opt-in events were recorded in the AI prompt funnel in the last ${report.windowDays} days.`)
   }
 
   if (report.truthSnapshot?.instagram.followers) {
@@ -222,7 +227,7 @@ export function buildDailySandraBriefing(
 
   if (report.revenueScorecard) {
     working.push(
-      `Revenue truth: ${report.revenueScorecard.members.active} active Suite members, ${currencyBreakdown(report.revenueScorecard.members.netMrrByCurrency)} net MRR, ${report.revenueScorecard.members.discountedMembers} discounted.`,
+      `Revenue truth: ${report.revenueScorecard.members.active} active Suite members billed directly in Stripe, ${currencyBreakdown(report.revenueScorecard.members.netMrrByCurrency)} net MRR, ${report.revenueScorecard.members.discountedMembers} discounted. Skool billing is separate.`,
     )
     working.push(
       `Trial activation: ${report.revenueScorecard.trials.claimed30d} claimed in 30 days, ${report.revenueScorecard.trials.firstGeneration30d} reached first generation, ${report.revenueScorecard.trials.paymentFormRendered30d} reached payment form.`,
@@ -230,7 +235,7 @@ export function buildDailySandraBriefing(
   }
 
   if (report.eventCounts.checkoutStarts > 0) {
-    working.push(`${report.eventCounts.checkoutStarts} people started Prompt Vault checkout from ${report.eventCounts.vaultVisits} Vault visits (${checkoutRate}%).`)
+    working.push(`${report.eventCounts.checkoutStarts} Prompt Vault checkout sessions and ${report.eventCounts.vaultVisits} visit events were recorded. These are not a matched customer cohort.`)
   }
 
   if (purchases > 0) {
@@ -238,7 +243,7 @@ export function buildDailySandraBriefing(
   }
 
   if (report.eventCounts.vaultPromptCopies > 0) {
-    working.push(`Buyers copied ${report.eventCounts.vaultPromptCopies} Vault prompts (${copiesPerBuyer.toFixed(1)} per buyer). That is the product-fit signal to keep watching.`)
+    working.push(`${report.eventCounts.vaultPromptCopies} paid Vault prompt-copy events were recorded. Repeat events are not proof of customer results.`)
   }
 
   if (working.length === 0) {
@@ -246,7 +251,7 @@ export function buildDailySandraBriefing(
   }
 
   if (report.eventCounts.aiPromptAccessOpens > 0 && freeBridgeRate < 12) {
-    leaking.push(`Only ${freeBridgeRate}% of free prompt access opens clicked into the Vault. The preview-to-paid bridge needs the most attention.`)
+    leaking.push(`${report.eventCounts.freeToVaultClicks} paid-link click events versus ${report.eventCounts.aiPromptAccessOpens} free prompt access events. Inspect this handoff; unmatched event totals cannot establish a customer conversion rate.`)
   }
 
   if (report.revenueScorecard && report.revenueScorecard.trials.claimed30d > 0) {
@@ -297,17 +302,13 @@ export function buildDailySandraBriefing(
     leaking.push("No major leak is obvious in this window. Keep sending qualified traffic and watch the next 24 hours.")
   }
 
-  if (report.truthSnapshot?.leaks?.length) {
-    leaking.unshift(...report.truthSnapshot.leaks)
-  }
+  // Historical snapshots and popular prompts are supporting evidence, not authority
+  // to select a different offer or override the current commercial decision.
+  postToday.push(`Observed visual signal: ${topVisual}. Check it against the approved offer before drafting.`)
+  postToday.push("Use only the approved offer's CTA and checkout. Prompt popularity alone does not select the offer.")
+  postToday.push("Keep content and follow-up drafts unsent until Sandra reviews the exact copy and recipients.")
 
-  postToday.push(`Post one Prompt My Selfie reel around ${topVisual}. Make the first second show the finished transformation, not the explanation.`)
-
-  postToday.push("Use PROMPT as the CTA when the post teaches AI-photo prompts, then judge it from measured clicks and copies.")
-
-  postToday.push("Send story traffic directly to the free preview or Vault with clean UTM tracking.")
-
-  sandraNext.push("Choose today's reel angle from the strongest visual signal above.")
+  sandraNext.push("Review the current offer and the exact draft before approving any customer message.")
   sandraNext.push("Review Customer Support for objections, bugs, and requests.")
   sandraNext.push("Keep posting transformation proof before teaching the prompt mechanics.")
 
@@ -325,14 +326,6 @@ export function buildDailySandraBriefing(
     report.revenueScorecard.workWithMe.bookedCalls === 0
   ) {
     codexNext.push("Protect the existing attended inquiries and keep their status accurate. Do not rebuild or publicly promote the legacy path.")
-  } else if (
-    report.truthSnapshot &&
-    report.truthSnapshot.manychat.captures >= 100 &&
-    report.truthSnapshot.manychat.captureToPromptVaultPurchaseRate < 3
-  ) {
-    codexNext.push("Audit and tighten the ManyChat PROMPT path: delivered promise, email capture, Vault offer, checkout URL, and follow-up sequence.")
-  } else if (report.truthSnapshot && report.truthSnapshot.suite.activeTrials > 0) {
-    codexNext.push("Fix Suite trial activation: make first selfie upload and first generated result the obvious next step for every active trial.")
   } else if (report.eventCounts.aiPromptAccessOpens > 0 && freeBridgeRate < 12) {
     codexNext.push("Improve the free preview to Vault bridge after the first prompt copy.")
   } else if (report.eventCounts.manychatCheckoutStarts >= 3 && manychatUnrecoverableRate >= 25) {
@@ -345,10 +338,26 @@ export function buildDailySandraBriefing(
     codexNext.push("No urgent code fix. Monitor attribution and prompt copies before building another product layer.")
   }
 
-  codexNext.push("Pull the Growth Intelligence report again tomorrow and compare the same four sections.")
+  if (report.commercialJobs !== undefined) {
+    const bridge = report.commercialJobs?.find(job => job.job === "paid-product-membership-bridge")
+    const recovery = report.commercialJobs?.find(job => job.job === "high-intent-click-recovery")
+    if (!bridge || !recovery) {
+      leaking.unshift("GAP: recent evidence for a commercial follow-up job is unavailable. Do not report the sales loop as healthy.")
+    }
+    if (bridge?.status === "ok" && (bridge.summary?.retired || bridge.summary?.enabled === false)) {
+      leaking.unshift("The legacy buyer-to-membership job is retired or disabled and sends no sales follow-up. This report has not verified its replacement. This is separate from Skool payment-to-access delivery.")
+      codexNext.unshift("Resolve the membership handoff against the approved offer and member-access checks. Keep the retired bridge disabled; prepare a reviewed, manually assisted follow-up first.")
+    }
+    if (recovery?.status === "ok" && recovery.summary?.enabled === false) {
+      leaking.splice(1, 0, `High-intent follow-up is report-only${typeof recovery.summary.found === "number" ? ` (${recovery.summary.found} candidates reported)` : ""}. Report-only runs do not send follow-ups; verify which offers their candidate rules cover.`)
+    }
+    if (report.commercialJobs?.some(job => job.status !== "ok")) {
+      leaking.unshift("A recent commercial follow-up run did not finish successfully. Inspect it before any send.")
+    }
+  }
 
   const moneyHeader = extras.money
-    ? `Yesterday: ${extras.money.yesterdayPayments} payments, $${extras.money.yesterdayRevenue.toFixed(0)}. This month: ${extras.money.monthPayments} payments, $${extras.money.monthRevenue.toFixed(0)}.`
+    ? `Last 24 hours: ${extras.money.yesterdayPayments} payment records, ${currencyBreakdown(extras.money.yesterdayRevenueByCurrency)}. Last 30 days: ${extras.money.monthPayments} payment records, ${currencyBreakdown(extras.money.monthRevenueByCurrency)}. Ledger payment dates, not settlement dates. Currencies are not combined.`
     : null
 
   return {
@@ -448,10 +457,10 @@ function revenueScorecardHtml(scorecard: RevenueTruthScorecard | null): string {
     ["Trials", `${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads`, scorecard.sources.audienceBehavior],
     ["Legacy attended inquiries", `${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won`, scorecard.sources.workWithMePipeline],
     [
-      "Best email",
+      "Email click signal",
       topEmail
-        ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions`
-        : "no converting email signal yet",
+        ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} click-marked records · ${compactNumber(topEmail.conversions)} unverified conversion flags. Renewals and duplicate attribution may be included.`
+        : "no email click signal available",
       "email_logs",
     ],
     [
@@ -469,7 +478,7 @@ function revenueScorecardHtml(scorecard: RevenueTruthScorecard | null): string {
             <strong style="color:#0D0E10;">${escapeHtml(label)}</strong> · ${escapeHtml(value)} <span style="color:#9A9A9A;">source: ${escapeHtml(source)}</span>
           </p>
         `).join("")}
-        <p style="margin:10px 0 0;font-size:12px;color:#818283;line-height:1.6;">Payments are charge rows. Members are active Stripe subscriptions. MRR is net of discounts.</p>
+        <p style="margin:10px 0 0;font-size:12px;color:#818283;line-height:1.6;">Payments are charge rows. Members are active Stripe subscriptions. MRR is net of discounts. These totals exclude Skool billing; Suite access grants are not proof of a Skool payment.</p>
       </div>`
 }
 
@@ -477,7 +486,7 @@ function revenueScorecardText(scorecard: RevenueTruthScorecard | null): string {
   if (!scorecard) return ""
   const topEmail = scorecard.demandSignals.topEmailConverters[0]
   const topPrompt = scorecard.demandSignals.topFreePromptCopies[0]
-  return `\n\nRevenue truth\n- Members: ${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted (${scorecard.sources.activeMembersAndMrr})\n- Trials: ${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads (${scorecard.sources.audienceBehavior})\n- Legacy attended inquiries: ${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won (${scorecard.sources.workWithMePipeline})\n- Best email: ${topEmail ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} clicks · ${compactNumber(topEmail.conversions)} conversions` : "no converting email signal yet"}\n- Best free prompt: ${topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet"}\n- Labels: payments are charge rows; members are active Stripe subscriptions; MRR is net of discounts.`
+  return `\n\nRevenue truth\n- Members: ${compactNumber(scorecard.members.active)} active · ${currencyBreakdown(scorecard.members.netMrrByCurrency)} net MRR · ${compactNumber(scorecard.members.discountedMembers)} discounted (${scorecard.sources.activeMembersAndMrr})\n- Trials: ${compactNumber(scorecard.trials.claimed30d)} claimed · ${compactNumber(scorecard.trials.firstGeneration30d)} first generations · ${compactNumber(scorecard.trials.downloads30d)} downloads (${scorecard.sources.audienceBehavior})\n- Legacy attended inquiries: ${compactNumber(scorecard.workWithMe.applications30d)} applications · ${compactNumber(scorecard.workWithMe.qualifiedOpen)} qualified/open · ${compactNumber(scorecard.workWithMe.bookedCalls)} booked · ${compactNumber(scorecard.workWithMe.won)} won (${scorecard.sources.workWithMePipeline})\n- Email click signal: ${topEmail ? `${topEmail.emailType} · ${compactNumber(topEmail.clicks)} click-marked records · ${compactNumber(topEmail.conversions)} unverified conversion flags (may include renewals and duplicate attribution)` : "no email click signal available"}\n- Best free prompt: ${topPrompt ? `${topPrompt.title} · ${compactNumber(topPrompt.copies)} copies` : "no prompt-copy signal yet"}\n- Labels: payments are charge rows; members are active Stripe subscriptions; MRR is net of discounts. These totals exclude Skool billing; Suite access grants are not proof of a Skool payment.`
 }
 
 /** Compact "today's move" line — reuses the top already-computed working/leaking signal
