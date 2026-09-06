@@ -32,7 +32,7 @@ export async function receiveCustomerEmail(data: any) {
   const id = typeof data?.email_id === "string" ? data.email_id : ""
   if (!/^[a-f0-9-]{36}$/i.test(id)) return { ignored: true, reason: "invalid_email_id" }
   const sender = inboundAddress(data.from)
-  const recipients = (Array.isArray(data.to) ? data.to : [data.to]).map(inboundAddress)
+  const recipients: Array<string | null> = (Array.isArray(data.to) ? data.to : [data.to]).map(inboundAddress)
   if (!sender || sender.endsWith("@sselfie.ai") || !recipients.some(address => address === "hello@sselfie.ai" || address === "support@sselfie.ai")) {
     return { ignored: true, reason: "outside_customer_mailbox" }
   }
