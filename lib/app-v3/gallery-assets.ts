@@ -10,6 +10,9 @@ export type AppV3GalleryContentType =
   | "unknown"
 
 export type AppV3GalleryAsset = {
+  description?: string
+  labels?: string
+  isUsed?: boolean
   id: string
   kind: "image" | "video"
   contentType: AppV3GalleryContentType

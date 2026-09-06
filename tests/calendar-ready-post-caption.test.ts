@@ -7,6 +7,14 @@ const mocks = vi.hoisted(() => ({
   sql: vi.fn(),
 }))
 
+vi.mock("@/lib/app-v3/maya/writing-context", () => ({
+  getMayaWritingContext: async () => ({
+    memberContext: "Current member facts",
+    approvedExamples: [],
+    length: "standard",
+  }),
+}))
+
 vi.mock("@/lib/auth-helper", () => ({
   getAuthenticatedUser: mocks.auth,
 }))
@@ -109,8 +117,7 @@ describe("Calendar ready-post captions", () => {
     expect(mocks.generateInstagramCaption).toHaveBeenCalledTimes(1)
     expect(mocks.generateInstagramCaption).toHaveBeenCalledWith(
       expect.objectContaining({
-        imageContext:
-          "A quiet close portrait by a dark window with a reflective editorial mood.",
+        imageContext: "A quiet close portrait by a dark window with a reflective editorial mood.",
       })
     )
     expect(queries.some(query => query.includes("CASE") && query.includes("caption"))).toBe(true)
@@ -178,10 +185,7 @@ describe("Calendar ready-post captions", () => {
           {
             id: 9,
             image_url: "https://example.com/slide-1.jpg",
-            media_urls: [
-              "https://example.com/slide-1.jpg",
-              "https://example.com/slide-2.jpg",
-            ],
+            media_urls: ["https://example.com/slide-1.jpg", "https://example.com/slide-2.jpg"],
             caption: "A useful carousel",
           },
         ]
@@ -197,10 +201,7 @@ describe("Calendar ready-post captions", () => {
         body: JSON.stringify({
           postId: 9,
           imageUrl: "https://example.com/slide-1.jpg",
-          imageUrls: [
-            "https://example.com/slide-1.jpg",
-            "https://example.com/slide-2.jpg",
-          ],
+          imageUrls: ["https://example.com/slide-1.jpg", "https://example.com/slide-2.jpg"],
         }),
       }),
       { params: Promise.resolve({ feedId: "12" }) }
@@ -209,10 +210,7 @@ describe("Calendar ready-post captions", () => {
     expect(response.status).toBe(200)
     expect(values.flat()).toContain("https://example.com/slide-1.jpg")
     expect(values.flat()).toContain(
-      JSON.stringify([
-        "https://example.com/slide-1.jpg",
-        "https://example.com/slide-2.jpg",
-      ])
+      JSON.stringify(["https://example.com/slide-1.jpg", "https://example.com/slide-2.jpg"])
     )
     await expect(response.json()).resolves.toMatchObject({
       post: {

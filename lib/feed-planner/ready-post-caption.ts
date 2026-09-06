@@ -1,3 +1,4 @@
+import { getMayaWritingContext } from "@/lib/app-v3/maya/writing-context"
 import { sql } from "@/lib/db/client"
 import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 
@@ -74,6 +75,7 @@ export async function draftReadyPostCaption(input: {
       content_pillars: [],
     }
     const result = await generateInstagramCaption({
+      ...(await getMayaWritingContext(null, String(input.userId))),
       postPosition: Number(input.post.position) || 1,
       shotType: input.post.post_type || "photo",
       purpose: input.post.content_pillar || "personal brand story",

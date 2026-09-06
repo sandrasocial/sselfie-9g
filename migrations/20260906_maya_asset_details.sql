@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS app_v3_asset_details (user_id text NOT NULL, asset_id text NOT NULL, description text NOT NULL DEFAULT '', labels text NOT NULL DEFAULT '', used_at timestamptz, updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (user_id, asset_id));

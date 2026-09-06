@@ -130,45 +130,51 @@ describe("app v3 legacy gallery bridge", () => {
   it("returns legacy Studio images from the live app gallery endpoint", async () => {
     mocks.getAuthenticatedUser.mockResolvedValue({ user: { id: "auth-user-1" }, error: null })
     mocks.getEffectiveNeonUser.mockResolvedValue({ id: "neon-user-1" })
-    mocks.sql
-      .mockResolvedValueOnce([
-        {
-          id: 11,
-          user_id: "neon-user-1",
-          image_url: "https://blob.vercel-storage.com/new-suite.png",
-          prompt: "new photo",
-          generated_prompt: "new photo",
-          style: null,
-          category: "concept",
-          is_favorite: true,
-          source: "openai",
-          created_at: "2026-06-17T10:00:00.000Z",
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: 22,
-          user_id: "neon-user-1",
-          image_url: "https://blob.vercel-storage.com/old-studio.png",
-          prompt: "old photo",
-          category: "portrait",
-          subcategory: null,
-          saved: false,
-          selected_url: "https://blob.vercel-storage.com/old-studio.png",
-          created_at: "2026-06-18T10:00:00.000Z",
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: 33,
-          image_source: "https://blob.vercel-storage.com/new-suite.png",
-          video_url: "https://blob.vercel-storage.com/video.mp4",
-          motion_prompt: "subtle hair movement",
-          status: "completed",
-          created_at: "2026-06-19T10:00:00.000Z",
-          completed_at: "2026-06-19T10:02:00.000Z",
-        },
-      ])
+    mocks.sql.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join(" ")
+      if (query.includes("FROM generated_videos"))
+        return [
+          {
+            id: 33,
+            image_source: "https://blob.vercel-storage.com/new-suite.png",
+            video_url: "https://blob.vercel-storage.com/video.mp4",
+            motion_prompt: "subtle hair movement",
+            status: "completed",
+            created_at: "2026-06-19T10:00:00.000Z",
+            completed_at: "2026-06-19T10:02:00.000Z",
+          },
+        ]
+      if (query.includes("FROM generated_images"))
+        return [
+          {
+            id: 22,
+            user_id: "neon-user-1",
+            image_url: "https://blob.vercel-storage.com/old-studio.png",
+            prompt: "old photo",
+            category: "portrait",
+            subcategory: null,
+            saved: false,
+            selected_url: "https://blob.vercel-storage.com/old-studio.png",
+            created_at: "2026-06-18T10:00:00.000Z",
+          },
+        ]
+      if (query.includes("FROM ai_images"))
+        return [
+          {
+            id: 11,
+            user_id: "neon-user-1",
+            image_url: "https://blob.vercel-storage.com/new-suite.png",
+            prompt: "new photo",
+            generated_prompt: "new photo",
+            style: null,
+            category: "concept",
+            is_favorite: true,
+            source: "openai",
+            created_at: "2026-06-17T10:00:00.000Z",
+          },
+        ]
+      return []
+    })
 
     const { GET } = await import("@/app/api/app-v3/gallery/route")
     const response = await GET()
@@ -198,8 +204,9 @@ describe("app v3 legacy gallery bridge", () => {
       canMakeMotion: true,
     })
     expect(payload.counts).toMatchObject({ all: 3, favorites: 1, photos: 2, videos: 1 })
-    expect(mocks.sql).toHaveBeenCalledTimes(3)
-    expect(String(mocks.sql.mock.calls[1][0])).toContain("FROM generated_images")
+    expect(
+      mocks.sql.mock.calls.some(call => String(call[0]).includes("FROM generated_images"))
+    ).toBe(true)
   })
 
   it("normalizes gallery asset ids and counts", () => {

@@ -1,3 +1,5 @@
+import { ownedGalleryPhotos } from "@/lib/app-v3/gallery-details"
+import { searchGalleryPhotos } from "@/lib/app-v3/gallery-search"
 // SSELFIE Studio 3.0 - Daily Relevance Engine (MAYA-REBUILD-05 Phase 5).
 // Maya recommends what the creator should post today, grounded in her brand profile, memory,
 // and recent activity. Powers the Content surface ("Good morning Sandra, here's what I'd
@@ -37,64 +39,6 @@ interface Recommendation {
   imageReason?: string | null
 }
 
-// ── Visual intelligence: match a Library image to each recommendation's intent. ──
-// Until we have real image metadata, score each image's stored prompt text against the
-// intent's visual cues (the rubric Sandra outlined). Pick the best, prefer not reusing.
-
-type Intent =
-  | "personal-story"
-  | "tutorial"
-  | "authority"
-  | "behind-scenes"
-  | "story-slide"
-  | "editorial"
-
-function intentFor(rec: { title: string; rationale: string; format: OutputFormat }): Intent {
-  const t = `${rec.title} ${rec.rationale}`.toLowerCase()
-  if (rec.format === "story-slide") return "story-slide"
-  if (
-    /\b(story|life|journey|rebuild|divorce|honest|vulnerable|fear|almost|started over|starting over|why i)\b/.test(
-      t
-    )
-  )
-    return "personal-story"
-  if (/\b(selfie|tutorial|how to|how i|tip|pose|lighting|angle|teach|guide)\b/.test(t))
-    return "tutorial"
-  if (/\b(behind|desk|working|process|day in|routine|building|making|setup)\b/.test(t))
-    return "behind-scenes"
-  if (
-    /\b(offer|launch|sell|founder|business|authority|expert|program|masterclass|client|sale|book|pitch)\b/.test(
-      t
-    )
-  )
-    return "authority"
-  return "editorial"
-}
-
-const IMAGE_CUES: Record<Intent, RegExp> = {
-  "personal-story":
-    /(candid|intimate|soft|natural|home|window|mirror|close|emotional|quiet|cozy|bed|morning)/gi,
-  tutorial: /(selfie|iphone|front camera|mirror|face|close-up|close up|phone|portrait)/gi,
-  authority:
-    /(editorial|blazer|tailored|professional|studio|confident|suit|office|marble|luxury|power|sharp)/gi,
-  "behind-scenes": /(desk|laptop|coffee|home|kitchen|working|caf|process|cozy|sofa)/gi,
-  "story-slide": /(vertical|minimal|negative space|plain|clean|empty|simple|spacious)/gi,
-  editorial: /(editorial|magazine|elegant|refined|luxury|polished|cinematic)/gi,
-}
-
-const INTENT_REASON: Record<Intent, string> = {
-  "personal-story": "to match your story angle",
-  tutorial: "for a clear, teaching-friendly shot",
-  authority: "for a polished, confident look",
-  "behind-scenes": "for a real, behind-the-scenes feel",
-  "story-slide": "with room for your text",
-  editorial: "for an editorial feel",
-}
-
-function scorePrompt(promptText: string, intent: Intent): number {
-  return (promptText.match(IMAGE_CUES[intent]) || []).length
-}
-
 export async function GET() {
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -126,13 +70,19 @@ export async function GET() {
       ])
       if (mem.agentName?.trim()) agentName = mem.agentName.trim()
       if (mem.brandNotes?.trim()) brandContext += `\nNotes she gave: ${mem.brandNotes.trim()}`
-      hasMeaningfulContext = Boolean(mem.brandNotes?.trim()) || hasBrandProfile
+      hasMeaningfulContext =
+        Boolean(mem.brandNotes?.trim()) ||
+        Object.values(mem.facts ?? {}).some(f => f.value && !f.key.startsWith("example-")) ||
+        hasBrandProfile
       recentActivity = chats
         .map(c => c.title)
         .filter((t): t is string => !!t && t.trim().length > 0)
         .filter(t => !/^(let's|actually,\s*let's)\b/i.test(t.trim()))
         .slice(0, 8)
-      if (hasMeaningfulContext) brandContext = await getUserContextForMaya(user.id)
+      if (hasMeaningfulContext)
+        brandContext = [await getUserContextForMaya(user.id), brandContext]
+          .filter(Boolean)
+          .join("\n")
     }
   } catch (e) {
     console.error("[app-v3 recommendations] context load skipped:", e)
@@ -231,40 +181,20 @@ export async function GET() {
       const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
       const neonUser = await getEffectiveNeonUser(user.id)
       if (neonUser) {
-        const rows = await sql`
-          SELECT image_url, prompt
-          FROM ai_images
-          WHERE user_id = ${neonUser.id}
-            AND image_url IS NOT NULL
-            AND (generation_status = 'completed' OR generation_status IS NULL)
-          ORDER BY created_at DESC
-          LIMIT 40
-        `
-        const lib = rows
-          .map((r: { image_url?: unknown; prompt?: unknown }) => ({
-            url: typeof r.image_url === "string" ? r.image_url : "",
-            prompt: typeof r.prompt === "string" ? r.prompt.toLowerCase() : "",
-          }))
-          .filter(x => x.url.startsWith("http"))
-
+        const photos = await ownedGalleryPhotos(String(neonUser.id))
         const used = new Set<string>()
         for (const rec of recommendations) {
-          const intent = intentFor(rec)
-          let best: { url: string; score: number } | null = null
-          for (let i = 0; i < lib.length; i++) {
-            const img = lib[i]
-            if (used.has(img.url)) continue
-            // Score by intent cues; a tiny recency nudge breaks ties (earlier index = newer).
-            const score = scorePrompt(img.prompt, intent) * 10 + Math.max(0, 5 - i)
-            if (score > 0 && (!best || score > best.score)) best = { url: img.url, score }
-          }
-          if (best && best.score >= 10) {
-            // A real cue matched (>=10), so it's a contextual choice, not just recency.
+          const matches = searchGalleryPhotos(
+            photos.filter(a => !!a.description || !!a.labels),
+            `${rec.title} ${rec.rationale}`,
+            true
+          )
+          const best = matches.find(a => !used.has(a.id))
+          if (best) {
             rec.imageUrl = best.url
-            rec.imageReason = `Chosen ${INTENT_REASON[intent]}`
-            used.add(best.url)
-          } else {
-            rec.imageUrl = null // frontend uses the aspirational Vault fallback
+            rec.imageReason =
+              "Matched to its saved photo description or your labels; not marked posted."
+            used.add(best.id)
           }
         }
       }

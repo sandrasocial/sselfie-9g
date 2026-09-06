@@ -63,6 +63,8 @@ vi.mock("@/components/feed-planner/feed-gallery-selector", () => ({
   ),
 }))
 
+vi.mock("@/lib/app-v3/download-asset", () => ({ initiateAssetDownload: vi.fn(async () => true) }))
+
 vi.mock("@/hooks/use-toast", () => ({ toast: mocks.toast }))
 vi.mock("@/lib/analytics/client", () => ({ trackAnalyticsEvent: mocks.trackAnalyticsEvent }))
 
@@ -107,6 +109,39 @@ describe("Suite Calendar 2.0", () => {
       return jsonResponse({})
     })
     global.fetch = mocks.fetch as unknown as typeof fetch
+  })
+
+  it("copies the edited caption, downloads the photo, and saves an approved writing example", async () => {
+    const copy = vi.fn(async () => {})
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: copy },
+    })
+    const { SuiteCalendar } = await import("@/components/app-v3/suite-calendar")
+    const { initiateAssetDownload } = await import("@/lib/app-v3/download-asset")
+    render(<SuiteCalendar />)
+    fireEvent.click(await screen.findByRole("button", { name: "Edit post 1, Ready" }))
+    fireEvent.click(screen.getByRole("button", { name: "Copy caption" }))
+    await waitFor(() => expect(copy).toHaveBeenCalledWith("A real caption"))
+    await screen.findByText("Caption copied.")
+    fireEvent.click(screen.getByRole("button", { name: "Download photos" }))
+    await waitFor(() =>
+      expect(initiateAssetDownload).toHaveBeenCalledWith(
+        "https://example.com/photo.jpg",
+        "sselfie-post-1-1.png"
+      )
+    )
+    await screen.findByText("Download started.")
+    fireEvent.click(screen.getByText("Help Maya learn your writing"))
+    fireEvent.click(screen.getByRole("button", { name: "Keep as writing example" }))
+    await screen.findByText("Writing example saved. Maya keeps your three most recent examples.")
+    expect(mocks.fetch).toHaveBeenCalledWith(
+      "/api/app-v3/maya/memory",
+      expect.objectContaining({
+        method: "PUT",
+        body: expect.stringContaining("Member approved caption in Calendar"),
+      })
+    )
   })
 
   it("opens with the Instagram grid and keeps advanced planner surfaces out of the Suite", async () => {

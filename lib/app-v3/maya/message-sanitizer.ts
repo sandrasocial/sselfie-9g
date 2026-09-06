@@ -1,5 +1,7 @@
 const BASE_TOOL_NAMES = new Set([
+  "find_photos",
   "emit_concepts",
+  "revise_carousel",
   "ask_clarify",
   "set_format",
   "remember",

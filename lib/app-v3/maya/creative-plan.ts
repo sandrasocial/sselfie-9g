@@ -66,6 +66,9 @@ export interface ReferenceHandlingPlan {
 
 export interface CreativePlanOutput {
   title: string
+  layout?: "photo" | "notes" | "messages" | "filmstrip" | "statement"
+  items?: string[]
+  sourceAssets?: Array<{ url: string; role: "photo" | "screenshot" | "product"; label?: string }>
   /** Optional exact supporting line baked under the title (carousel slides). With this on
    *  the plan output, carousels no longer mirror outputs into brief.graphic.slides. */
   body?: string
@@ -134,7 +137,8 @@ export function inferCreativeUseCase(intent: string, mode: CreativeMode): Creati
   if (mode === "photo" && /\b(full shoot|photoshoot|series|collection|six|6|nine|9)\b/.test(text)) {
     return "full_photoshoot"
   }
-  if (/\b(vault|prompt|prompts|style|styles|already own|top vault)\b/.test(text)) return "vault_product"
+  if (/\b(vault|prompt|prompts|style|styles|already own|top vault)\b/.test(text))
+    return "vault_product"
   if (/\b(tutorial|how to|settings|step|guide|method)\b/.test(text)) return "tutorial"
   if (/\b(sell|offer|checkout|price|launch|waitlist|buy)\b/.test(text)) return "sales"
   if (/\b(behind|process|bts|making of)\b/.test(text)) return "behind_the_scenes"
@@ -153,8 +157,14 @@ export function isFiveStylesRequest(intent: string): boolean {
   return /\b(5|five)\b/i.test(intent) && /\b(style|styles|prompt|prompts|vault)\b/i.test(intent)
 }
 
-export function isVaultRelatedRequest(intent: string, vaultStyleReferences: VaultStyleReference[] = []): boolean {
-  return vaultStyleReferences.length > 0 || /\b(vault|prompt|prompts|style|styles|already own|top vault)\b/i.test(intent)
+export function isVaultRelatedRequest(
+  intent: string,
+  vaultStyleReferences: VaultStyleReference[] = []
+): boolean {
+  return (
+    vaultStyleReferences.length > 0 ||
+    /\b(vault|prompt|prompts|style|styles|already own|top vault)\b/i.test(intent)
+  )
 }
 
 export function recommendCreativeOutputCount({
@@ -190,7 +200,9 @@ export function recommendCreativeOutputCount({
   return 1
 }
 
-export function buildDefaultCreativePlanValidationRules(plan: Pick<CreativePlan, "mode" | "useCase" | "userIntent">): CreativePlanValidationRule[] {
+export function buildDefaultCreativePlanValidationRules(
+  plan: Pick<CreativePlan, "mode" | "useCase" | "userIntent">
+): CreativePlanValidationRule[] {
   const rules: CreativePlanValidationRule[] = [
     {
       id: "output-count-matches-plan",
@@ -213,12 +225,14 @@ export function buildDefaultCreativePlanValidationRules(plan: Pick<CreativePlan,
     rules.push({
       id: "carousel-minimum-for-educational-content",
       severity: "error",
-      description: "Educational, tutorial, and Vault carousels need at least 6 slides unless the user asked for short.",
+      description:
+        "Educational, tutorial, and Vault carousels need at least 6 slides unless the user asked for short.",
     })
     rules.push({
       id: "carousel-no-lazy-repeated-backgrounds",
       severity: "error",
-      description: "Carousel visuals must not reuse the same background/prompt across every slide unless intentional.",
+      description:
+        "Carousel visuals must not reuse the same background/prompt across every slide unless intentional.",
     })
   }
 
@@ -257,7 +271,10 @@ export function validateCreativePlan(plan: CreativePlan): CreativePlanValidation
     errors.push(`outputCount is ${plan.outputCount}, but outputs.length is ${plan.outputs.length}`)
   }
 
-  if (plan.outputCount !== recommendCreativeOutputCount(plan) && !isShortCreativeRequest(plan.userIntent)) {
+  if (
+    plan.outputCount !== recommendCreativeOutputCount(plan) &&
+    !isShortCreativeRequest(plan.userIntent)
+  ) {
     warnings.push("outputCount differs from the default recommendation for this mode and use case")
   }
 
@@ -272,7 +289,8 @@ export function validateCreativePlan(plan: CreativePlan): CreativePlanValidation
     if (!output.referenceImageStrategy) errors.push(`${label} is missing referenceImageStrategy`)
 
     if (plan.mode === "video") {
-      if (!output.videoPromptDirection?.trim()) errors.push(`${label} is missing videoPromptDirection`)
+      if (!output.videoPromptDirection?.trim())
+        errors.push(`${label} is missing videoPromptDirection`)
     } else if (!output.imagePromptDirection?.trim()) {
       errors.push(`${label} is missing imagePromptDirection`)
     }
@@ -314,7 +332,9 @@ function validateModeSpecificPlan(plan: CreativePlan, errors: string[], warnings
 
 function validateCarouselPlanRules(plan: CreativePlan, errors: string[]): void {
   const educational =
-    plan.useCase === "educational" || plan.useCase === "tutorial" || plan.useCase === "vault_product"
+    plan.useCase === "educational" ||
+    plan.useCase === "tutorial" ||
+    plan.useCase === "vault_product"
 
   if (educational && !isShortCreativeRequest(plan.userIntent) && plan.outputCount < 6) {
     errors.push(`educational carousel needs at least 6 slides, got ${plan.outputCount}`)
@@ -324,7 +344,10 @@ function validateCarouselPlanRules(plan: CreativePlan, errors: string[]): void {
     errors.push("five-style carousel must include five distinct style outputs")
   }
 
-  if (isVaultRelatedRequest(plan.userIntent, plan.vaultStyleReferences) && plan.vaultStyleReferences.length === 0) {
+  if (
+    isVaultRelatedRequest(plan.userIntent, plan.vaultStyleReferences) &&
+    plan.vaultStyleReferences.length === 0
+  ) {
     errors.push("Vault-related plan is missing vaultStyleReferences")
   }
 

@@ -6,9 +6,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import type { MemoryFacts, MemoryFactInput } from "@/lib/app-v3/maya/memory-facts"
 import { useAccessibleModal } from "./use-accessible-modal"
 
 export interface Memory {
+  facts?: MemoryFacts
   agentName: string | null
   brandNotes: string | null
   preferences: string | null
@@ -26,6 +28,8 @@ interface MemoryModalProps {
 }
 
 export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
+  const [facts, setFacts] = useState<MemoryFacts>({})
+  const [factBusy, setFactBusy] = useState(false)
   const [name, setName] = useState("")
   const [brand, setBrand] = useState("")
   const [prefs, setPrefs] = useState("")
@@ -53,6 +57,7 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
         return r.json()
       })
       .then(d => {
+        setFacts(d?.facts ?? {})
         setName(d?.agentName ?? "")
         // Empty notes prefill from what Maya actually knows (user_personal_brand), so the
         // page never claims she knows nothing while her chat plainly does. Saving persists
@@ -146,6 +151,28 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
       setError("Your photo did not upload. Please try again.")
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function saveFact(key: MemoryFactInput["key"], value: string | null) {
+    setFactBusy(true)
+    setError(null)
+    try {
+      const response = await fetch("/api/app-v3/maya/memory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fact: { key, value: value?.trim() || null, source: "Member edited in Memory" },
+        }),
+      })
+      if (!response.ok) throw new Error()
+      const next = await response.json()
+      setFacts(next.facts ?? {})
+      onSaved(next)
+    } catch {
+      setError("That memory change wasn't saved. Please try again.")
+    } finally {
+      setFactBusy(false)
     }
   }
 
@@ -312,6 +339,102 @@ export function MemoryModal({ open, onClose, onSaved }: MemoryModalProps) {
               className="mt-1.5 w-full resize-none rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3 py-2.5 text-[14px] text-[#282728] outline-none focus:border-[#0D0E10]"
             />
           </label>
+
+          <section aria-label="Current facts">
+            <h4 className="text-sm font-medium">Current facts & your writing</h4>
+            <p className="text-xs text-[#6D6E70]">
+              These replace conflicting older notes. Keep instructions for one post in that
+              conversation.
+            </p>
+            {(
+              [
+                "business",
+                "audience",
+                "offer",
+                "goal",
+                "voice",
+                "length",
+                "style",
+                "avoid",
+                "example-1",
+                "example-2",
+                "example-3",
+                ...Object.keys(facts).filter(
+                  k =>
+                    ![
+                      "business",
+                      "audience",
+                      "offer",
+                      "goal",
+                      "voice",
+                      "length",
+                      "style",
+                      "avoid",
+                      "example-1",
+                      "example-2",
+                      "example-3",
+                    ].includes(k)
+                ),
+              ] as MemoryFactInput["key"][]
+            ).map(key => (
+              <details key={key} className="mt-3 rounded border p-2">
+                <summary className="cursor-pointer text-sm">
+                  {key.startsWith("example-")
+                    ? `Writing example ${key.slice(-1)}`
+                    : key.charAt(0).toUpperCase() + key.slice(1)}
+                  :{" "}
+                  {facts[key]?.value?.slice(0, 65) ||
+                    (facts[key]?.updatedAt ? "Forgotten" : "Not set")}
+                </summary>
+                <label className="block text-sm">
+                  {key.startsWith("example-")
+                    ? `Approved writing example ${key.slice(-1)}`
+                    : key.charAt(0).toUpperCase() + key.slice(1)}
+                  <textarea
+                    className="mt-1 w-full rounded border p-2 text-sm"
+                    rows={2}
+                    maxLength={2200}
+                    disabled={loading || !loadedSuccessfully || factBusy}
+                    value={facts[key]?.value ?? ""}
+                    onChange={e =>
+                      setFacts(current => ({
+                        ...current,
+                        [key]: {
+                          key,
+                          value: e.target.value,
+                          source: current[key]?.source ?? "",
+                          updatedAt: current[key]?.updatedAt ?? "",
+                        },
+                      }))
+                    }
+                  />
+                </label>
+                {facts[key]?.updatedAt && (
+                  <p className="text-xs text-[#6D6E70]">
+                    {facts[key]?.source} · {new Date(facts[key]!.updatedAt).toLocaleDateString()}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className="min-h-11 mr-4 text-sm underline"
+                  disabled={factBusy || !loadedSuccessfully}
+                  onClick={() => void saveFact(key, facts[key]?.value ?? null)}
+                >
+                  Save {key.startsWith("example-") ? "example" : "fact"}
+                </button>
+                {facts[key] && (
+                  <button
+                    type="button"
+                    className="min-h-11 text-sm underline"
+                    disabled={factBusy}
+                    onClick={() => void saveFact(key, null)}
+                  >
+                    Forget
+                  </button>
+                )}
+              </details>
+            ))}
+          </section>
 
           {/* What Maya learns on her own - shown so an empty modal never reads as "Maya
               knows nothing". These fill automatically as she creates. */}

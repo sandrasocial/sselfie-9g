@@ -3,6 +3,8 @@
 // SSELFIE Studio 3.0 - Photos hub.
 // Functional first pass: typed assets, filters, videos, favorites, selection, delete/download.
 
+import { GalleryDetailsEditor } from "./gallery-details-editor"
+import { searchGalleryPhotos } from "@/lib/app-v3/gallery-search"
 import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import {
@@ -236,6 +238,7 @@ const AssetTile = memo(function AssetTile({
   onToggleSelect,
   onFavorite,
   onDelete,
+  onDetails,
   onDownload,
   onActionsOpenChange,
   onCompare,
@@ -252,6 +255,7 @@ const AssetTile = memo(function AssetTile({
   onOpen: (asset: AppV3GalleryAsset, index: number) => void
   onToggleSelect: (id: string) => void
   onFavorite: (asset: AppV3GalleryAsset) => void
+  onDetails: (asset: AppV3GalleryAsset) => void
   onDelete: (asset: AppV3GalleryAsset) => void
   onDownload: (asset: AppV3GalleryAsset) => void
   onActionsOpenChange: (open: boolean) => void
@@ -431,6 +435,18 @@ const AssetTile = memo(function AssetTile({
               >
                 Download
               </button>
+              {asset.kind === "image" && (
+                <button
+                  type="button"
+                  className="flex min-h-11 w-full items-center px-4 text-left text-[10px] uppercase"
+                  onClick={() => {
+                    onActionsOpenChange(false)
+                    onDetails(asset)
+                  }}
+                >
+                  Labels & use
+                </button>
+              )}
               {asset.canDelete && (
                 <button
                   type="button"
@@ -488,6 +504,9 @@ export function GalleryView({
   const [previewVideo, setPreviewVideo] = useState<AppV3GalleryAsset | null>(null)
   const [compareAsset, setCompareAsset] = useState<AppV3GalleryAsset | null>(null)
   const [busy, setBusy] = useState(false)
+  const [query, setQuery] = useState("")
+  const [unusedOnly, setUnusedOnly] = useState(false)
+  const [detailsAsset, setDetailsAsset] = useState<AppV3GalleryAsset | null>(null)
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null)
   const [visibleAssetCount, setVisibleAssetCount] = useState(GALLERY_PAGE_SIZE)
   const favoritePendingRef = useRef(new Set<string>())
@@ -505,10 +524,12 @@ export function GalleryView({
     () => setCompareAsset(null)
   )
 
-  const filteredAssets = useMemo(
-    () => groupGalleryVersions(filterAssets(assets ?? [], filter)),
-    [assets, filter]
-  )
+  const filteredAssets = useMemo(() => {
+    const candidates = filterAssets(assets ?? [], filter)
+    return groupGalleryVersions(
+      query || unusedOnly ? searchGalleryPhotos(candidates, query, unusedOnly) : candidates
+    )
+  }, [assets, filter, query, unusedOnly])
   const displayedAssets = useMemo(
     () => filteredAssets.slice(0, visibleAssetCount),
     [filteredAssets, visibleAssetCount]
@@ -589,7 +610,7 @@ export function GalleryView({
 
   useEffect(() => {
     setVisibleAssetCount(GALLERY_PAGE_SIZE)
-  }, [filter])
+  }, [filter, query, unusedOnly])
 
   useEffect(() => {
     setFilter(initialFilter)
@@ -793,6 +814,31 @@ export function GalleryView({
         </h2>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          aria-label="Search photos"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search photos, descriptions or labels"
+          className="min-h-11 min-w-0 flex-1 rounded border bg-white px-3 text-sm"
+        />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={unusedOnly}
+            onChange={e => setUnusedOnly(e.target.checked)}
+          />
+          Not marked posted
+        </label>
+      </div>
+      {detailsAsset && (
+        <GalleryDetailsEditor
+          asset={detailsAsset}
+          onClose={() => setDetailsAsset(null)}
+          onSaved={loadGallery}
+        />
+      )}
       <div className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none]">
         <div className="flex min-w-max gap-2">
           {visibleFilters.map(option => {
@@ -946,10 +992,11 @@ export function GalleryView({
                     onEditAsset(selectedAsset)
                     return
                   }
-                  openAsset(selectedAsset, selectedIndex)
+                  openAsset(selectedAsset)
                 }}
                 onToggleSelect={toggleSelected}
                 onFavorite={toggleFavorite}
+                onDetails={setDetailsAsset}
                 onDelete={asset => setPendingDeleteIds([asset.id])}
                 onDownload={downloadAsset}
                 onActionsOpenChange={open => setOpenActionsAssetId(open ? asset.id : null)}

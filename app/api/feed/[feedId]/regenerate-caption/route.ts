@@ -1,3 +1,4 @@
+import { getMayaWritingContext } from "@/lib/app-v3/maya/writing-context"
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -153,6 +154,7 @@ export async function POST(
 
     // Generate new caption using the same logic as create-from-strategy
     const captionResult = await generateInstagramCaption({
+      ...(await getMayaWritingContext(authUser.id, String(neonUser.id))),
       postPosition: post.position,
       shotType: post.post_type || "portrait",
       purpose: post.content_pillar || "general",
@@ -171,8 +173,7 @@ export async function POST(
       previousCaptions: previousCaptions,
       researchData: researchData,
       storySource: verifiedStorySource || null,
-      imageContext:
-        post.selected_image_generated_prompt || post.selected_image_prompt || null,
+      imageContext: post.selected_image_generated_prompt || post.selected_image_prompt || null,
     })
 
     const newCaption = captionResult.caption || ""

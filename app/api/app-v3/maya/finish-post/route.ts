@@ -1,4 +1,11 @@
-import { NextResponse } from "next/server"
+import { getMayaWritingContext } from "@/lib/app-v3/maya/writing-context"
+import { rateLimit } from "@/lib/rate-limit-api"
+import { requireMayaInferenceAccess } from "@/lib/maya/require-inference-access"
+import { getMemory } from "@/lib/app-v3/maya/memory-store"
+import { getUserContextForMaya } from "@/lib/maya/get-user-context"
+import { getMayaHomeBrandContext } from "@/lib/maya/home-brand-context"
+import { sql } from "@/lib/db/client"
+import { NextResponse, type NextRequest } from "next/server"
 
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -32,12 +39,21 @@ function contentPillars(value: unknown): unknown[] {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const limit = await rateLimit(request, { maxRequests: 12, windowMs: 60000 })
+  if (!limit.success)
+    return NextResponse.json(
+      { error: "Please wait a moment before trying again." },
+      { status: 429 }
+    )
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const neonUser = await getUserByAuthId(user.id)
   if (!neonUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+  const access = await requireMayaInferenceAccess({ neonUserId: neonUser.id, email: user.email })
+  if (!access.allowed) return NextResponse.json(access.body, { status: access.status })
 
   const body = await request.json().catch(() => null)
   if (!body || typeof body !== "object") {
@@ -50,15 +66,22 @@ export async function POST(request: Request) {
   }
 
   const conceptTitle = cleanText((body as Record<string, unknown>).conceptTitle, 240)
-  const conceptDescription = cleanText(
-    (body as Record<string, unknown>).conceptDescription,
-    600
-  )
+  const conceptDescription = cleanText((body as Record<string, unknown>).conceptDescription, 600)
   const captionContext = cleanText((body as Record<string, unknown>).captionContext, 1200)
   const purpose = [conceptTitle, conceptDescription, captionContext].filter(Boolean).join(". ")
 
   try {
-    const personalBrand = await getUserPersonalBrand(String(neonUser.id)).catch(() => null)
+    const [personalBrand, writing, recent] = await Promise.all([
+      getUserPersonalBrand(String(neonUser.id)).catch(() => null),
+      getMayaWritingContext(
+        user.id,
+        String(neonUser.id),
+        cleanText(body.length, 20) || cleanText(body.revisionInstruction, 1000)
+      ),
+      sql`SELECT p.caption FROM feed_posts p JOIN feed_layouts f ON f.id = p.feed_layout_id WHERE f.user_id = ${String(neonUser.id)} AND p.caption IS NOT NULL ORDER BY p.updated_at DESC LIMIT 6`,
+    ])
+    const storySource = cleanText(body.storySource, 2000)
+
     const safeBrandProfile = personalBrand || {
       business_type: "Personal brand",
       brand_vibe: "Editorial and approachable",
@@ -76,8 +99,16 @@ export async function POST(request: Request) {
       brandVoice: safeBrandProfile.brand_voice || "warm, direct and human",
       contentPillar: conceptTitle || "personal brand",
       valueConcept: captionContext || conceptDescription || conceptTitle || undefined,
-      previousCaptions: [],
-      captionType: "value",
+      previousCaptions: recent.map((row, i) => ({
+        position: i + 1,
+        caption: String(row.caption || ""),
+      })),
+      captionType: storySource ? "story" : "value",
+      storySource: storySource || undefined,
+      ...writing,
+      existingCaption: cleanText(body.existingCaption, 2200),
+      revisionInstruction: cleanText(body.revisionInstruction, 1000),
+      imageContext: cleanText(body.imageContext, 1200),
       contentPillars: contentPillars(safeBrandProfile.content_pillars),
     })
 

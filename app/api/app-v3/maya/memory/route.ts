@@ -3,6 +3,7 @@
 // PUT -> patch any of those fields (empty string clears; absent leaves unchanged).
 // Admin reaches it through the admin-gated /app shell; schema is member-ready.
 
+import { memoryFactSchema } from "@/lib/app-v3/maya/memory-facts"
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
@@ -11,6 +12,7 @@ import {
   getMemory,
   removeLikenessNote,
   saveMemory,
+  saveMemoryFact,
 } from "@/lib/app-v3/maya/memory-store"
 import {
   getBrandProfileSummary,
@@ -83,6 +85,7 @@ export async function PUT(request: Request) {
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = (await request.json().catch(() => null)) as {
+    fact?: unknown
     agentName?: string | null
     brandNotes?: string | null
     preferences?: string | null
@@ -99,10 +102,24 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 })
   }
 
+  const fact = body.fact === undefined ? null : memoryFactSchema.safeParse(body.fact)
+  if (fact && !fact.success)
+    return NextResponse.json({ error: "Invalid memory fact" }, { status: 400 })
+  for (const key of [
+    "agentName",
+    "brandNotes",
+    "preferences",
+    "userAvatarUrl",
+    "preferredOverlayStyle",
+  ] as const) {
+    if (body[key] !== undefined && body[key] !== null && typeof body[key] !== "string")
+      return NextResponse.json({ error: "Invalid memory field" }, { status: 400 })
+  }
   const neonUserId = await getUserIdFromSupabase(user.id)
   if (!neonUserId) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
   try {
+    if (fact?.success) await saveMemoryFact(String(neonUserId), fact.data)
     if (typeof body.addLikenessNote === "string" && body.addLikenessNote.trim()) {
       const saved = await addLikenessNote(String(neonUserId), body.addLikenessNote)
       await Promise.all([

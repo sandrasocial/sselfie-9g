@@ -1,3 +1,5 @@
+import { getMemory } from "@/lib/app-v3/maya/memory-store"
+import { renderMemoryContext } from "@/lib/app-v3/maya/memory-facts"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalMemory, getUserPersonalBrand } from "@/lib/data/maya"
@@ -803,7 +805,13 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
     )
     // Append after legacy truncation so saved workbook answers cannot be silently dropped.
     const workbookContext = await getWorkbookContextForMaya(String(neonUser.id))
-    return [finalContext, workbookContext].filter(Boolean).join("\n\n")
+    const memberMemory = await getMemory(String(neonUser.id))
+      .then(renderMemoryContext)
+      .catch(
+        () =>
+          "Current member memory could not be loaded. Do not claim to remember current preferences."
+      )
+    return [finalContext, workbookContext, memberMemory].filter(Boolean).join("\n\n")
   } catch (error) {
     console.error("[v0] getUserContextForMaya: FATAL ERROR")
     console.error("[v0] Error:", error)

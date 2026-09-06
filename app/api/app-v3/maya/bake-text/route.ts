@@ -1,3 +1,5 @@
+import { reviewCarouselSlide } from "@/lib/app-v3/maya/carousel-review"
+import { composeCarouselText } from "@/lib/app-v3/maya/carousel-renderer"
 // SSELFIE Studio 3.0 - bake Maya's text design into a graphic result.
 //
 // Graphic formats generate a CLEAN text-free image first. If the member chose text, the generate
@@ -185,6 +187,55 @@ export async function POST(request: NextRequest) {
             { status: 403 }
           )
         }
+      }
+    }
+
+    if (spec.format === "carousel") {
+      const owned =
+        await sql`SELECT id FROM ai_images WHERE user_id = ${neonUser.id} AND image_url = ${cleanImageUrl} LIMIT 1`
+      const uploaded = owned.length
+        ? []
+        : await sql`SELECT id FROM user_avatar_images WHERE user_id = ${String(neonUser.id)} AND image_url = ${cleanImageUrl} LIMIT 1`
+      if (!owned.length && !uploaded.length)
+        return NextResponse.json({ error: "Carousel image not found" }, { status: 404 })
+      try {
+        let source = await loadImage(cleanImageUrl)
+        if (uploaded.length) {
+          const asset = await sharp(source)
+            .rotate()
+            .resize(900, 720, { fit: "contain", background: "#eeeae4" })
+            .png()
+            .toBuffer()
+          source = await sharp({
+            create: { width: 1080, height: 1350, channels: 3, background: "#eeeae4" },
+          })
+            .composite([{ input: asset, left: 90, top: 80 }])
+            .png()
+            .toBuffer()
+          spec.preserveAssets = true
+        }
+        const buffer = await composeCarouselText(source, spec)
+        const review = await reviewCarouselSlide(buffer, spec, 1, String(neonUser.id))
+        const blob = await put(
+          `maya-app-v3/${neonUser.id}/carousel-text-${Date.now()}.png`,
+          buffer,
+          { access: "public", contentType: "image/png" }
+        )
+        const rows =
+          await sql`INSERT INTO ai_images (user_id, image_url, title, variant_of, prompt, generated_prompt, generation_status, source, category, created_at)
+          VALUES (${neonUser.id}, ${blob.url}, ${imageTitle}, ${owned[0]?.id ?? null}, ${spec.headline}, ${JSON.stringify(spec)}, 'completed', 'openai', 'carousel', NOW()) RETURNING id`
+        return NextResponse.json({
+          bakedUrl: blob.url,
+          review,
+          aiImageId: rows[0]?.id ?? null,
+          newBalance: await getUserCredits(neonUser.id),
+        })
+      } catch (error) {
+        console.error("[maya carousel] composition failed", error)
+        return NextResponse.json(
+          { error: "Couldn't lay out this slide. Try shorter copy or a smaller text size." },
+          { status: 422 }
+        )
       }
     }
 

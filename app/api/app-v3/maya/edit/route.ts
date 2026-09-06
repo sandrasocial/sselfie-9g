@@ -1,3 +1,4 @@
+import { findUnownedIdentityReferences } from "@/lib/app-v3/identity-reference-ownership"
 // SSELFIE Studio 3.0 - true Edit Mode (MAYA-REBUILD-05 Phase 4).
 // Image-to-image refinement: the GENERATED image is the input, and one instruction is applied
 // ("make my blazer black", "brighter", "change the background"), keeping everything else.
@@ -170,7 +171,7 @@ function buildEditPrompt(
     "outfit, hair, objects, color, camera look, lens look, lighting, or scenery when her instruction " +
     "explicitly changes it. Requested scene changes must look like one coherent photograph, not a pasted composite. Instruction: "
   const identity = hasIdentityReference
-    ? " An attached image labeled maya-edit-identity.png is her real reference selfie. Use it only to keep her face, facial " +
+    ? " Images labeled maya-edit-identity.png or maya-edit-angle.png are her real reference selfies. Use it only to keep her face, facial " +
       "structure, skin tone, natural skin texture, body proportions, and age true to the real person. " +
       "Do not copy its pose, framing, lighting, or background."
     : ""
@@ -222,6 +223,7 @@ export async function POST(request: NextRequest) {
       imageUrl?: string
       instruction?: string
       format?: OutputFormat
+      referenceSelfieUrls?: string[]
       referenceSelfieUrl?: string
       referenceImageUrl?: string
       sourceImageId?: number
@@ -417,7 +419,8 @@ export async function POST(request: NextRequest) {
       if (reservation.kind === "conflict") {
         return NextResponse.json(
           {
-            error: "This edit confirmation belongs to a different request. Confirm this edit again.",
+            error:
+              "This edit confirmation belongs to a different request. Confirm this edit again.",
             code: "edit_request_conflict",
           },
           { status: 409 }
@@ -464,6 +467,28 @@ export async function POST(request: NextRequest) {
         )
       }
       reservationRequestId = requestId
+    }
+
+    if (format === "carousel") {
+      const owned =
+        await sql`SELECT id FROM ai_images WHERE user_id = ${neonUser.id} AND image_url = ${body.imageUrl}
+        UNION ALL SELECT id FROM user_avatar_images WHERE user_id = ${String(neonUser.id)} AND image_url = ${body.imageUrl} LIMIT 1`
+      if (!owned.length)
+        return NextResponse.json({ error: "Carousel image not found" }, { status: 404 })
+      const refs = [
+        body.referenceSelfieUrl,
+        ...(Array.isArray(body.referenceSelfieUrls) ? body.referenceSelfieUrls : []),
+      ].filter(isAllowedImageUrl)
+      if (
+        (
+          await findUnownedIdentityReferences({
+            neonUserId: String(neonUser.id),
+            referenceUrls: refs,
+            admin: false,
+          })
+        ).length
+      )
+        return NextResponse.json({ error: "Use your own saved identity photos" }, { status: 403 })
     }
 
     // ── LIKENESS-MEMORY-01 (flag-gated, fail-open): read her stored accuracy notes for this
@@ -543,7 +568,8 @@ export async function POST(request: NextRequest) {
       if (charge.kind === "conflict") {
         return NextResponse.json(
           {
-            error: "This edit confirmation belongs to a different request. Confirm this edit again.",
+            error:
+              "This edit confirmation belongs to a different request. Confirm this edit again.",
             code: "edit_request_conflict",
           },
           { status: 409 }
@@ -675,6 +701,31 @@ export async function POST(request: NextRequest) {
         console.error("[app-v3 edit] identity selfie attach skipped:", selfieError)
       }
     }
+    if (format === "carousel" && Array.isArray(body.referenceSelfieUrls)) {
+      const extras = [...new Set(body.referenceSelfieUrls.filter(isAllowedImageUrl))]
+        .filter(url => url !== identitySelfieUrl)
+        .slice(0, 3)
+      try {
+        for (const url of extras)
+          editImages.push(
+            await toFile(await normalize(await loadImage(url)), "maya-edit-angle.png", {
+              type: "image/png",
+            })
+          )
+      } catch {
+        await refundAndCloseReservation(
+          "Carousel identity reference unavailable",
+          "identity_reference_unavailable"
+        )
+        return NextResponse.json(
+          {
+            error: "Couldn't load your identity photos. Please try again.",
+          },
+          { status: 502 }
+        )
+      }
+    }
+    hasIdentityReference = editImages.length > 1
     let hasEditReference = false
     if (isAllowedImageUrl(body.referenceImageUrl)) {
       try {
@@ -770,6 +821,9 @@ export async function POST(request: NextRequest) {
         )
       }
     }
+
+    if (format === "carousel")
+      imageBuffer = await sharp(imageBuffer).resize(1080, 1350, { fit: "cover" }).png().toBuffer()
 
     let blob: { url: string }
     try {

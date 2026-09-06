@@ -32,6 +32,7 @@ const SLOT_TO_TYPE: Record<string, string> = {
   inspiration: "inspiration",
   "edit-reference": "edit-reference",
   video: "video-source",
+  carousel: "casual",
 }
 // Slots that hold exactly ONE active image: a new upload replaces the old one.
 const SINGLE_ACTIVE_TYPES = new Set(["three-quarter", "side-profile", "full-body", "inspiration"])

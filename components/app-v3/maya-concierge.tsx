@@ -1,5 +1,11 @@
 "use client"
 
+import {
+  requestedSlideIndex,
+  slideRevision,
+  restoreSlide,
+} from "@/lib/app-v3/maya/carousel-revisions"
+
 // SSELFIE Studio 3.0 - Maya Concierge (MAYA-REBUILD-03: conversational rebuild).
 //
 // This is the missing layer Sandra felt. Instead of a form with one Generate button, Maya
@@ -702,8 +708,7 @@ function extractConcepts(
   if (format && validateConceptCardReadiness({ format, concepts: normalized }).length > 0) {
     if (options.allowReadySubset) {
       const ready = normalized.filter(
-        concept =>
-          validateConceptCardReadiness({ format, concepts: [concept] }).length === 0
+        concept => validateConceptCardReadiness({ format, concepts: [concept] }).length === 0
       )
       return ready.length > 0 ? ready : null
     }
@@ -812,7 +817,10 @@ function dedupeRestoredMessages(
     })
     const fingerprint = emittedConcepts
       ? `concepts:${JSON.stringify(
-          emittedConcepts.map(concept => ({ id: concept.id, title: concept.title }))
+          emittedConcepts.map((concept: ConceptCardData) => ({
+            id: concept.id,
+            title: concept.title,
+          }))
         )}`
       : JSON.stringify(fingerprintParts)
     const previousIndex = assistantFingerprints.get(fingerprint)
@@ -1147,6 +1155,22 @@ export function MayaConcierge({
   } | null>(null)
   const [editBusy, setEditBusy] = useState(false)
   const [textRefining, setTextRefining] = useState(false)
+  const [carouselAttachments, setCarouselAttachments] = useState<
+    Array<{
+      url: string
+      mediaType: string
+      filename: string
+      role: "photo" | "screenshot" | "product" | "inspiration"
+    }>
+  >([])
+  const [carouselUploading, setCarouselUploading] = useState(false)
+  const carouselRevisionCallsRef = useRef(
+    new Set<string>(
+      (restoredDraft?.messages ?? []).flatMap((m: any) =>
+        (m.parts ?? []).map((p: any) => p.toolCallId).filter(Boolean)
+      )
+    )
+  )
   // Which photoshoot-set generation key is currently zipping a bulk download (null = none).
   const [photoshootBulkDownloadKey, setPhotoshootBulkDownloadKey] = useState<string | null>(null)
   // Out-of-credits modal (opened when /generate returns 402).
@@ -1410,6 +1434,10 @@ export function MayaConcierge({
     /** The member's carried idea - structured context, never a replayed user message. */
     creationIdea: string | null
     /** Ground truth about the most recent completed render in this session. */
+    carouselState?: Array<{
+      key: string
+      slides: Array<{ number: number; url: string; spec?: TextOverlaySpec }>
+    }>
     lastGeneration: LastGenerationSnapshot | null
     /** Explicit task context; Calendar styling must never be inferred for ordinary Maya work. */
     mayaContext: ConciergeSession["mayaContext"]
@@ -1555,7 +1583,10 @@ export function MayaConcierge({
           ? activeSession.creationIdea
           : restoredSession.creationIdea,
       })
-      const restoredMessages = dedupeRestoredMessages(snapshot.messages, snapshot.genState)
+      const restoredMessages = dedupeRestoredMessages(
+        snapshot.messages,
+        snapshot.genState as Record<string, ConceptGenState>
+      )
       sessionResumedWithHistoryRef.current = restoredMessages.length > 0
       savedCountRef.current = restoredMessages.length
       lastPulledFormatRef.current = restoredMessages.length
@@ -1573,6 +1604,9 @@ export function MayaConcierge({
       sessionChatIdRef.current = taskId
       suppressChatSaveForIdRef.current = taskId
       setChatId(taskId)
+      for (const message of snapshot.messages as any[])
+        for (const part of message.parts ?? [])
+          if (part.toolCallId) carouselRevisionCallsRef.current.add(part.toolCallId)
       setMessages(restoredMessages as any[])
       setGenState(snapshot.genState as Record<string, ConceptGenState>)
       setGeneratedOnce(snapshot.generatedOnce)
@@ -1725,6 +1759,9 @@ export function MayaConcierge({
     sessionChatIdRef.current = draft.chatId
     suppressChatSaveForIdRef.current = draft.chatId
     setChatId(draft.chatId)
+    for (const message of draft.messages as any[])
+      for (const part of message.parts ?? [])
+        if (part.toolCallId) carouselRevisionCallsRef.current.add(part.toolCallId)
     setMessages(draft.messages as any)
     setGenState(draft.genState)
     setGeneratedOnce(draft.generatedOnce)
@@ -2161,7 +2198,7 @@ export function MayaConcierge({
     if (!fmt || isThinking) return
     const pullIntent =
       localCreationIntent ?? session.creationIntent ?? intentForFormat(fmt, "manual")
-    const hasSpecificSessionWorld = session.aesthetic.id !== "maya-general"
+    const hasSpecificSessionWorld = fmt === "carousel" || session.aesthetic.id !== "maya-general"
     const needsInitialVisualWorld =
       messages.length === 0 &&
       fmt !== "video" &&
@@ -2171,7 +2208,13 @@ export function MayaConcierge({
     const canUseTrainedModelWithoutSelfie =
       hasTrainedModel && generationSource === "trained-model" && fmt === "photo"
     if (fmt === "video" && !session.videoSourceUrl) return
-    if (fmt !== "video" && !session.referenceSelfieUrl && !canUseTrainedModelWithoutSelfie) return
+    if (
+      fmt !== "video" &&
+      fmt !== "carousel" &&
+      !session.referenceSelfieUrl &&
+      !canUseTrainedModelWithoutSelfie
+    )
+      return
     // Old drafts may predate the hands-free finish. Normalize them once so they cannot reopen
     // into a silent text/style gate with no visible next action.
     if (isGraphicOutputFormat(fmt)) {
@@ -2681,6 +2724,24 @@ export function MayaConcierge({
     taskHydrationEpoch,
   ])
 
+  useEffect(() => {
+    if (isThinking || textRefining || !isOpen) return
+    const last = messages[messages.length - 1] as any
+    if (last?.role !== "assistant") return
+    for (const part of last.parts ?? []) {
+      if (
+        part.type !== "tool-revise_carousel" ||
+        part.state !== "output-available" ||
+        !part.output ||
+        carouselRevisionCallsRef.current.has(part.toolCallId)
+      )
+        continue
+      carouselRevisionCallsRef.current.add(part.toolCallId)
+      void reviseCarouselSlides(part.output, part.toolCallId)
+      break
+    }
+  }, [messages, isThinking, textRefining, isOpen])
+
   if (!isOpen || !session) return null
   const { aesthetic, outputFormat, referenceSelfieUrl } = session
   const selectedShot = aesthetic.selectedShot ?? null
@@ -2707,7 +2768,8 @@ export function MayaConcierge({
     session.workspacePath ?? mayaWorkspacePathForFormat(outputFormat) ?? "ai-photos"
   const videoSourceUrl = session.videoSourceUrl
   const mayaChoosesVisualWorld = session.aesthetic.id === "maya-decides"
-  const hasSpecificVisualWorld = mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
+  const hasSpecificVisualWorld =
+    format === "carousel" || mayaChoosesVisualWorld || aesthetic.id !== "maya-general"
   const needsInitialVisualWorld =
     Boolean(outputFormat) && outputFormat !== "video" && !hasStarted && !hasSpecificVisualWorld
   const shouldShowProjectStart = !calendarSurfaceActive && !outputFormat
@@ -2830,23 +2892,24 @@ export function MayaConcierge({
       new CustomEvent("calendar:feed-updated", { detail: { feedId: target.feedId } })
     )
   }
-  const openerLine = calendarSurfaceActive && session.calendarTarget
-    ? `I'm working on Post ${session.calendarTarget.position} in ${session.calendarTarget.feedTitle || "your current grid"}. I'll keep the selected photo, caption, and posting plan together.`
-    : generalHomeConversation
-      ? "Choose a clear path below, or tell me what you want to say, share, or sell. I'll keep the right tools and the conversation together."
-    : outputFormat
-      ? activeGenerationSource === "trained-model" && outputFormat === "photo"
-        ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
-        : format === "video"
-          ? videoSourceUrl
-            ? FORMAT_OPENER_READY[outputFormat]
-            : FORMAT_OPENER[outputFormat]
+  const openerLine =
+    calendarSurfaceActive && session.calendarTarget
+      ? `I'm working on Post ${session.calendarTarget.position} in ${session.calendarTarget.feedTitle || "your current grid"}. I'll keep the selected photo, caption, and posting plan together.`
+      : generalHomeConversation
+        ? "Choose a clear path below, or tell me what you want to say, share, or sell. I'll keep the right tools and the conversation together."
+        : outputFormat
+          ? activeGenerationSource === "trained-model" && outputFormat === "photo"
+            ? "Your trained model is ready. Hit create and pick the direction that feels most like you."
+            : format === "video"
+              ? videoSourceUrl
+                ? FORMAT_OPENER_READY[outputFormat]
+                : FORMAT_OPENER[outputFormat]
+              : referenceSelfieUrl
+                ? FORMAT_OPENER_READY[outputFormat]
+                : FORMAT_OPENER[outputFormat]
           : referenceSelfieUrl
-            ? FORMAT_OPENER_READY[outputFormat]
-            : FORMAT_OPENER[outputFormat]
-      : referenceSelfieUrl
-        ? "Pick what we're making next. Your selfie is already in."
-        : "Pick what we're making next, then add one selfie."
+            ? "Pick what we're making next. Your selfie is already in."
+            : "Pick what we're making next, then add one selfie."
 
   // Keep the transport context current.
   extrasRef.current = {
@@ -2862,6 +2925,17 @@ export function MayaConcierge({
     videoSourceUrl,
     inspirationImageUrl: inspirationUrl,
     creationIdea: session.creationIdea ?? null,
+    carouselState: Object.entries(genState)
+      .filter(([, g]) => g.status === "done" && g.textOverlaySpecs?.[0]?.format === "carousel")
+      .slice(-1)
+      .map(([key, g]) => ({
+        key,
+        slides: (g.imageUrls ?? []).map((url, i) => ({
+          number: i + 1,
+          url: g.bakedImageUrls?.[i] ?? url,
+          spec: g.textOverlaySpecs?.[i],
+        })),
+      })),
     lastGeneration,
     mayaContext: session.mayaContext ?? null,
     skoolHandoffKey: skoolHandoff?.key ?? null,
@@ -2877,6 +2951,205 @@ export function MayaConcierge({
       properties: { source: "skool", lesson_key: skoolHandoff.key },
     })
     sendMessage({ text: skoolHandoff.starterPrompt })
+  }
+
+  async function reviseCarouselSlides(
+    request: {
+      key: string
+      changes: Array<{
+        slide: number
+        headline?: string
+        subline?: string
+        items?: string[]
+        size?: "s" | "m" | "l"
+        style?: OverlayStyleId
+        color?: string
+        layout?: TextOverlaySpec["layout"]
+        instruction?: string
+        sourceUrl?: string
+        removeText?: boolean
+        undo?: boolean
+      }>
+    },
+    operationId: string
+  ) {
+    let current = genState[request.key]
+    if (
+      !current ||
+      current.status !== "done" ||
+      current.textOverlaySpecs?.[0]?.format !== "carousel"
+    )
+      return
+    const stillCurrent = () =>
+      extrasRef.current.carouselState?.some(p => p.key === request.key) === true
+    const commit = (next: ConceptGenState) =>
+      setGenState(state => {
+        if (stillCurrent()) return { ...state, [request.key]: next }
+        return state
+      })
+    setTextRefining(true)
+    try {
+      const indices = request.changes.map(c => c.slide - 1)
+      if (
+        new Set(indices).size !== indices.length ||
+        indices.some(i => !Number.isInteger(i) || i < 0 || !current.imageUrls?.[i])
+      )
+        throw new Error("That slide number is not in this carousel.")
+      for (const change of request.changes) {
+        const index = change.slide - 1
+        if (
+          current.carouselRevisions?.some(r => r.operationId === operationId && r.index === index)
+        )
+          continue
+        if (change.undo) {
+          const history = [...(current.carouselRevisions ?? [])]
+          const previousIndex = history.findLastIndex(r => r.index === index)
+          if (previousIndex < 0) throw new Error(`Slide ${change.slide} has no earlier version.`)
+          const previous = history.splice(previousIndex, 1)[0]
+          current = {
+            ...restoreSlide(current, previous),
+            carouselRevisions: history,
+            error: undefined,
+          }
+          commit(current)
+          continue
+        }
+        const previous = slideRevision(current, index, operationId)
+        if (change.removeText) {
+          current = {
+            ...restoreSlide(current, {
+              ...previous,
+              review: undefined,
+              bakedUrl: previous.imageUrl,
+              bakedId: previous.imageId,
+            }),
+            carouselRevisions: [...(current.carouselRevisions ?? []), previous].slice(-30),
+            error: undefined,
+          }
+          commit(current)
+          continue
+        }
+        let cleanUrl = change.sourceUrl ?? previous.imageUrl
+        let cleanId = change.sourceUrl ? null : previous.imageId
+        if (change.instruction && previous.spec?.preserveAssets && !change.sourceUrl)
+          throw new Error(
+            "This slide uses an original photo or screenshot. Ask me to change its words or replace the original image."
+          )
+        if (change.instruction && !change.sourceUrl) {
+          const res = await fetch("/api/app-v3/maya/edit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              imageUrl: cleanUrl,
+              sourceImageId: cleanId,
+              format: "carousel",
+              instruction: change.instruction,
+              referenceSelfieUrl: session?.referenceSelfieUrl,
+              referenceSelfieUrls: [
+                session?.referenceSelfieUrl,
+                threeQuarterUrl,
+                sideProfileUrl,
+                fullBodyUrl,
+              ].filter(Boolean),
+            }),
+          })
+          const data = await res.json()
+          if (!res.ok || !data.imageUrl) throw new Error(data.error || "Couldn't edit this slide")
+          cleanUrl = data.imageUrl
+          cleanId = data.aiImageId ?? null
+        }
+        const spec = {
+          ...previous.spec!,
+          ...(change.sourceUrl ? { preserveAssets: true } : {}),
+          ...(change.headline !== undefined ? { headline: change.headline } : {}),
+          ...(change.subline !== undefined ? { subline: change.subline } : {}),
+          ...(change.items ? { items: change.items } : {}),
+          ...(change.size ? { size: change.size } : {}),
+          ...(change.style ? { style: change.style } : {}),
+          ...(change.color ? { color: change.color } : {}),
+          ...(change.layout ? { layout: change.layout } : {}),
+        }
+        const res = await fetch("/api/app-v3/maya/bake-text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cleanImageUrl: cleanUrl, cleanImageId: cleanId, spec }),
+        })
+        const data = await res.json()
+        if (!res.ok || !data.bakedUrl)
+          throw new Error(data.error || "Couldn't add the words to this slide")
+        current = {
+          ...restoreSlide(current, {
+            ...previous,
+            imageUrl: cleanUrl,
+            imageId: cleanId,
+            bakedUrl: data.bakedUrl,
+            review: data.review ? { ...data.review, slide: index + 1 } : undefined,
+            bakedId: data.aiImageId ?? null,
+            spec,
+          }),
+          carouselRevisions: [...(current.carouselRevisions ?? []), previous].slice(-30),
+          error: undefined,
+        }
+        commit(current)
+      }
+      void trackAnalyticsEvent({
+        event: "suite_carousel_revision_completed",
+        properties: { slides_changed: indices.length, undo: request.changes.some(c => c.undo) },
+      })
+      if (!stillCurrent()) return
+      setMessages(history => [
+        ...history,
+        {
+          id: `revision-${operationId}`,
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: `Updated slide${indices.length > 1 ? "s" : ""} ${request.changes.map(c => c.slide).join(", ")}. The other slides are unchanged.`,
+            },
+          ],
+        },
+      ])
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Couldn't update this slide. Please try again."
+      if (!stillCurrent()) return
+      commit({ ...current, error: message })
+      setMessages(history => [
+        ...history,
+        {
+          id: `revision-error-${operationId}`,
+          role: "assistant",
+          parts: [{ type: "text", text: message }],
+        },
+      ])
+    } finally {
+      setTextRefining(false)
+    }
+  }
+
+  async function uploadCarouselAssets(files: File[]) {
+    setCarouselUploading(true)
+    setUploadError(null)
+    try {
+      for (const file of files.slice(0, 6 - carouselAttachments.length)) {
+        const form = new FormData()
+        form.append("file", file)
+        form.append("slot", "carousel")
+        const res = await fetch("/api/app-v3/upload-selfie", { method: "POST", body: form })
+        const data = await res.json()
+        if (!res.ok || !data.url || !data.avatarImageId)
+          throw new Error(data.error || "Couldn't save this attachment. Please try again.")
+        setCarouselAttachments(current => [
+          ...current,
+          { url: data.url, mediaType: file.type, filename: file.name, role: "photo" },
+        ])
+      }
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Upload failed")
+    } finally {
+      setCarouselUploading(false)
+    }
   }
 
   async function handleUpload(slot: UploadSlot, file: File) {
@@ -2940,10 +3213,14 @@ export function MayaConcierge({
 
   async function handleSend() {
     const text = input.trim()
-    if (!text || isThinking || textRefining) return
+    if (!text || isThinking || textRefining || carouselUploading) return
     if (homeMode) homeTaskInitiatedRef.current = true
     const refinement = parseTextRefinement(text)
-    if (refinement && (await applyTextRefinement(refinement))) {
+    if (
+      refinement &&
+      requestedSlideIndex(text) === null &&
+      (await applyTextRefinement(refinement))
+    ) {
       setInput("")
       return
     }
@@ -2955,7 +3232,15 @@ export function MayaConcierge({
       preserveCommittedFormat:
         pendingClarifyKind !== "format" && Boolean(activeCreationIntent.format),
     })
-    sendMessage({ text })
+    sendMessage({
+      text: carouselAttachments.length
+        ? `${text}\nAttachment roles (my choices): ${carouselAttachments.map(a => `${a.filename}: ${a.role}`).join("; ")}`
+        : text,
+      ...(carouselAttachments.length
+        ? { files: carouselAttachments.map(({ role, ...a }) => ({ type: "file" as const, ...a })) }
+        : {}),
+    })
+    setCarouselAttachments([])
     setInput("")
     setPendingClarifyKind(null)
   }
@@ -3116,6 +3401,9 @@ export function MayaConcierge({
       setLastGeneration(null)
     }
     sessionResumedWithHistoryRef.current = loaded.length > 0
+    for (const message of loaded as any[])
+      for (const part of message.parts ?? [])
+        if (part.toolCallId) carouselRevisionCallsRef.current.add(part.toolCallId)
     setMessages(loaded as any)
     setHistoryOpen(false)
     // Paint the restored messages and durable result state before changing the app surface.
@@ -3513,7 +3801,17 @@ export function MayaConcierge({
       if (actionRequestId) throw new Error("Choose the photo you want to animate first.")
       return
     }
-    if (targetFormat !== "video" && !referenceSelfieUrl && !canUseCustomModel) {
+    if (
+      targetFormat !== "video" &&
+      !referenceSelfieUrl &&
+      !canUseCustomModel &&
+      (targetFormat !== "carousel" ||
+        effectiveBrief.graphic?.creativePlan?.outputs.some(o =>
+          ["selfie_identity_anchor", "selfie_plus_body_reference"].includes(
+            o.referenceImageStrategy
+          )
+        ))
+    ) {
       trackRecoveryShown(targetFormat, "missing_selfie", {
         phase: "generate_request",
         planState: "blocked",
@@ -3790,11 +4088,21 @@ export function MayaConcierge({
       // The chat-level text choice rides every graphic generation. Text is either baked into the
       // final image, or kept off the visual with Maya's suggested words shown below the result.
       const wantsGraphicText =
-        isGraphicOutputFormat(targetFormat) && textOverlayMode === "with-text"
+        isGraphicOutputFormat(targetFormat) &&
+        (targetFormat === "carousel"
+          ? textOverlayMode !== "without-text"
+          : textOverlayMode === "with-text")
       const graphicTextMode =
-        isGraphicOutputFormat(targetFormat) && textOverlayMode ? textOverlayMode : null
+        targetFormat === "carousel"
+          ? (textOverlayMode ?? "with-text")
+          : isGraphicOutputFormat(targetFormat) && textOverlayMode
+            ? textOverlayMode
+            : null
       const bakeStyle = overlayStyle ?? (wantsGraphicText ? textStyleChoice : null)
-      const wantsBakedText = Boolean(bakeStyle && isGraphicOutputFormat(targetFormat))
+      const wantsBakedText =
+        targetFormat === "carousel"
+          ? wantsGraphicText
+          : Boolean(bakeStyle && isGraphicOutputFormat(targetFormat))
       type ActiveIdentityReferences = {
         faceUrl: string
         threeQuarterUrl: string | null
@@ -3868,6 +4176,7 @@ export function MayaConcierge({
               bakedImageUrls?: Array<string | null>
               bakedAiImageIds?: Array<number | null>
               textOverlayMode?: GraphicTextMode
+              carouselReviews?: import("@/lib/app-v3/maya/carousel-review").CarouselReview[]
               autoBakeSkipped?: string | null
               aiImageId?: number | null
               aiImageIds?: Array<number | null>
@@ -3999,6 +4308,7 @@ export function MayaConcierge({
         bakedImageUrls?: Array<string | null>
         bakedAiImageIds?: Array<number | null>
         textOverlayMode?: GraphicTextMode
+        carouselReviews?: import("@/lib/app-v3/maya/carousel-review").CarouselReview[]
         autoBakeSkipped?: string | null
         aiImageId?: number | null
         aiImageIds?: Array<number | null>
@@ -4060,6 +4370,7 @@ export function MayaConcierge({
           bakedAiImageIds: data?.bakedAiImageIds,
           textOverlayMode: data?.textOverlayMode,
           autoBakeSkipped: data?.autoBakeSkipped,
+          carouselReviews: data?.carouselReviews,
           aiImageId: data?.aiImageId ?? null,
           aiImageIds: data?.aiImageIds,
         },
@@ -4738,7 +5049,7 @@ export function MayaConcierge({
   ) {
     if (isThinking) return
     const intent = intentForFormat(nextFormat, "gallery_action")
-    const needsGraphicTextChoice = isGraphicOutputFormat(nextFormat)
+    const needsGraphicTextChoice = isGraphicOutputFormat(nextFormat) && nextFormat !== "carousel"
     setLocalCreationIntent(intent)
     extrasRef.current = { ...extrasRef.current, format: intent.format, creationIntent: intent }
     void trackAnalyticsEvent({
@@ -5016,15 +5327,18 @@ export function MayaConcierge({
     })
   }
 
-  function findTextRefinementTarget(): TextRefinementTarget | null {
+  function findTextRefinementTarget(
+    requestedIndex: number | null = null
+  ): TextRefinementTarget | null {
     if (lightbox?.key) {
-      const target = textTargetForKey(lightbox.key, 0)
+      const target = textTargetForKey(lightbox.key, requestedIndex ?? lightbox.startIndex ?? 0)
       if (target) return target
     }
     const entries = Object.keys(genState).reverse()
     for (const key of entries) {
       const gen = genState[key]
       if (!gen?.imageUrls?.length) continue
+      if (requestedIndex !== null) return textTargetForKey(key, requestedIndex)
       for (let index = 0; index < gen.imageUrls.length; index += 1) {
         const target = textTargetForKey(key, index)
         if (target) return target
@@ -5033,14 +5347,17 @@ export function MayaConcierge({
     return null
   }
 
-  async function applyTextRefinement(refinement: TextRefinement): Promise<boolean> {
-    const target = findTextRefinementTarget()
+  async function applyTextRefinement(
+    refinement: TextRefinement,
+    requestedIndex: number | null = null
+  ): Promise<boolean> {
+    const target = findTextRefinementTarget(requestedIndex)
     if (!target) return false
     // Story slides/sequences are content-planning surfaces, not text-layer editing surfaces.
     // If she types exact story text ("make it say...", "use this line..."), let Maya see it
     // and rebuild the story brief instead of silently routing her back into the old Text Studio
     // architecture against the latest overlay spec.
-    if (isStoryGraphicFormat(target.spec.format)) return false
+    if (isStoryGraphicFormat(target.spec.format) || target.spec.format === "carousel") return false
 
     if (refinement.kind === "remove-text") {
       const current = genState[target.key]
@@ -5359,11 +5676,23 @@ export function MayaConcierge({
                           job: session.mayaContext?.job ?? null,
                           chatId,
                           outputFormat: session.outputFormat ?? null,
-                          feedId: session.mayaContext?.feedId ?? null,
-                          postId: session.mayaContext?.postId ?? null,
+                          feedId:
+                            session.mayaContext?.feedId == null
+                              ? null
+                              : String(session.mayaContext?.feedId),
+                          postId:
+                            session.mayaContext?.postId == null
+                              ? null
+                              : String(session.mayaContext?.postId),
                           postPosition: session.mayaContext?.postPosition ?? null,
-                          courseId: session.mayaContext?.lessonRef?.courseId ?? null,
-                          lessonId: session.mayaContext?.lessonRef?.lessonId ?? null,
+                          courseId:
+                            session.mayaContext?.lessonRef?.courseId == null
+                              ? null
+                              : String(session.mayaContext?.lessonRef?.courseId),
+                          lessonId:
+                            session.mayaContext?.lessonRef?.lessonId == null
+                              ? null
+                              : String(session.mayaContext?.lessonRef?.lessonId),
                         }}
                       />
                     </div>
@@ -5469,11 +5798,11 @@ export function MayaConcierge({
                         ? session.calendarTarget.imageUrl
                           ? "Maya is writing for this selected photo and your posting plan."
                           : "Maya is writing for this exact post and your posting plan."
-                      : session.calendarTarget.hasImage
-                        ? "Your current photo stays safe while we make another option."
-                        : workspaceBusy
-                          ? "Maya is working on it now."
-                          : "Choose a direction and Maya will place it here."}
+                        : session.calendarTarget.hasImage
+                          ? "Your current photo stays safe while we make another option."
+                          : workspaceBusy
+                            ? "Maya is working on it now."
+                            : "Choose a direction and Maya will place it here."}
                   </p>
                   {session.calendarTarget.delivery && !operatingLayerEnabled && (
                     <button
@@ -5571,424 +5900,424 @@ export function MayaConcierge({
               !plainPreSelfieChat &&
               !calendarSurfaceActive &&
               !generalHomeConversation && (
-              <div className="min-h-0 min-w-0 shrink space-y-3 overflow-y-auto overscroll-contain border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
-                {guidedFirstPhoto && (
-                  <div
-                    className="rounded-[8px] border border-[#C5C6C8]/55 bg-[#F8FAFA] p-4"
-                    aria-live="polite"
-                  >
-                    <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
-                      Your first photo
-                    </p>
-                    <div className="mt-3 flex items-center gap-3">
-                      {referenceSelfieUrl && (
-                        <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50 bg-white">
-                          <Image
-                            src={referenceSelfieUrl}
-                            alt="Your selfie"
-                            fill
-                            className="object-cover"
-                            sizes="48px"
-                          />
-                        </span>
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
-                          {referenceSelfieUrl ? "Selfie ready" : "One selfie is enough"}
-                        </p>
-                        <p className="mt-1 text-[13px] leading-relaxed text-[#6D6E70]">
-                          {referenceSelfieUrl
-                            ? "Maya is preparing one strong recommendation for you."
-                            : "Add one clear selfie. Maya will recommend the strongest direction and guide the rest."}
-                        </p>
-                      </div>
-                    </div>
-                    {!referenceSelfieUrl && (
-                      <button
-                        type="button"
-                        onClick={() => openSelfieManager()}
-                        className="mt-4 min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.16em] text-white hover:bg-[#282728]"
-                      >
-                        Add my selfie
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {!guidedFirstPhoto && shouldShowProjectStart && (
-                  <InlineProjectStart disabled={isThinking} onStart={handleProjectStart} />
-                )}
-
-                {!guidedFirstPhoto && shouldShowVibeChoice && (
-                  <div className="space-y-2">
-                    {inlineShotPickerAesthetic ? (
-                      <>
-                        {pendingShotDirector ? (
-                          <InlineShotDirectorCard
-                            aestheticName={pendingShotDirector.aesthetic.name}
-                            shot={pendingShotDirector.shot}
-                            disabled={isThinking}
-                            onBack={() => setPendingShotDirector(null)}
-                            onPick={handleShotDirectorChoice}
-                          />
-                        ) : (
-                          <InlineShotPicker
-                            shots={inlineShotPickerAesthetic.shots ?? []}
-                            disabled={isThinking}
-                            onPick={handleInlineShotPick}
-                          />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPendingShotDirector(null)
-                            setInlineShotPickerAesthetic(null)
-                          }}
-                          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#6D6E70] underline underline-offset-2 hover:text-[#0D0E10]"
-                        >
-                          Choose another style
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {aestheticsFallback && (
-                          <div className="flex items-center justify-between gap-3 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] px-3 py-2.5">
-                            <p className="text-[12px] leading-relaxed text-[#4F5052]">
-                              Using the looks already saved in SUITE.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => void retryAesthetics()}
-                              className="inline-flex min-h-10 shrink-0 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
-                            >
-                              Retry
-                            </button>
-                          </div>
-                        )}
-                        {inspirationUrl && (
-                          <p className="px-1 pb-1 text-[12px] leading-relaxed text-[#6D6E70]">
-                            Your inspiration image is in. Pick a style and Maya keeps that style as
-                            the world, using your inspiration for pose, light, and mood.
-                          </p>
-                        )}
-                        <InlineVibePicker
-                          aesthetics={inlineAesthetics}
-                          disabled={isThinking}
-                          onPick={handleInlineVibePick}
-                          onUseInspiration={handleInlineUseInspiration}
-                          onLetMayaDecide={handleInlineMayaDecides}
-                        />
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {format === "video" && (
-                  <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
-                          Image to animate
-                        </p>
-                        <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
-                          Pick from your photos or upload a new still image. Maya will send this
-                          exact image to the video pipeline.
-                        </p>
-                      </div>
-                      {videoSourceUrl && (
-                        <span className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[4px] border border-[#C5C6C8]/50">
-                          <Image
-                            src={videoSourceUrl}
-                            alt="Selected image to animate"
-                            fill
-                            className="object-cover"
-                            sizes="44px"
-                          />
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-3 space-y-3">
-                      <div>
-                        <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
-                          Pick from your photos
-                        </p>
-                        {videoGalleryImages === null && !videoGalleryError && (
-                          <p className="text-[12px] text-[#6D6E70]">Loading photos...</p>
-                        )}
-                        {videoGalleryError && (
-                          <p className="text-[12px] text-[#6D6E70]">{videoGalleryError}</p>
-                        )}
-                        {videoGalleryImages && videoGalleryImages.length > 0 && (
-                          <div className="flex gap-2 overflow-x-auto pb-1">
-                            {videoGalleryImages.map(url => {
-                              const selected = videoSourceUrl === url
-                              return (
-                                <button
-                                  key={url}
-                                  type="button"
-                                  onClick={() => setVideoSourceUrl(url)}
-                                  className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-[4px] border-2 ${
-                                    selected
-                                      ? "border-[#0D0E10]"
-                                      : "border-[#C5C6C8]/50 hover:border-[#0D0E10]/50"
-                                  }`}
-                                >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={url}
-                                    alt="Gallery photo"
-                                    className="h-full w-full object-cover"
-                                    loading="lazy"
-                                  />
-                                </button>
-                              )
-                            })}
-                          </div>
-                        )}
-                        {videoGalleryImages && videoGalleryImages.length === 0 && (
-                          <p className="text-[12px] text-[#6D6E70]">
-                            No gallery photos yet. Upload one from your device.
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => videoInput.current?.click()}
-                          disabled={uploadingSlot === "video"}
-                          className="min-h-11 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
-                        >
-                          {uploadingSlot === "video" ? "Uploading..." : "Upload new photo"}
-                        </button>
-                        {videoSourceUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setVideoSourceUrl(null)}
-                            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#6D6E70] underline underline-offset-2 hover:text-[#0D0E10]"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <input
-                      ref={videoInput}
-                      type="file"
-                      accept={IMAGE_UPLOAD_ACCEPT}
-                      className="hidden"
-                      onChange={e => {
-                        const f = e.target.files?.[0]
-                        if (f) void handleUpload("video", f)
-                        if (videoInput.current) videoInput.current.value = ""
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* Front-face selfie: an action before upload, a calm status after. */}
-                {!guidedFirstPhoto &&
-                  (format !== "video" && referenceSelfieUrl ? (
-                    <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="flex min-w-0 items-center gap-2.5">
-                          <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
+                <div className="min-h-0 min-w-0 shrink space-y-3 overflow-y-auto overscroll-contain border-b border-[#C5C6C8]/40 px-5 py-4 sm:px-6">
+                  {guidedFirstPhoto && (
+                    <div
+                      className="rounded-[8px] border border-[#C5C6C8]/55 bg-[#F8FAFA] p-4"
+                      aria-live="polite"
+                    >
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-[#6D6E70]">
+                        Your first photo
+                      </p>
+                      <div className="mt-3 flex items-center gap-3">
+                        {referenceSelfieUrl && (
+                          <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50 bg-white">
                             <Image
                               src={referenceSelfieUrl}
                               alt="Your selfie"
                               fill
                               className="object-cover"
-                              sizes="32px"
+                              sizes="48px"
                             />
                           </span>
-                          <span className="truncate text-[13px] font-medium text-[#0D0E10]">
-                            {selfieRestored ? "Using your saved selfie" : "Selfie added"}
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-serif text-[22px] font-light leading-tight text-[#0D0E10]">
+                            {referenceSelfieUrl ? "Selfie ready" : "One selfie is enough"}
+                          </p>
+                          <p className="mt-1 text-[13px] leading-relaxed text-[#6D6E70]">
+                            {referenceSelfieUrl
+                              ? "Maya is preparing one strong recommendation for you."
+                              : "Add one clear selfie. Maya will recommend the strongest direction and guide the rest."}
+                          </p>
+                        </div>
+                      </div>
+                      {!referenceSelfieUrl && (
+                        <button
+                          type="button"
+                          onClick={() => openSelfieManager()}
+                          className="mt-4 min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.16em] text-white hover:bg-[#282728]"
+                        >
+                          Add my selfie
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {!guidedFirstPhoto && shouldShowProjectStart && (
+                    <InlineProjectStart disabled={isThinking} onStart={handleProjectStart} />
+                  )}
+
+                  {!guidedFirstPhoto && shouldShowVibeChoice && (
+                    <div className="space-y-2">
+                      {inlineShotPickerAesthetic ? (
+                        <>
+                          {pendingShotDirector ? (
+                            <InlineShotDirectorCard
+                              aestheticName={pendingShotDirector.aesthetic.name}
+                              shot={pendingShotDirector.shot}
+                              disabled={isThinking}
+                              onBack={() => setPendingShotDirector(null)}
+                              onPick={handleShotDirectorChoice}
+                            />
+                          ) : (
+                            <InlineShotPicker
+                              shots={inlineShotPickerAesthetic.shots ?? []}
+                              disabled={isThinking}
+                              onPick={handleInlineShotPick}
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPendingShotDirector(null)
+                              setInlineShotPickerAesthetic(null)
+                            }}
+                            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#6D6E70] underline underline-offset-2 hover:text-[#0D0E10]"
+                          >
+                            Choose another style
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {aestheticsFallback && (
+                            <div className="flex items-center justify-between gap-3 rounded-[6px] border border-[#C5C6C8]/60 bg-[#F8FAFA] px-3 py-2.5">
+                              <p className="text-[12px] leading-relaxed text-[#4F5052]">
+                                Using the looks already saved in SUITE.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => void retryAesthetics()}
+                                className="inline-flex min-h-10 shrink-0 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D0E10]"
+                              >
+                                Retry
+                              </button>
+                            </div>
+                          )}
+                          {inspirationUrl && (
+                            <p className="px-1 pb-1 text-[12px] leading-relaxed text-[#6D6E70]">
+                              Your inspiration image is in. Pick a style and Maya keeps that style
+                              as the world, using your inspiration for pose, light, and mood.
+                            </p>
+                          )}
+                          <InlineVibePicker
+                            aesthetics={inlineAesthetics}
+                            disabled={isThinking}
+                            onPick={handleInlineVibePick}
+                            onUseInspiration={handleInlineUseInspiration}
+                            onLetMayaDecide={handleInlineMayaDecides}
+                          />
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {format === "video" && (
+                    <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.2em] text-[#6D6E70]">
+                            Image to animate
+                          </p>
+                          <p className="mt-1 text-[13px] leading-relaxed text-[#4F5052]">
+                            Pick from your photos or upload a new still image. Maya will send this
+                            exact image to the video pipeline.
+                          </p>
+                        </div>
+                        {videoSourceUrl && (
+                          <span className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[4px] border border-[#C5C6C8]/50">
+                            <Image
+                              src={videoSourceUrl}
+                              alt="Selected image to animate"
+                              fill
+                              className="object-cover"
+                              sizes="44px"
+                            />
                           </span>
-                        </span>
+                        )}
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        <div>
+                          <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#6D6E70]">
+                            Pick from your photos
+                          </p>
+                          {videoGalleryImages === null && !videoGalleryError && (
+                            <p className="text-[12px] text-[#6D6E70]">Loading photos...</p>
+                          )}
+                          {videoGalleryError && (
+                            <p className="text-[12px] text-[#6D6E70]">{videoGalleryError}</p>
+                          )}
+                          {videoGalleryImages && videoGalleryImages.length > 0 && (
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                              {videoGalleryImages.map(url => {
+                                const selected = videoSourceUrl === url
+                                return (
+                                  <button
+                                    key={url}
+                                    type="button"
+                                    onClick={() => setVideoSourceUrl(url)}
+                                    className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-[4px] border-2 ${
+                                      selected
+                                        ? "border-[#0D0E10]"
+                                        : "border-[#C5C6C8]/50 hover:border-[#0D0E10]/50"
+                                    }`}
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={url}
+                                      alt="Gallery photo"
+                                      className="h-full w-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
+                          {videoGalleryImages && videoGalleryImages.length === 0 && (
+                            <p className="text-[12px] text-[#6D6E70]">
+                              No gallery photos yet. Upload one from your device.
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => videoInput.current?.click()}
+                            disabled={uploadingSlot === "video"}
+                            className="min-h-11 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
+                          >
+                            {uploadingSlot === "video" ? "Uploading..." : "Upload new photo"}
+                          </button>
+                          {videoSourceUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setVideoSourceUrl(null)}
+                              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#6D6E70] underline underline-offset-2 hover:text-[#0D0E10]"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        ref={videoInput}
+                        type="file"
+                        accept={IMAGE_UPLOAD_ACCEPT}
+                        className="hidden"
+                        onChange={e => {
+                          const f = e.target.files?.[0]
+                          if (f) void handleUpload("video", f)
+                          if (videoInput.current) videoInput.current.value = ""
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Front-face selfie: an action before upload, a calm status after. */}
+                  {!guidedFirstPhoto &&
+                    (format !== "video" && referenceSelfieUrl ? (
+                      <div className="rounded-[6px] border border-[#0D0E10]/15 bg-white px-3 py-2.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#C5C6C8]/50">
+                              <Image
+                                src={referenceSelfieUrl}
+                                alt="Your selfie"
+                                fill
+                                className="object-cover"
+                                sizes="32px"
+                              />
+                            </span>
+                            <span className="truncate text-[13px] font-medium text-[#0D0E10]">
+                              {selfieRestored ? "Using your saved selfie" : "Selfie added"}
+                            </span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => openSelfieManager()}
+                            disabled={uploadingSlot === "face"}
+                            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
+                          >
+                            {uploadingSlot === "face" ? "Uploading…" : "Replace selfie"}
+                          </button>
+                        </div>
+                        <p className="mt-1 text-[11px] leading-relaxed text-[#6D6E70]">
+                          Maya will keep your skin tone and natural features recognizable, so
+                          it&apos;s still you.
+                        </p>
+                      </div>
+                    ) : format !== "video" ? (
+                      <div className="flex items-center gap-3">
                         <button
                           type="button"
                           onClick={() => openSelfieManager()}
                           disabled={uploadingSlot === "face"}
-                          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10] disabled:opacity-60"
+                          className="flex min-h-11 items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
                         >
-                          {uploadingSlot === "face" ? "Uploading…" : "Replace selfie"}
+                          {uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openSelfieManager()}
+                          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
+                        >
+                          Use a past selfie
                         </button>
                       </div>
-                      <p className="mt-1 text-[11px] leading-relaxed text-[#6D6E70]">
-                        Maya will keep your skin tone and natural features recognizable, so
-                        it&apos;s still you.
-                      </p>
-                    </div>
-                  ) : format !== "video" ? (
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => openSelfieManager()}
-                        disabled={uploadingSlot === "face"}
-                        className="flex min-h-11 items-center gap-2 rounded-[4px] border border-[#C5C6C8]/60 bg-white px-3.5 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60"
-                      >
-                        {uploadingSlot === "face" ? "Uploading…" : "Add your selfie"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openSelfieManager()}
-                        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#4F5052] underline underline-offset-2 hover:text-[#0D0E10]"
-                      >
-                        Use a past selfie
-                      </button>
-                    </div>
-                  ) : null)}
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept={IMAGE_UPLOAD_ACCEPT}
-                  className="hidden"
-                  onChange={e => {
-                    const f = e.target.files?.[0]
-                    if (f) void handleUpload("face", f)
-                    if (fileInput.current) fileInput.current.value = ""
-                  }}
-                />
+                    ) : null)}
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept={IMAGE_UPLOAD_ACCEPT}
+                    className="hidden"
+                    onChange={e => {
+                      const f = e.target.files?.[0]
+                      if (f) void handleUpload("face", f)
+                      if (fileInput.current) fileInput.current.value = ""
+                    }}
+                  />
 
-                {/* Primary "go": before Maya has pulled directions, one obvious next action so the
+                  {/* Primary "go": before Maya has pulled directions, one obvious next action so the
               customer never has to type or guess. Reuses handlePickFormat (commits the format,
               which triggers the pull). Hidden once directions exist. */}
-                {!guidedFirstPhoto && !hasStarted && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!outputFormat || needsInitialVisualWorld) return
-                      // Identity first (P0): with no selfie the CTA commits the format and opens the
-                      // upload - the gated auto-pull then starts the moment her selfie is in.
-                      handlePickFormat(outputFormat)
-                      if (outputFormat === "video" && !videoSourceUrl) {
-                        videoInput.current?.click()
-                      } else if (
-                        !referenceSelfieUrl &&
-                        activeGenerationSource !== "trained-model"
-                      ) {
-                        openSelfieManager()
-                      }
-                    }}
-                    disabled={isThinking || !outputFormat || needsInitialVisualWorld}
-                    className="min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.18em]"
-                  >
-                    {isThinking
-                      ? "Creating…"
-                      : needsInitialVisualWorld
-                        ? "Choose a style first"
-                        : !outputFormat
-                          ? "Pick a format to start"
-                          : outputFormat === "video"
-                            ? videoSourceUrl
-                              ? CTA_LABEL[outputFormat]
-                              : "Choose image to animate"
-                            : referenceSelfieUrl || activeGenerationSource === "trained-model"
-                              ? CTA_LABEL[outputFormat]
-                              : "Add my selfie to start"}
-                  </button>
-                )}
+                  {!guidedFirstPhoto && !hasStarted && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!outputFormat || needsInitialVisualWorld) return
+                        // Identity first (P0): with no selfie the CTA commits the format and opens the
+                        // upload - the gated auto-pull then starts the moment her selfie is in.
+                        handlePickFormat(outputFormat)
+                        if (outputFormat === "video" && !videoSourceUrl) {
+                          videoInput.current?.click()
+                        } else if (
+                          !referenceSelfieUrl &&
+                          activeGenerationSource !== "trained-model"
+                        ) {
+                          openSelfieManager()
+                        }
+                      }}
+                      disabled={isThinking || !outputFormat || needsInitialVisualWorld}
+                      className="min-h-12 w-full rounded-[6px] bg-[#0D0E10] px-4 py-3 text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-[#282728] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.18em]"
+                    >
+                      {isThinking
+                        ? "Creating…"
+                        : needsInitialVisualWorld
+                          ? "Choose a style first"
+                          : !outputFormat
+                            ? "Pick a format to start"
+                            : outputFormat === "video"
+                              ? videoSourceUrl
+                                ? CTA_LABEL[outputFormat]
+                                : "Choose image to animate"
+                              : referenceSelfieUrl || activeGenerationSource === "trained-model"
+                                ? CTA_LABEL[outputFormat]
+                                : "Add my selfie to start"}
+                    </button>
+                  )}
 
-                {/* Optional extras - tucked away so a single selfie still just works */}
-                {!guidedFirstPhoto && format !== "video" && (
-                  <button
-                    type="button"
-                    onClick={() => setShowMore(v => !v)}
-                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#6D6E70] hover:text-[#0D0E10]"
-                  >
-                    {showMore ? "Hide extras" : "Add more angles (optional)"}
-                  </button>
-                )}
+                  {/* Optional extras - tucked away so a single selfie still just works */}
+                  {!guidedFirstPhoto && format !== "video" && (
+                    <button
+                      type="button"
+                      onClick={() => setShowMore(v => !v)}
+                      className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.16em] text-[#6D6E70] hover:text-[#0D0E10]"
+                    >
+                      {showMore ? "Hide extras" : "Add more angles (optional)"}
+                    </button>
+                  )}
 
-                {!guidedFirstPhoto && format !== "video" && showMore && (
-                  <div className="space-y-2">
-                    <p className="text-[11px] leading-relaxed text-[#6D6E70]">
-                      For stronger likeness, add 1-3 extra identity photos: a three-quarter face,
-                      side profile, and full-body shot. Inspiration is separate: Maya uses it for
-                      pose, light, or vibe, never as your face.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        {
-                          slot: "angle" as const,
-                          ref: angleInput,
-                          added: !!threeQuarterUrl,
-                          label: "Three-quarter face",
-                        },
-                        {
-                          slot: "side" as const,
-                          ref: sideInput,
-                          added: !!sideProfileUrl,
-                          label: "Side profile",
-                        },
-                        {
-                          slot: "body" as const,
-                          ref: bodyInput,
-                          added: !!fullBodyUrl,
-                          label: "Full body",
-                        },
-                        {
-                          slot: "inspiration" as const,
-                          ref: inspoInput,
-                          added: !!inspirationUrl,
-                          label: "Inspiration pose/vibe",
-                        },
-                      ].map(({ slot, ref, added, label }) => (
-                        <span key={slot} className="inline-flex items-center">
-                          <button
-                            type="button"
-                            onClick={() => ref.current?.click()}
-                            disabled={uploadingSlot === slot}
-                            title={added ? `Change ${label.toLowerCase()}` : undefined}
-                            className={`min-h-11 border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60 ${added ? "rounded-l-[4px]" : "rounded-[4px]"}`}
-                          >
-                            {added
-                              ? `✓ ${label}`
-                              : uploadingSlot === slot
-                                ? "Uploading…"
-                                : `+ ${label}`}
-                          </button>
-                          {added && (
+                  {!guidedFirstPhoto && format !== "video" && showMore && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] leading-relaxed text-[#6D6E70]">
+                        For stronger likeness, add 1-3 extra identity photos: a three-quarter face,
+                        side profile, and full-body shot. Inspiration is separate: Maya uses it for
+                        pose, light, or vibe, never as your face.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          {
+                            slot: "angle" as const,
+                            ref: angleInput,
+                            added: !!threeQuarterUrl,
+                            label: "Three-quarter face",
+                          },
+                          {
+                            slot: "side" as const,
+                            ref: sideInput,
+                            added: !!sideProfileUrl,
+                            label: "Side profile",
+                          },
+                          {
+                            slot: "body" as const,
+                            ref: bodyInput,
+                            added: !!fullBodyUrl,
+                            label: "Full body",
+                          },
+                          {
+                            slot: "inspiration" as const,
+                            ref: inspoInput,
+                            added: !!inspirationUrl,
+                            label: "Inspiration pose/vibe",
+                          },
+                        ].map(({ slot, ref, added, label }) => (
+                          <span key={slot} className="inline-flex items-center">
                             <button
                               type="button"
-                              onClick={() => clearSlot(slot)}
-                              aria-label={`Remove ${label.toLowerCase()}`}
-                              title={`Remove ${label.toLowerCase()}`}
-                              className="self-stretch rounded-r-[4px] border border-l-0 border-[#C5C6C8]/60 bg-white px-2.5 text-[12px] text-[#6D6E70] hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+                              onClick={() => ref.current?.click()}
+                              disabled={uploadingSlot === slot}
+                              title={added ? `Change ${label.toLowerCase()}` : undefined}
+                              className={`min-h-11 border border-[#C5C6C8]/60 bg-white px-3 py-2 text-[12px] text-[#4F5052] hover:border-[#0D0E10]/40 disabled:opacity-60 ${added ? "rounded-l-[4px]" : "rounded-[4px]"}`}
                             >
-                              ×
+                              {added
+                                ? `✓ ${label}`
+                                : uploadingSlot === slot
+                                  ? "Uploading…"
+                                  : `+ ${label}`}
                             </button>
-                          )}
-                          <input
-                            ref={ref}
-                            type="file"
-                            accept={IMAGE_UPLOAD_ACCEPT}
-                            className="hidden"
-                            onChange={e => {
-                              const f = e.target.files?.[0]
-                              if (f) void handleUpload(slot, f)
-                              if (ref.current) ref.current.value = ""
-                            }}
-                          />
-                        </span>
-                      ))}
+                            {added && (
+                              <button
+                                type="button"
+                                onClick={() => clearSlot(slot)}
+                                aria-label={`Remove ${label.toLowerCase()}`}
+                                title={`Remove ${label.toLowerCase()}`}
+                                className="self-stretch rounded-r-[4px] border border-l-0 border-[#C5C6C8]/60 bg-white px-2.5 text-[12px] text-[#6D6E70] hover:border-[#0D0E10]/40 hover:text-[#0D0E10]"
+                              >
+                                ×
+                              </button>
+                            )}
+                            <input
+                              ref={ref}
+                              type="file"
+                              accept={IMAGE_UPLOAD_ACCEPT}
+                              className="hidden"
+                              onChange={e => {
+                                const f = e.target.files?.[0]
+                                if (f) void handleUpload(slot, f)
+                                if (ref.current) ref.current.value = ""
+                              }}
+                            />
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Mid-conversation, setup is an overlay moment: one tap returns to the thread. */}
-                {!guidedFirstPhoto && threadVisible && (
-                  <button
-                    type="button"
-                    onClick={() => setSetupOpen(false)}
-                    className="min-h-11 w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
-                  >
-                    Back to the conversation
-                  </button>
-                )}
+                  {/* Mid-conversation, setup is an overlay moment: one tap returns to the thread. */}
+                  {!guidedFirstPhoto && threadVisible && (
+                    <button
+                      type="button"
+                      onClick={() => setSetupOpen(false)}
+                      className="min-h-11 w-full rounded-[4px] border border-[#C5C6C8]/60 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.16em] text-[#4F5052] hover:border-[#0D0E10]/40"
+                    >
+                      Back to the conversation
+                    </button>
+                  )}
 
-                {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
-              </div>
-            )}
+                  {uploadError && <p className="text-[12px] text-[#282728]">{uploadError}</p>}
+                </div>
+              )}
 
             {plainPreSelfieChat && !hasStarted && !skoolHandoff && (
               <div className="min-h-0 flex-1" aria-hidden />
@@ -6339,6 +6668,7 @@ export function MayaConcierge({
                                 const aiImageId =
                                   current?.aiImageIds?.[0] ?? current?.aiImageId ?? null
                                 const selectedCalendarPost = session.calendarTarget
+                                if (!selectedCalendarPost) return null
                                 if (conceptFormat === "photo") {
                                   if (selectedCalendarPost.delivery?.imageUrl === url) {
                                     return {
@@ -6380,6 +6710,27 @@ export function MayaConcierge({
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({
                                       conceptTitle: concept.title,
+                                      storySource: messages
+                                        .filter((m: any) => m.role === "user")
+                                        .slice(-6)
+                                        .flatMap((m: any) =>
+                                          (m.parts ?? [])
+                                            .filter((p: any) => p.type === "text")
+                                            .map((p: any) => p.text)
+                                        )
+                                        .join("\n")
+                                        .slice(-2000),
+                                      existingCaption: current?.finishedPost?.caption || "",
+                                      revisionInstruction: messages
+                                        .filter((m: any) => m.role === "user")
+                                        .slice(-1)
+                                        .flatMap((m: any) =>
+                                          (m.parts ?? [])
+                                            .filter((p: any) => p.type === "text")
+                                            .map((p: any) => p.text)
+                                        )
+                                        .join(" ")
+                                        .slice(0, 1000),
                                       conceptDescription: concept.description,
                                       format: conceptFormat,
                                       captionContext: [
@@ -6764,31 +7115,30 @@ export function MayaConcierge({
                               </button>
                             </div>
                           )}
-                          {isGraphicOutputFormat(conceptFormat) &&
-                            styleSwapOpen && (
-                              <div className="space-y-2">
-                                <TextStyleTemplatePicker
-                                  format={conceptFormat}
-                                  rememberedStyle={rememberedOverlayStyle}
-                                  onPick={style => {
-                                    handleTextStylePick(style)
-                                    setStyleSwapOpen(false)
-                                  }}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setTextOverlayMode("without-text")
-                                    setTextStyleChoice(null)
-                                    setTextStyleAdjustments(null)
-                                    setStyleSwapOpen(false)
-                                  }}
-                                  className="min-h-11 w-full rounded-[6px] border border-[#C5C6C8]/70 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]"
-                                >
-                                  Keep the images clean · no text
-                                </button>
-                              </div>
-                            )}
+                          {isGraphicOutputFormat(conceptFormat) && styleSwapOpen && (
+                            <div className="space-y-2">
+                              <TextStyleTemplatePicker
+                                format={conceptFormat}
+                                rememberedStyle={rememberedOverlayStyle}
+                                onPick={style => {
+                                  handleTextStylePick(style)
+                                  setStyleSwapOpen(false)
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTextOverlayMode("without-text")
+                                  setTextStyleChoice(null)
+                                  setTextStyleAdjustments(null)
+                                  setStyleSwapOpen(false)
+                                }}
+                                className="min-h-11 w-full rounded-[6px] border border-[#C5C6C8]/70 bg-white px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-[#4F5052] hover:border-[#0D0E10]"
+                              >
+                                Keep the images clean · no text
+                              </button>
+                            </div>
+                          )}
                           {(() => {
                             const directions = conceptPart.slice(0, 3)
                             const activeDirection = directions.findIndex(concept => {
@@ -7012,25 +7362,80 @@ export function MayaConcierge({
                   </button>
                 </div>
               )}
+              {carouselAttachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 py-2">
+                  {carouselAttachments.map(asset => (
+                    <div key={asset.url} className="w-28">
+                      <img
+                        src={asset.url}
+                        alt={asset.filename}
+                        className="h-16 w-full rounded object-cover"
+                      />
+                      <select
+                        aria-label={`Use ${asset.filename} as`}
+                        value={asset.role}
+                        className="min-h-11 w-full border bg-white text-xs"
+                        onChange={e =>
+                          setCarouselAttachments(current =>
+                            current.map(a =>
+                              a.url === asset.url
+                                ? { ...a, role: e.target.value as typeof a.role }
+                                : a
+                            )
+                          )
+                        }
+                      >
+                        <option value="photo">Real photo</option>
+                        <option value="screenshot">Screenshot</option>
+                        <option value="product">Product</option>
+                        <option value="inspiration">Style reference</option>
+                      </select>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${asset.filename}`}
+                        className="min-h-9 text-xs underline"
+                        onClick={() =>
+                          setCarouselAttachments(current =>
+                            current.filter(a => a.url !== asset.url)
+                          )
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="suite-maya-composer-rail flex min-w-0 max-w-full items-end border border-[#C5C6C8] bg-white p-1.5 transition-colors focus-within:border-[#0D0E10]">
                 <input
                   ref={attachInputRef}
                   type="file"
                   accept={IMAGE_UPLOAD_ACCEPT}
+                  multiple={format === "carousel"}
                   className="hidden"
                   onChange={e => {
                     const file = e.target.files?.[0]
-                    if (file) void handleUpload("inspiration", file)
+                    if (format === "carousel")
+                      void uploadCarouselAssets(Array.from(e.target.files ?? []))
+                    else if (file) void handleUpload("inspiration", file)
                     if (attachInputRef.current) attachInputRef.current.value = ""
                   }}
                 />
                 {!plainPreSelfieChat && (
                   <button
                     type="button"
-                    aria-label="Attach an inspiration image"
-                    title="Attach an inspiration image"
+                    aria-label={
+                      format === "carousel"
+                        ? "Attach photos or screenshots"
+                        : "Attach an inspiration image"
+                    }
+                    title={
+                      format === "carousel"
+                        ? "Attach photos or screenshots"
+                        : "Attach an inspiration image"
+                    }
                     onClick={() => attachInputRef.current?.click()}
-                    disabled={uploadingSlot === "inspiration"}
+                    disabled={uploadingSlot === "inspiration" || carouselUploading}
                     className="flex h-11 w-10 shrink-0 items-center justify-center text-[#4F5052] transition-colors hover:text-[#0D0E10] disabled:opacity-40"
                   >
                     {uploadingSlot === "inspiration" ? (

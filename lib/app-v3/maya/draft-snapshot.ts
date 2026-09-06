@@ -123,8 +123,10 @@ export type ServerConciergeSessionSnapshot = {
 }
 
 export type ServerConceptGenState = {
+  carouselReviews?: import("@/lib/app-v3/maya/carousel-review").CarouselReview[]
   status: string
   imageUrls?: string[]
+  carouselRevisions?: import("@/lib/app-v3/maya/carousel-revisions").CarouselRevision[]
   textOverlaySpecs?: TextOverlaySpec[]
   /** TEXT-STUDIO-01: per-image baked text renders, index-aligned with imageUrls. */
   bakedImageUrls?: Array<string | null>
@@ -566,6 +568,56 @@ export function sanitizeServerGenState(value: unknown): Record<string, ServerCon
         : null
       out[key] = {
         status: "done",
+        carouselReviews: Array.isArray(state.carouselReviews)
+          ? state.carouselReviews.slice(0, 12).flatMap((r: any) =>
+              r &&
+              Number.isInteger(r.slide) &&
+              r.slide > 0 &&
+              r.slide <= 12 &&
+              ["checked", "needs_review", "unavailable"].includes(r.status)
+                ? [
+                    {
+                      slide: r.slide,
+                      status: r.status,
+                      issues: Array.isArray(r.issues)
+                        ? r.issues
+                            .filter((v: unknown): v is string => typeof v === "string")
+                            .slice(0, 4)
+                            .map((v: string) => v.slice(0, 200))
+                        : [],
+                    },
+                  ]
+                : []
+            )
+          : undefined,
+        carouselRevisions: Array.isArray(state.carouselRevisions)
+          ? state.carouselRevisions.slice(-30).flatMap((r: any) => {
+              if (
+                !r ||
+                typeof r.operationId !== "string" ||
+                !Number.isInteger(r.index) ||
+                r.index < 0 ||
+                r.index >= (state.imageUrls as unknown[]).length ||
+                typeof r.imageUrl !== "string" ||
+                !r.imageUrl.startsWith("https://")
+              )
+                return []
+              return [
+                {
+                  operationId: r.operationId.slice(0, 150),
+                  index: r.index,
+                  imageUrl: r.imageUrl,
+                  imageId: Number.isInteger(r.imageId) ? r.imageId : null,
+                  bakedUrl:
+                    typeof r.bakedUrl === "string" && r.bakedUrl.startsWith("https://")
+                      ? r.bakedUrl
+                      : null,
+                  bakedId: Number.isInteger(r.bakedId) ? r.bakedId : null,
+                  spec: sanitizeTextOverlaySpec(r.spec) ?? undefined,
+                },
+              ]
+            })
+          : undefined,
         imageUrls: state.imageUrls.filter((url): url is string => typeof url === "string"),
         ...(textOverlaySpecs?.length ? { textOverlaySpecs } : {}),
         ...(bakedImageUrls?.some(Boolean) ? { bakedImageUrls } : {}),

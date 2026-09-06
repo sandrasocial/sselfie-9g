@@ -26,8 +26,10 @@ import { FavoriteButton } from "./favorite-button"
 export type ConceptGenStatus = "idle" | "generating" | "done" | "error"
 
 export interface ConceptGenState {
+  carouselReviews?: import("@/lib/app-v3/maya/carousel-review").CarouselReview[]
   status: ConceptGenStatus
   imageUrls?: string[]
+  carouselRevisions?: import("@/lib/app-v3/maya/carousel-revisions").CarouselRevision[]
   textOverlaySpecs?: TextOverlaySpec[]
   textOverlayMode?: "with-text" | "without-text"
   /**
@@ -130,7 +132,7 @@ interface ConceptCardProps {
 }
 
 const FRAME_ASPECT: Record<OutputFormat, string> = Object.fromEntries(
-  Object.entries(OUTPUT_FORMAT_CONTRACT).map(([format, contract]) => [format, contract.frameClass]),
+  Object.entries(OUTPUT_FORMAT_CONTRACT).map(([format, contract]) => [format, contract.frameClass])
 ) as Record<OutputFormat, string>
 
 const FRAME_MAX_WIDTH: Record<OutputFormat, string> = {
@@ -579,6 +581,22 @@ export function ConceptCard({
           )}
         </div>
 
+        {gen.carouselReviews?.some(r => r.status !== "checked") && (
+          <div
+            role="status"
+            className="my-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm"
+          >
+            <p>Some slides need a look before you post.</p>
+            {gen.carouselReviews
+              .filter(r => r.status !== "checked")
+              .map(r => (
+                <p key={r.slide}>
+                  Slide {r.slide}: {r.issues.join(" ")}
+                </p>
+              ))}
+            <p>You can ask Maya to change just that slide.</p>
+          </div>
+        )}
         {gen.status === "error" && !idleAction && (
           <p
             role="alert"

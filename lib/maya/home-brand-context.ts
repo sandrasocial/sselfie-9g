@@ -41,5 +41,7 @@ export function getMayaHomeBrandContext(legacyContext: string): string {
     .filter(Boolean)
     .filter(line => HOME_BRAND_FACT_PREFIXES.some(prefix => line.startsWith(prefix)))
     .join("\n")
-  return [facts, workbook].filter(Boolean).join("\n\n")
+  const memoryStart = legacyContext.indexOf("## CURRENT MEMBER MEMORY")
+  const memory = memoryStart >= 0 ? legacyContext.slice(memoryStart) : ""
+  return [facts, workbook, memory].filter(Boolean).join("\n\n")
 }

@@ -3,6 +3,7 @@
 // New /app generation writes ai_images; pre-cutover Studio and trained-model flows may only
 // have generated_images rows. Keep this endpoint read-only so migrated members keep their work.
 
+import { ownedGalleryPhotos } from "@/lib/app-v3/gallery-details"
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
@@ -35,13 +36,7 @@ export async function GET() {
         videos: [],
       })
 
-    const galleryImages = (await getAllUserImages(String(neonUser.id))).slice(
-      0,
-      APP_GALLERY_IMAGE_LIMIT + LEGACY_GALLERY_SCAN_LIMIT
-    )
-    const imageAssets = galleryImages
-      .map(imageToGalleryAsset)
-      .filter((asset): asset is NonNullable<typeof asset> => Boolean(asset))
+    const imageAssets = await ownedGalleryPhotos(String(neonUser.id))
 
     const videoRows = await sql`
       SELECT id, image_source, video_url, motion_prompt, status, created_at, completed_at
@@ -62,6 +57,9 @@ export async function GET() {
     return NextResponse.json({ assets, counts: buildGalleryCounts(assets), images, videos })
   } catch (e) {
     console.error("[app-v3 gallery] list failed:", e)
-    return NextResponse.json({ assets: [], counts: buildGalleryCounts([]), images: [], videos: [] })
+    return NextResponse.json(
+      { error: "Could not load your gallery. Please try again." },
+      { status: 500 }
+    )
   }
 }

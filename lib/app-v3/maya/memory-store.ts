@@ -4,10 +4,12 @@
 // admin-gated UI for now. Guarded lazy CREATE TABLE IF NOT EXISTS (repo precedent); the formal
 // record is migrations/20260609_app_v3_memory.sql. Isolated and additive.
 
+import { parseMemoryFacts, type MemoryFacts, type MemoryFactInput } from "./memory-facts"
 import { sql } from "@/lib/db/client"
 import { upsertLikenessNote } from "@/lib/app-v3/likeness-memory"
 
 export interface AppV3Memory {
+  facts?: MemoryFacts
   agentName: string | null
   brandNotes: string | null
   preferences: string | null
@@ -45,7 +47,8 @@ export function ensureMemoryTable(): Promise<void> {
       await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS preferred_overlay_style text`
       // LIKENESS-MEMORY-01 (formal record: migrations/20260702_app_v3_likeness_memory.sql).
       await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS likeness_notes jsonb NOT NULL DEFAULT '[]'::jsonb`
-    })().catch((e) => {
+      await sql`ALTER TABLE app_v3_memory ADD COLUMN IF NOT EXISTS facts jsonb NOT NULL DEFAULT '{}'::jsonb`
+    })().catch(e => {
       ensured = null
       throw e
     })
@@ -57,7 +60,7 @@ export function ensureMemoryTable(): Promise<void> {
 export async function getMemory(userId: string): Promise<AppV3Memory> {
   await ensureMemoryTable()
   const rows = await sql`
-    SELECT agent_name, brand_notes, preferences, user_avatar_url, preferred_overlay_style, likeness_notes
+    SELECT agent_name, brand_notes, preferences, user_avatar_url, preferred_overlay_style, likeness_notes, facts
     FROM app_v3_memory
     WHERE user_id = ${userId}
     LIMIT 1
@@ -69,11 +72,13 @@ export async function getMemory(userId: string): Promise<AppV3Memory> {
         preferences: string | null
         user_avatar_url: string | null
         preferred_overlay_style: string | null
+        facts: unknown
         likeness_notes: unknown
       }
     | undefined
   if (!row) return { ...EMPTY }
   return {
+    facts: parseMemoryFacts(row.facts),
     agentName: row.agent_name ?? null,
     brandNotes: row.brand_notes ?? null,
     preferences: row.preferences ?? null,
@@ -112,8 +117,8 @@ function resolve(patchVal: string | null | undefined, currentVal: string | null)
 }
 
 /**
- * Upsert memory with patch semantics. Read-merge-write (no driver-specific SQL fragment
- * composition): only provided fields change; the rest are preserved.
+ * Atomic patch semantics: only provided fields change. Concurrent updates to other
+ * fields are preserved by the database rather than overwritten from an earlier read.
  */
 export async function saveMemory(
   userId: string,
@@ -123,10 +128,10 @@ export async function saveMemory(
     preferences?: string | null
     userAvatarUrl?: string | null
     preferredOverlayStyle?: string | null
-  },
+  }
 ): Promise<void> {
   await ensureMemoryTable()
-  const current = await getMemory(userId)
+  const current = EMPTY
   const agentName = resolve(patch.agentName, current.agentName)
   const brandNotes = resolve(patch.brandNotes, current.brandNotes)
   const preferences = resolve(patch.preferences, current.preferences)
@@ -153,11 +158,11 @@ export async function saveMemory(
       now()
     )
     ON CONFLICT (user_id) DO UPDATE SET
-      agent_name              = EXCLUDED.agent_name,
-      brand_notes             = EXCLUDED.brand_notes,
-      preferences             = EXCLUDED.preferences,
-      user_avatar_url         = EXCLUDED.user_avatar_url,
-      preferred_overlay_style = EXCLUDED.preferred_overlay_style,
+      agent_name              = CASE WHEN ${patch.agentName !== undefined} THEN EXCLUDED.agent_name ELSE app_v3_memory.agent_name END,
+      brand_notes             = CASE WHEN ${patch.brandNotes !== undefined} THEN EXCLUDED.brand_notes ELSE app_v3_memory.brand_notes END,
+      preferences             = CASE WHEN ${patch.preferences !== undefined} THEN EXCLUDED.preferences ELSE app_v3_memory.preferences END,
+      user_avatar_url         = CASE WHEN ${patch.userAvatarUrl !== undefined} THEN EXCLUDED.user_avatar_url ELSE app_v3_memory.user_avatar_url END,
+      preferred_overlay_style = CASE WHEN ${patch.preferredOverlayStyle !== undefined} THEN EXCLUDED.preferred_overlay_style ELSE app_v3_memory.preferred_overlay_style END,
       updated_at              = now()
   `
 }
@@ -179,7 +184,7 @@ async function writeLikenessNotes(userId: string, notes: string[]): Promise<void
  */
 export async function addLikenessNote(
   userId: string,
-  note: string,
+  note: string
 ): Promise<{ added: boolean; updated: boolean; total: number }> {
   await ensureMemoryTable()
   const current = await getMemory(userId)
@@ -201,4 +206,15 @@ export async function removeLikenessNote(userId: string, note: string): Promise<
     await writeLikenessNotes(userId, notes)
   }
   return notes
+}
+
+/** Atomic replacement by topic. Null is a tombstone so older profiles cannot revive a forgotten fact. */
+export async function saveMemoryFact(userId: string, input: MemoryFactInput): Promise<void> {
+  await ensureMemoryTable()
+  const fact = { ...input, updatedAt: new Date().toISOString() }
+  await sql`
+    INSERT INTO app_v3_memory (user_id, facts) VALUES (${userId}, ${JSON.stringify({ [input.key]: fact })}::jsonb)
+    ON CONFLICT (user_id) DO UPDATE SET
+      facts = app_v3_memory.facts || EXCLUDED.facts, updated_at = now()
+  `
 }

@@ -3,8 +3,7 @@
 // A carousel is a mini editorial design system, not disconnected AI photos (QA doc §10 and
 // Sandra's reference grids). Each system is a complete visual language for the WHOLE set:
 // palette + grade, baked typography, decoration rules, and how each slide is treated. Customer
-// slides are always real-image redesigns: the person appears, or a tutorial screenshot/reference
-// is preserved. There are no faceless object-only or text-only cards.
+// slides follow the story: portraits, details, original uploads and statement cards.
 //
 // CAROUSEL-03: the image model is the designer. Finished slides bake type/callouts in the
 // generated image; there is no local text-overlay renderer after generation.
@@ -116,19 +115,15 @@ export function getCarouselDesignGuide(): string {
     "Pick ONE design system per concept (set brief.graphic.designSystem) that fits her brand and the topic:",
     systems,
     "",
-    "Design system VARIATION (non-negotiable):",
-    "- ALWAYS set brief.graphic.designSystem explicitly on every carousel concept. Never leave it blank.",
-    "- Your 3 concepts must NOT all use the same design system: give at least two different systems across the set, so she sees genuinely different directions, not one style three times.",
-    "- Default to full-bleed-editorial. Use cutout-editorial only for layered photographic or contact-sheet energy, never a literal subject cutout. Use soft-minimal for light, bright, checklist work.",
-    "- If she asks for a specific style, or repeats one she loved, honor that instead.",
-    "",
-    "Slide mix rules (non-negotiable):",
-    '- Every customer carousel slide is a real-image redesign: the person appears, recognizable and natural, with text baked into the finished image.',
-    "- Do not create object-only, screenshot-only, or typography-only cards for customer carousels. If a slide is a hook, list, big statement, or CTA, it still uses a real photo moment of her.",
-    "- PHOTOSHOOT-FIRST DEFAULT: the carousel should feel like a continuation of the user's photoshoot, so the person stays present and recognizable.",
-    "- Never isolate her silhouette onto a replacement background. No sticker outlines, subject drop shadows, or pasted-person compositions.",
-    "- Vary crop, pose, background, scale, and text placement so the set does not feel repetitive.",
-    "- Write slide copy that teaches or tells a story worth saving. Short headline per slide; body lines only where they help.",
-    "- The whole set shares one palette and one voice. Vary the slide compositions so the carousel feels designed, never repetitive.",
+    "- Choose one strong direction by default. Offer alternatives only when requested.",
+    "- The member's current brief and brand determine palette, type and mood. These systems are starting points, never a fixed SSELFIE look.",
+    "- Choose the visual that explains each slide: portrait, real memory photo, detail, screenshot, diagram, or plain statement.",
+    "- Use no_reference for details and non-person scenes. Use screenshot_preserve_exact or existing_generated_image with sourceAssets for real uploads. Never fabricate historical memories, testimonials or screenshots.",
+    "- About me: beginning, turning point, present work and invitation. Offer optional older photos or memories without making uploading a required step.",
+    "- Walkthrough: real screenshots, clear steps and close-ups. Education: examples and checklists. Behind the scenes: real process and detail shots. Offers: real products and verified proof.",
+    "- Use layout notes for a checklist, messages for a short message, filmstrip for 1-3 real photos, statement for a plain backdrop, or photo for a lifestyle scene. Use these only when they help this story.",
+    "- Each output may include items (up to six short lines) and sourceAssets (up to three uploaded URLs, with role photo, screenshot or product). Bind assets to the exact slide that needs them.",
+    "- Keep the same palette and voice across the set. Vary scene, crop, scale and text placement. All slides do not need her face.",
+    "- Text and real uploads are composited locally. Do not ask the image model to draw words, fake UI, testimonials or screenshot contents.",
   ].join("\n")
 }

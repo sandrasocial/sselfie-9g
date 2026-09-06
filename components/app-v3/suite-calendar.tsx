@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import { initiateAssetDownload } from "@/lib/app-v3/download-asset"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   ArrowLeft,
@@ -168,6 +169,8 @@ function PostEditor({
   onMove: (postId: number, direction: -1 | 1) => Promise<void>
   onAskMaya: (post: CalendarPost) => void
 }) {
+  const [exportBusy, setExportBusy] = useState(false)
+  const [exportMessage, setExportMessage] = useState("")
   const [caption, setCaption] = useState(post.caption || "")
   const [scheduledAt, setScheduledAt] = useState(dateValue(post.scheduled_at))
   const [isPosted, setIsPosted] = useState(Boolean(post.is_posted))
@@ -231,6 +234,60 @@ function PostEditor({
     const timeout = window.setTimeout(() => setIsRemoveArmed(false), 4_000)
     return () => window.clearTimeout(timeout)
   }, [isRemoveArmed])
+
+  async function exportPost(action: "copy" | "download" | "example") {
+    setExportBusy(true)
+    setExportMessage("")
+    try {
+      if (action === "copy") await navigator.clipboard.writeText(caption)
+      if (action === "download") {
+        const images = [
+          imageUrlForPost(post),
+          ...(Array.isArray(post.media_urls)
+            ? post.media_urls.filter((u): u is string => typeof u === "string")
+            : []),
+        ].filter((u): u is string => !!u)
+        for (const [index, url] of [...new Set(images)].entries()) {
+          if (!(await initiateAssetDownload(url, `sselfie-post-${post.position}-${index + 1}.png`)))
+            throw new Error("The photo could not be downloaded.")
+        }
+      }
+      if (action === "example") {
+        const response = await fetch("/api/app-v3/maya/memory")
+        if (!response.ok) throw new Error("Memory could not load.")
+        const memory = await response.json()
+        const keys = ["example-1", "example-2", "example-3"]
+        const key =
+          keys.find(k => !memory.facts?.[k]?.value) ||
+          keys.sort((a, b) =>
+            String(memory.facts[a].updatedAt).localeCompare(String(memory.facts[b].updatedAt))
+          )[0]
+        const saved = await fetch("/api/app-v3/maya/memory", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fact: { key, value: caption, source: "Member approved caption in Calendar" },
+          }),
+        })
+        if (!saved.ok) throw new Error("The writing example could not be saved.")
+      }
+      setExportMessage(
+        action === "copy"
+          ? "Caption copied."
+          : action === "download"
+            ? "Download started."
+            : "Writing example saved. Maya keeps your three most recent examples."
+      )
+      void trackAnalyticsEvent({
+        event: "suite_result_used",
+        properties: { source: "calendar", action, post_id: post.id },
+      })
+    } catch (e) {
+      setExportMessage(e instanceof Error ? e.message : "That didn't finish. Please try again.")
+    } finally {
+      setExportBusy(false)
+    }
+  }
 
   const save = async () => {
     if (caption.length > 2200) {
@@ -479,6 +536,43 @@ function PostEditor({
                   </p>
                 </div>
 
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={exportBusy || !caption.trim()}
+                    className="min-h-11 rounded border px-3 text-sm"
+                    onClick={() => void exportPost("copy")}
+                  >
+                    Copy caption
+                  </button>
+                  <button
+                    type="button"
+                    disabled={exportBusy || !imageUrlForPost(post)}
+                    className="min-h-11 rounded border px-3 text-sm"
+                    onClick={() => void exportPost("download")}
+                  >
+                    Download photos
+                  </button>
+                </div>
+                <details className="text-sm">
+                  <summary className="cursor-pointer py-2">Help Maya learn your writing</summary>
+                  <p>
+                    Save this caption as one of your three most recent approved writing examples.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={exportBusy || !caption.trim() || caption.length > 2200}
+                    className="min-h-11 underline"
+                    onClick={() => void exportPost("example")}
+                  >
+                    Keep as writing example
+                  </button>
+                </details>
+                {exportMessage && (
+                  <p role="status" className="text-sm">
+                    {exportMessage}
+                  </p>
+                )}
                 <div className="mt-auto grid grid-cols-2 gap-2">
                   <button
                     type="button"

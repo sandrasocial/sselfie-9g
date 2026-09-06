@@ -54,6 +54,10 @@ export type OverlayStyleId =
 /** The editable text layer for ONE image. Stored with the generation result, never in pixels. */
 export interface TextOverlaySpec {
   headline: string
+  items?: string[]
+  layout?: "photo" | "notes" | "messages" | "filmstrip" | "statement"
+  color?: string
+  preserveAssets?: boolean
   subline?: string
   position: OverlayPosition
   style: OverlayStyleId
@@ -425,7 +429,8 @@ export function parseOverlayEmphasis(text: string): OverlayTextSegmentSource[] {
   let cursor = 0
   let match: RegExpExecArray | null
   while ((match = pattern.exec(text)) !== null) {
-    if (match.index > cursor) segments.push({ text: text.slice(cursor, match.index), emphasized: false })
+    if (match.index > cursor)
+      segments.push({ text: text.slice(cursor, match.index), emphasized: false })
     if (match[1]) segments.push({ text: match[1], emphasized: true })
     cursor = match.index + match[0].length
   }
@@ -518,10 +523,14 @@ const DESIGN_SYSTEM_STYLE_MAP: Record<string, OverlayStyleId> = {
 /** Emotion keywords -> starting style, for single covers/slides. Conservative on purpose. */
 const EMOTION_STYLE_RULES: { pattern: RegExp; style: OverlayStyleId }[] = [
   {
-    pattern: /(personal|story|vulnerab|honest|raw|intimate|emotional|rebuild|journey|behind the scenes)/,
+    pattern:
+      /(personal|story|vulnerab|honest|raw|intimate|emotional|rebuild|journey|behind the scenes)/,
     style: "lower-third-accent",
   },
-  { pattern: /(minimal|airy|serene|wellness|clean girl|weightless|spacious)/, style: "top-band-minimal" },
+  {
+    pattern: /(minimal|airy|serene|wellness|clean girl|weightless|spacious)/,
+    style: "top-band-minimal",
+  },
   { pattern: /(bold|statement|dramatic|moody|fierce|powerful|noir)/, style: "quote-statement" },
 ]
 
@@ -630,6 +639,18 @@ export function sanitizeTextOverlaySpec(value: unknown): TextOverlaySpec | null 
   const size = spec.size as OverlaySize
   return {
     headline,
+    preserveAssets: spec.preserveAssets === true,
+    items: Array.isArray(spec.items)
+      ? spec.items
+          .filter((x): x is string => typeof x === "string")
+          .slice(0, 6)
+          .map(x => x.slice(0, 120))
+      : undefined,
+    layout: ["photo", "notes", "messages", "filmstrip", "statement"].includes(String(spec.layout))
+      ? (spec.layout as TextOverlaySpec["layout"])
+      : undefined,
+    color:
+      typeof spec.color === "string" && /^#[\da-f]{6}$/i.test(spec.color) ? spec.color : undefined,
     subline: subline || undefined,
     position:
       preset.lockedPosition ??
@@ -752,7 +773,12 @@ export interface OverlayLayout {
   accents: OverlayAccent[]
 }
 
-export function overlayCanvasFont(weight: number, px: number, family: string, italic = false): string {
+export function overlayCanvasFont(
+  weight: number,
+  px: number,
+  family: string,
+  italic = false
+): string {
   return `${italic ? "italic " : ""}${weight} ${px}px ${family}`
 }
 
@@ -852,7 +878,13 @@ function handDrawnEllipsePath(cx: number, cy: number, rx: number, ry: number): s
 }
 
 /** A short curved arrow from (sx, sy) toward (tx, ty), with an open hand-drawn head. */
-function curvedArrowPath(sx: number, sy: number, tx: number, ty: number, maxLength: number): string {
+function curvedArrowPath(
+  sx: number,
+  sy: number,
+  tx: number,
+  ty: number,
+  maxLength: number
+): string {
   const dx = tx - sx
   const dy = ty - sy
   const dist = Math.hypot(dx, dy) || 1
@@ -901,8 +933,15 @@ export function computeOverlayLayout(
     trackedWidth(text, font, preset.sublineTrackingEm, sublinePx, measure)
 
   const headlineWords = markedWords(spec.headline, preset.headlineMark !== "none")
-  const headlineLines = wrapMarkedWords(headlineWords, maxTextWidth, headlineFont, headlineWrapMeasure)
-  const sublineSource = preset.sublineUppercase ? (spec.subline ?? "").toUpperCase() : spec.subline ?? ""
+  const headlineLines = wrapMarkedWords(
+    headlineWords,
+    maxTextWidth,
+    headlineFont,
+    headlineWrapMeasure
+  )
+  const sublineSource = preset.sublineUppercase
+    ? (spec.subline ?? "").toUpperCase()
+    : (spec.subline ?? "")
   const sublineWords = markedWords(sublineSource, preset.sublineMark !== "none")
   const sublineLines = wrapMarkedWords(sublineWords, maxTextWidth, sublineFont, sublineWrapMeasure)
 
@@ -1033,8 +1072,19 @@ function buildRichLine(input: {
   measure: OverlayMeasure
   accents: OverlayAccent[]
 }): OverlayLine {
-  const { words, y, fontPx, fontFamily, fontWeight, trackingEm, color, uppercase, kind, mark, preset } =
-    input
+  const {
+    words,
+    y,
+    fontPx,
+    fontFamily,
+    fontWeight,
+    trackingEm,
+    color,
+    uppercase,
+    kind,
+    mark,
+    preset,
+  } = input
   const font = overlayCanvasFont(fontWeight, fontPx, fontFamily)
   const italicFont = overlayCanvasFont(fontWeight, fontPx, fontFamily, true)
   const spaceWidth = Math.max(input.measure(" ", font), fontPx * 0.24)

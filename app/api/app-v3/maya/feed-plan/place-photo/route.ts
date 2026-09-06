@@ -1,3 +1,4 @@
+import { getMayaWritingContext } from "@/lib/app-v3/maya/writing-context"
 // SSELFIE Studio 3.0 - Feed Planner Phase 2c: Maya places a chat-generated photo onto the
 // calendar. Called from the "Add to calendar" action on a generated photo's result card
 // (components/app-v3/concept-card.tsx). No day-picker UI - Maya picks the slot herself:
@@ -264,6 +265,7 @@ export async function POST(req: Request) {
           LIMIT 1
         `
         const captionResult = await generateInstagramCaption({
+          ...(await getMayaWritingContext(user.id, String(neonUser.id))),
           postPosition: 1,
           shotType: "portrait",
           purpose: contentPillar || "general",
