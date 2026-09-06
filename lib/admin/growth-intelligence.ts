@@ -179,6 +179,8 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     WHERE created_at > NOW() - (${interval}::interval)
   `.catch(() => [{ total: 0, new_count: 0, reviewing_count: 0, resolved_count: 0, bug_count: 0 }])
 
+  const { getCustomerEmailReplies } = await import("@/lib/email/received-email")
+  const incomingCustomerEmails = await getCustomerEmailReplies().catch(() => null)
   const recentSupportThreads = await sql`
     SELECT
       id,
@@ -273,5 +275,6 @@ export async function getGrowthIntelligenceReport(windowDays: number) {
     attributionRows,
     supportCounts,
     recentSupportThreads,
+    incomingCustomerEmails,
   }
 }

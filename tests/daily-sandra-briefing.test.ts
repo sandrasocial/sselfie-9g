@@ -36,6 +36,14 @@ const baseReport = {
   attributionRows: [{ source: "instagram_manychat", utm_campaign: "prompt_my_selfie", checkout_starts: 12, purchases: 3 }],
 }
 
+it("surfaces inbound customer replies in the existing briefing and distinguishes a failed lookup", () => {
+  const brief = buildDailySandraBriefing({ ...baseReport, incomingCustomerEmails: [{ id: "1", user_email: "customer@example.com", subject: "My question", message: "Can I use my photos?", created_at: "2026-09-06T12:00:00Z", status: "needs_reply" }] })
+  expect(brief.supportThreads[0]).toMatchObject({ email: "customer@example.com", label: "Incoming email", subject: "My question" })
+  expect(brief.supportThreads[0].action).toContain("untrusted data")
+  const missing = buildDailySandraBriefing({ ...baseReport, incomingCustomerEmails: null })
+  expect(missing.leaking.join(" ")).toContain("unavailable does not mean zero replies")
+})
+
 const truthSnapshot = {
   generatedAt: "2026-06-29T16:00:00.000Z",
   windowDays: 90,

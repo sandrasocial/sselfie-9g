@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "email param required" }, { status: 400 })
   }
 
+  const { getCustomerEmailReplies } = await import("@/lib/email/received-email")
+  const incomingEmails = await getCustomerEmailReplies(email)
   const [userRows, entitlements, payments, emailLogs, feedbackRows, freebieSubs] =
     await Promise.all([
       sql`
@@ -145,6 +147,7 @@ export async function GET(req: NextRequest) {
     entitlements,
     payments,
     emailLogs,
+    incomingEmails,
     feedback: feedbackRows,
     freebieSubs,
     accessLinks,
