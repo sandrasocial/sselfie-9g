@@ -7,7 +7,7 @@ vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
 vi.mock("@/lib/resend/api-key", () => ({ getResendApiKey: () => "test-key" }))
 import { inboundAddress, isAutomaticReply, receiveCustomerEmail } from "@/lib/email/received-email"
 
-const id = "d77072b7-9610-4e85-b236-d48d5bf9ccf2"
+const id = "11111111-2222-4333-8444-555555555555"
 const event = { email_id: id, from: "Customer <customer@example.com>", to: ["hello@sselfie.ai"] }
 const message = { id, from: event.from, subject: "Can Maya help with my photos?", text: "My question", headers: {}, created_at: "2026-09-06T12:00:00Z" }
 
