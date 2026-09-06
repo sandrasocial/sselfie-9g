@@ -70,8 +70,13 @@ export async function receiveCustomerEmail(data: any) {
   return { recorded: true, automated }
 }
 
-export async function getCustomerEmailReplies(email?: string) {
-  return sql`
+export type CustomerEmailReply = {
+  id: string; user_email: string; subject: string; message: string;
+  provider_email_id: string; created_at: string; status: string;
+}
+
+export async function getCustomerEmailReplies(email?: string): Promise<CustomerEmailReply[]> {
+  const rows = await sql`
     SELECT id::text, metadata->>'sender_email' AS user_email,
       metadata->>'subject' AS subject, metadata->>'text' AS message,
       metadata->>'resend_message_id' AS provider_email_id,
@@ -82,4 +87,5 @@ export async function getCustomerEmailReplies(email?: string) {
       AND (${email || null}::text IS NULL OR LOWER(metadata->>'sender_email') = ${email || null})
     ORDER BY id DESC LIMIT 20
   `
+  return rows as CustomerEmailReply[]
 }
