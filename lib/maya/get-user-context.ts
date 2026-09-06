@@ -3,6 +3,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalMemory, getUserPersonalBrand } from "@/lib/data/maya"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
 import { hasStudioMembership } from "@/lib/subscription"
+import { getWorkbookContextForMaya } from "@/lib/academy/workbook-answers"
 
 const ACADEMY_PRODUCT_GUIDANCE: Record<string, string> = {
   what_to_say: "Helps with caption writing. Offer caption starters and a 7-caption series.",
@@ -800,7 +801,9 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
       "[v0] getUserContextForMaya: Context built successfully, length:",
       finalContext.length
     )
-    return finalContext
+    // Append after legacy truncation so saved workbook answers cannot be silently dropped.
+    const workbookContext = await getWorkbookContextForMaya(String(neonUser.id))
+    return [finalContext, workbookContext].filter(Boolean).join("\n\n")
   } catch (error) {
     console.error("[v0] getUserContextForMaya: FATAL ERROR")
     console.error("[v0] Error:", error)

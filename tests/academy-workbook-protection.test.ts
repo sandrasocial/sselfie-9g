@@ -26,21 +26,21 @@ const WORKBOOKS: Array<{
     id: "what_to_say",
     path: "/academy/what_to_say",
     privateSource: "server/academy-workbooks/what_to_say/index.html",
-    sha256: "9f550acdf6aea1d1b96b5b3fcbab60f4b56a138fe9cab1fc1e0f82589e4cdeb1",
+    sha256: "975767db4d601c6e8b394ba0c1e1cb0638c57565501de897ef1b8d6665db0a0d",
     marker: "const MAYA_PRODUCT_ID = 'what_to_say'",
   },
   {
     id: "show_up",
     path: "/academy/show_up",
     privateSource: "server/academy-workbooks/show_up/index.html",
-    sha256: "66f1ad451c54fe4514fbf9c8664c0a84fa99d401b3f6ae14383dc96b560fbd82",
+    sha256: "72c06aac80ad6b029eb9287692e2b51be09da7c690ea6e7a6d298c1f906fac90",
     marker: "const MAYA_PRODUCT_ID = 'show_up'",
   },
   {
     id: "get_paid",
     path: "/academy/get_paid",
     privateSource: "server/academy-workbooks/get_paid/index.html",
-    sha256: "220c4c312c96446b3f5fc7eda85445a6f2aa52d587672c8e5ff81fd7bccc1a0d",
+    sha256: "3526c549cf3c16be5fbd39c81eb01726c1669731d000dc2e38cbd7e6f7f41d89",
     marker: "const MAYA_PRODUCT_ID = 'get_paid'",
   },
 ]
@@ -91,7 +91,7 @@ describe("protected Academy workbook routes", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     requireAcademyProductAccessMock.mockReset()
-    requireAcademyProductAccessMock.mockResolvedValue({})
+    requireAcademyProductAccessMock.mockResolvedValue({ neonUser: { id: "member-a" } })
   })
 
   it.each(WORKBOOKS)("serves the owned $id workbook from its existing path", async workbook => {
@@ -186,7 +186,7 @@ describe("protected Academy workbook routes", () => {
 
   it("never leaks one purchased workbook into another route", async () => {
     requireAcademyProductAccessMock.mockImplementation(async (id: WorkbookId) => {
-      if (id === "what_to_say") return {}
+      if (id === "what_to_say") return { neonUser: { id: "member-a" } }
       throw academyError(403, {
         error: "Academy product access required",
         hasAccess: false,
@@ -203,7 +203,7 @@ describe("protected Academy workbook routes", () => {
   })
 
   it("allows visibility-suite or membership access exactly when the canonical resolver allows it", async () => {
-    requireAcademyProductAccessMock.mockResolvedValue({ accessSource: "membership_or_suite" })
+    requireAcademyProductAccessMock.mockResolvedValue({ neonUser: { id: "member-a" }, accessSource: "membership_or_suite" })
 
     for (const workbook of WORKBOOKS) {
       const route = await loadRoute(workbook.id)
@@ -261,7 +261,7 @@ describe("protected Academy workbook routes", () => {
 })
 
 describe("Academy workbook private assets and routing contracts", () => {
-  it.each(WORKBOOKS)("moves $id byte-for-byte out of public", workbook => {
+  it.each(WORKBOOKS)("keeps the approved $id workbook private and integrity-checked", workbook => {
     const privatePath = path.join(process.cwd(), workbook.privateSource)
     const publicPath = path.join(process.cwd(), "public", "academy", workbook.id, "index.html")
 

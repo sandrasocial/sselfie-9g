@@ -1,5 +1,6 @@
 import { generateText } from "ai"
 import { type NextRequest, NextResponse } from "next/server"
+import { readWorkbookAnswers } from "@/lib/academy/workbook-answers"
 
 import { academyRouteErrorToResponse, requireAcademyUser } from "@/lib/academy-server-access"
 import { getAcademyEntitlementState } from "@/lib/academy-entitlements"
@@ -270,7 +271,6 @@ export async function POST(request: NextRequest) {
     const entitlementState = await getAcademyEntitlementState(neonUser.id)
     const accessibleIds = new Set(entitlementState.accessibleProductIds)
     const body = await request.json().catch(() => null)
-    const answers = normalizeAnswers(body?.answers)
 
     const hasSuiteAccess =
       entitlementState.membershipActive ||
@@ -287,6 +287,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const workbooks = await readWorkbookAnswers(neonUser.id)
+    const answers = normalizeAnswers(
+      workbooks.flatMap(book =>
+        book.answers.map(answer => ({ ...answer, productId: book.productId }))
+      )
+    )
     const entitledAnswers = entitlementState.membershipActive
       ? answers
       : answers.filter(answer => accessibleIds.has(answer.productId))
@@ -382,6 +388,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       token,
+      answerCount: entitledAnswers.length,
       url: `/academy/visibility-plan/${token}`,
     })
   } catch (error) {

@@ -58,11 +58,12 @@ async function getWorkbookImage(productId: ProtectedAcademyWorkbookId) {
   }
 }
 
-function injectWorkbookImage(html: string, imageUrl: string) {
+function injectWorkbookImage(html: string, imageUrl: string, userId: string) {
   const serialized = JSON.stringify(imageUrl).replace(/</g, "\\u003c")
-  return html.replace(
+  const user = JSON.stringify(userId).replace(/</g, "\\u003c")
+  return html.replace("<head>", `<head><script>window.SSELFIE_WORKBOOK_USER=${user}</script>`).replace(
     '<script src="/academy-workbook-wizard.js"></script>',
-    `<script>window.SSELFIE_COURSE_IMAGE=${serialized}</script><script src="/academy-workbook-wizard.js"></script>`
+    `<script>window.SSELFIE_COURSE_IMAGE=${serialized}</script><script src="/academy-workbook-sync.js"></script><script src="/academy-workbook-wizard.js"></script>`
   )
 }
 
@@ -110,8 +111,10 @@ export async function respondWithProtectedAcademyWorkbook({
   headOnly?: boolean
   readWorkbook: () => Promise<string>
 }): Promise<NextResponse> {
+  let userId: string
   try {
-    await requireAcademyProductAccess(productId)
+    const { neonUser } = await requireAcademyProductAccess(productId)
+    userId = neonUser.id
   } catch (error) {
     if (isAcademyError(error) && error.status === 401) {
       const loginUrl = new URL("/auth/login", request.url)
@@ -135,7 +138,7 @@ export async function respondWithProtectedAcademyWorkbook({
     const html = await readWorkbook()
     const imageUrl = await getWorkbookImage(productId)
     return securedResponse(
-      headOnly ? null : injectWorkbookImage(html, imageUrl),
+      headOnly ? null : injectWorkbookImage(html, imageUrl, userId),
       { status: 200 },
       "text/html; charset=utf-8"
     )
