@@ -44,6 +44,12 @@ it("surfaces inbound customer replies in the existing briefing and distinguishes
   expect(missing.leaking.join(" ")).toContain("unavailable does not mean zero replies")
 })
 
+it("keeps the newest incoming messages first when the email shows only four threads", () => {
+  const replies = Array.from({ length: 8 }, (_, index) => ({ id: String(8 - index), user_email: "customer@example.com", subject: `Question ${8 - index}`, message: "Question", created_at: "2026-09-06T12:00:00Z", status: "needs_reply" }))
+  const brief = buildDailySandraBriefing({ ...baseReport, incomingCustomerEmails: replies })
+  expect(brief.supportThreads.slice(0, 4).map(thread => thread.id)).toEqual(["inbound-8", "inbound-7", "inbound-6", "inbound-5"])
+})
+
 const truthSnapshot = {
   generatedAt: "2026-06-29T16:00:00.000Z",
   windowDays: 90,

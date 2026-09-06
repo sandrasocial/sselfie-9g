@@ -9,7 +9,7 @@ import {
   isVaultMayaLaunchCampaignKey,
 } from "@/lib/email/campaigns/vault-maya-launch-segments"
 import { assessDeliverabilityWindow } from "@/lib/email/deliverability-alerts"
-import { receiveCustomerEmail } from "@/lib/email/received-email"
+import { receiveCustomerEmail, markCustomerEmailAnswered } from "@/lib/email/received-email"
 
 const WEBHOOK_EVENT_TYPES = new Set([
   "email.sent",
@@ -856,6 +856,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await updateEmailLog(context)
+    await markCustomerEmailAnswered(context.eventType, context.eventData)
     await updateABTestIfNeeded(result.rows, context.eventType)
     await maybeSendDeliverabilityAlert(context.eventType)
 

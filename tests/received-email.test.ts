@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({ sql: Object.assign(vi.fn(), { transaction: vi.fn() }) }))
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
 vi.mock("@/lib/resend/api-key", () => ({ getResendApiKey: () => "test-key" }))
-import { inboundAddress, isAutomaticReply, receiveCustomerEmail } from "@/lib/email/received-email"
+import { inboundAddress, isAutomaticReply, receiveCustomerEmail, markCustomerEmailAnswered } from "@/lib/email/received-email"
 
 const id = "11111111-2222-4333-8444-555555555555"
 const event = { email_id: id, from: "Customer <customer@example.com>", to: ["hello@sselfie.ai"] }
@@ -45,6 +45,28 @@ describe("customer email replies", () => {
     mocks.sql.mockResolvedValueOnce([{ known: true }]).mockResolvedValueOnce([{ id: 5 }])
     expect(await receiveCustomerEmail(event)).toEqual({ recorded: true, duplicate: true })
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it("accepts the published support mailbox and checks durable subscriber history", async () => {
+    mocks.sql.mockResolvedValueOnce([{ known: true }]).mockResolvedValueOnce([])
+    await expect(receiveCustomerEmail({ ...event, to: ["support@sselfie.ai"] })).resolves.toMatchObject({ recorded: true })
+    expect(String(mocks.sql.mock.calls[0][0])).toContain("freebie_subscribers")
+  })
+
+  it("only clears a question after a delivered reply with an exact thread and recipient match", async () => {
+    const delivery = { from: "Sandra <hello@sselfie.ai>", to: ["customer@example.com"], email_id: "reply-id", headers: [{ name: "In-Reply-To", value: "<inbound@example.com>" }] }
+    await markCustomerEmailAnswered("email.sent", delivery)
+    await markCustomerEmailAnswered("email.bounced", delivery)
+    await markCustomerEmailAnswered("email.delivered", { ...delivery, headers: [] })
+    await markCustomerEmailAnswered("email.delivered", { ...delivery, from: "outsider@example.com" })
+    expect(mocks.sql).not.toHaveBeenCalled()
+    await markCustomerEmailAnswered("email.delivered", delivery)
+    const args = mocks.sql.mock.calls[0]
+    expect(String(args[0])).toContain("status = 'answered'")
+    expect(String(args[0])).toContain("metadata->>'message_id'")
+    expect(String(args[0])).toContain("metadata->>'sender_email'")
+    expect(args).toContain("<inbound@example.com>")
+    expect(args).toContainEqual(["customer@example.com"])
   })
 
   it("stores bounded plain text in the existing event log using a serialized transaction", async () => {

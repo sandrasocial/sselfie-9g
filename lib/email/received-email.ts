@@ -24,12 +24,13 @@ export async function receiveCustomerEmail(data: any) {
   if (!/^[a-f0-9-]{36}$/i.test(id)) return { ignored: true, reason: "invalid_email_id" }
   const sender = inboundAddress(data.from)
   const recipients = (Array.isArray(data.to) ? data.to : [data.to]).map(inboundAddress)
-  if (!sender || sender.endsWith("@sselfie.ai") || !recipients.includes("hello@sselfie.ai")) {
+  if (!sender || sender.endsWith("@sselfie.ai") || !recipients.some(address => address === "hello@sselfie.ai" || address === "support@sselfie.ai")) {
     return { ignored: true, reason: "outside_customer_mailbox" }
   }
 
   const known = await sql`
     SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = ${sender})
+      OR EXISTS(SELECT 1 FROM freebie_subscribers WHERE LOWER(email) = ${sender})
       OR EXISTS(SELECT 1 FROM email_logs WHERE LOWER(user_email) = ${sender}
         AND status IN ('sent', 'delivered') AND created_at > NOW() - INTERVAL '30 days') AS known
   `
@@ -70,9 +71,32 @@ export async function receiveCustomerEmail(data: any) {
   return { recorded: true, automated }
 }
 
+// A signed delivery event plus the exact thread header and recipient is evidence
+// of a reply. Another campaign to the same address is not an answered question.
+export async function markCustomerEmailAnswered(eventType: string, data: any) {
+  if (eventType !== "email.delivered" || !data?.email_id) return
+  const from = inboundAddress(data.from)
+  if (!from || !["hello@sselfie.ai", "support@sselfie.ai"].includes(from)) return
+  const headers: Array<{ name: string; value: unknown }> = Array.isArray(data.headers)
+    ? data.headers
+    : Object.entries(data.headers || {}).map(([name, value]) => ({ name, value }))
+  const reference = headers.find(header => header.name?.toLowerCase() === "in-reply-to")?.value
+  if (typeof reference !== "string" || !reference.trim() || /[\r\n]/.test(reference)) return
+  const recipients = (Array.isArray(data.to) ? data.to : [data.to]).map(inboundAddress).filter(Boolean)
+  if (!recipients.length) return
+  await sql`
+    UPDATE email_events SET status = 'answered', metadata = metadata || ${JSON.stringify({
+      answered_by_resend_message_id: data.email_id, answered_at: new Date().toISOString(),
+    })}::jsonb
+    WHERE event_type = 'email.received' AND status = 'needs_reply'
+      AND metadata->>'message_id' = ${reference.trim()}
+      AND LOWER(metadata->>'sender_email') = ANY(${recipients}::text[])
+  `
+}
+
 export type CustomerEmailReply = {
   id: string; user_email: string; subject: string; message: string;
-  provider_email_id: string; created_at: string; status: string;
+  provider_email_id: string; message_id: string; created_at: string; status: string;
 }
 
 export async function getCustomerEmailReplies(email?: string): Promise<CustomerEmailReply[]> {
@@ -80,6 +104,7 @@ export async function getCustomerEmailReplies(email?: string): Promise<CustomerE
     SELECT id::text, metadata->>'sender_email' AS user_email,
       metadata->>'subject' AS subject, metadata->>'text' AS message,
       metadata->>'resend_message_id' AS provider_email_id,
+      metadata->>'message_id' AS message_id,
       metadata->>'provider_created_at' AS created_at, status
     FROM email_events
     WHERE event_type = 'email.received' AND status = 'needs_reply'
