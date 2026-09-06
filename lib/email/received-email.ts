@@ -7,6 +7,15 @@ export function inboundAddress(value: unknown): string | null {
   return /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(address) ? address : null
 }
 
+// Google documents these two consumer-mail domains as the same inbox:
+// https://support.google.com/mail/answer/10313
+// This is for support correspondence only, never login or entitlement identity.
+export function correspondenceAddresses(email: string): string[] {
+  if (email.endsWith("@gmail.com")) return [email, email.replace(/@gmail\.com$/, "@googlemail.com")]
+  if (email.endsWith("@googlemail.com")) return [email, email.replace(/@googlemail\.com$/, "@gmail.com")]
+  return [email]
+}
+
 export function isAutomaticReply(email: { subject?: string; headers?: Record<string, unknown> }): boolean {
   const headers = Object.fromEntries(Object.entries(email.headers || {}).map(([key, value]) => [key.toLowerCase(), String(value).toLowerCase()]))
   return Boolean(
@@ -28,10 +37,11 @@ export async function receiveCustomerEmail(data: any) {
     return { ignored: true, reason: "outside_customer_mailbox" }
   }
 
+  const addresses = correspondenceAddresses(sender)
   const known = await sql`
-    SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = ${sender})
-      OR EXISTS(SELECT 1 FROM freebie_subscribers WHERE LOWER(email) = ${sender})
-      OR EXISTS(SELECT 1 FROM email_logs WHERE LOWER(user_email) = ${sender}
+    SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = ANY(${addresses}::text[]))
+      OR EXISTS(SELECT 1 FROM freebie_subscribers WHERE LOWER(email) = ANY(${addresses}::text[]))
+      OR EXISTS(SELECT 1 FROM email_logs WHERE LOWER(user_email) = ANY(${addresses}::text[])
         AND status IN ('sent', 'delivered') AND created_at > NOW() - INTERVAL '30 days') AS known
   `
   // Unknown mail remains in Resend. Do not import DMARC reports, vendor mail,
@@ -100,6 +110,7 @@ export type CustomerEmailReply = {
 }
 
 export async function getCustomerEmailReplies(email?: string): Promise<CustomerEmailReply[]> {
+  const addresses = email ? correspondenceAddresses(email) : []
   const rows = await sql`
     SELECT id::text, metadata->>'sender_email' AS user_email,
       metadata->>'subject' AS subject, metadata->>'text' AS message,
@@ -109,7 +120,7 @@ export async function getCustomerEmailReplies(email?: string): Promise<CustomerE
     FROM email_events
     WHERE event_type = 'email.received' AND status = 'needs_reply'
       AND created_at > NOW() - INTERVAL '30 days'
-      AND (${email || null}::text IS NULL OR LOWER(metadata->>'sender_email') = ${email || null})
+      AND (${email || null}::text IS NULL OR LOWER(metadata->>'sender_email') = ANY(${addresses}::text[]))
     ORDER BY id DESC LIMIT 20
   `
   return rows as CustomerEmailReply[]

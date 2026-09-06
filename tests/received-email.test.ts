@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({ sql: Object.assign(vi.fn(), { transaction: vi.fn() }) }))
 vi.mock("@/lib/db/client", () => ({ sql: mocks.sql }))
 vi.mock("@/lib/resend/api-key", () => ({ getResendApiKey: () => "test-key" }))
-import { inboundAddress, isAutomaticReply, receiveCustomerEmail, markCustomerEmailAnswered } from "@/lib/email/received-email"
+import { inboundAddress, correspondenceAddresses, isAutomaticReply, receiveCustomerEmail, markCustomerEmailAnswered } from "@/lib/email/received-email"
 
 const id = "11111111-2222-4333-8444-555555555555"
 const event = { email_id: id, from: "Customer <customer@example.com>", to: ["hello@sselfie.ai"] }
@@ -19,6 +19,13 @@ beforeEach(() => {
 })
 
 describe("customer email replies", () => {
+  it("recognizes Google's documented mail-domain alias without combining other inboxes", () => {
+    expect(correspondenceAddresses("customer@googlemail.com")).toEqual(["customer@googlemail.com", "customer@gmail.com"])
+    expect(correspondenceAddresses("customer@gmail.com")).toEqual(["customer@gmail.com", "customer@googlemail.com"])
+    expect(correspondenceAddresses("customer@example.com")).toEqual(["customer@example.com"])
+    expect(correspondenceAddresses("customer+tag@gmail.com")[0]).toBe("customer+tag@gmail.com")
+  })
+
   it("normalizes a display-name address and rejects header injection", () => {
     expect(inboundAddress("Customer <PERSON@EXAMPLE.COM>")).toBe("person@example.com")
     expect(inboundAddress("person@example.com\r\nBcc: victim@example.com")).toBeNull()
