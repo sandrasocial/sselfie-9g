@@ -831,19 +831,19 @@ function renderMayaMarkdown(text) {
 }
 
 function getMayaOutputStorageKey(action) {
-  return 'visibility_suite_workbook_output_' + MAYA_PRODUCT_ID + '_' + action;
+  return 'sselfie:' + window.SSELFIE_WORKBOOK_USER + ':visibility_suite_workbook_output_' + MAYA_PRODUCT_ID + '_' + action;
 }
 
 function saveMayaOutput(action, label, answer) {
   try {
     localStorage.setItem(getMayaOutputStorageKey(action), JSON.stringify({ label, answer, savedAt: Date.now() }));
-    localStorage.setItem('visibility_suite_workbook_output_' + MAYA_PRODUCT_ID + '_last', action);
+    localStorage.setItem('sselfie:' + window.SSELFIE_WORKBOOK_USER + ':visibility_suite_workbook_output_' + MAYA_PRODUCT_ID + '_last', action);
   } catch (error) {}
 }
 
 function loadMayaOutput() {
   try {
-    const action = localStorage.getItem('visibility_suite_workbook_output_' + MAYA_PRODUCT_ID + '_last') || 'generate';
+    const action = localStorage.getItem('sselfie:' + window.SSELFIE_WORKBOOK_USER + ':visibility_suite_workbook_output_' + MAYA_PRODUCT_ID + '_last') || 'generate';
     const raw = localStorage.getItem(getMayaOutputStorageKey(action));
     if (!raw) return;
     const saved = JSON.parse(raw);
@@ -948,6 +948,7 @@ async function runMayaAction(action) {
   output.classList.remove('visible');
 
   try {
+    if (window.SSELFIE_WORKBOOK_SYNC) await window.SSELFIE_WORKBOOK_SYNC.flush();
     const response = await fetch('/api/academy/visibility-suite/workbook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -980,11 +981,11 @@ async function runMayaAction(action) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  loadAnswers();
-  loadMayaOutput();
+  if (!window.SSELFIE_WORKBOOK_SYNC) loadAnswers();
+  // Generated browser previews were not account-owned. Do not restore them automatically.
   window.addEventListener('scroll', trackProgress);
   document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
-    el.addEventListener('input', () => { trackProgress(); saveAnswers(); });
+    el.addEventListener('input', () => { trackProgress(); if (!window.SSELFIE_WORKBOOK_SYNC) saveAnswers(); });
   });
   document.querySelectorAll('[data-maya-action]').forEach(btn => {
     btn.addEventListener('click', () => runMayaAction(btn.dataset.mayaAction));

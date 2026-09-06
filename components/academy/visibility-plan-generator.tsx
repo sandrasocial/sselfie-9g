@@ -2,133 +2,12 @@
 
 import { useState } from "react"
 
-type WorkbookAnswer = {
-  productId: "what_to_say" | "show_up" | "get_paid"
-  label: string
-  value: string
-}
-
-const STORAGE_KEYS = [
-  { productId: "what_to_say" as const, key: "wts_answers", prefix: "field_" },
-  { productId: "show_up" as const, key: "showup_answers", prefix: "su_field_" },
-  { productId: "get_paid" as const, key: "gp_answers", prefix: "gp_field_" },
-]
-
-const LABELS: Record<string, string[]> = {
-  what_to_say: [
-    "Who is your one person?",
-    "What does she tell herself?",
-    "What is the 90-day transformation?",
-    "Why are you the right person?",
-    "Your story",
-    "Your expertise",
-    "Your values",
-    "Your vision",
-    "Your voice",
-    "Who do you help?",
-    "What do you help them do?",
-    "What can they do without?",
-    "Story bucket",
-    "Teach bucket",
-    "Sell bucket",
-    "Connect bucket",
-    "Brand words",
-    "Message test",
-    "Proof",
-    "Content-to-offer bridge",
-  ],
-  show_up: [
-    "4 things you talk about most",
-    "What is happening in your business this month?",
-    "What should people do after 30 days?",
-    "Week 1 theme",
-    "Week 2 theme",
-    "Week 3 theme",
-    "Week 4 theme",
-    "Most natural content type",
-    "Content type you avoid",
-    "Sunday reset time",
-    "What would make this easier?",
-    "Realistic weekly post capacity",
-    "Best content formats right now",
-    "Existing content assets",
-    "Repurposing opportunity",
-  ],
-  get_paid: [
-    "Exact result",
-    "Timeline",
-    "Before and after",
-    "Who do you help?",
-    "What do you help them do?",
-    "How long does it take?",
-    "What does it help them do?",
-    "Who has already paid you?",
-    "What were they struggling with?",
-    "What did they say after?",
-    "Buyer in one sentence",
-    "Most realistic 500 path",
-    "What would you need to sell?",
-    "What is stopping you?",
-    "Offer name",
-    "Offer price",
-    "What they get",
-    "How to buy",
-    "Sales post hook",
-    "Sales post story",
-    "Sales post bridge",
-    "Sales post offer",
-    "Sales post CTA",
-    "DM script",
-    "Caption ask",
-    "Email or voice note",
-    "Buyer urgency",
-    "Willingness to pay signal",
-    "Delivery boundary",
-    "First 10 buyers",
-    "What part of selling feels hardest",
-  ],
-}
-
-function parseStoredAnswers(productId: keyof typeof LABELS, key: string, prefix: string) {
-  try {
-    const raw = window.localStorage.getItem(key)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    return Object.entries(parsed)
-      .map(([field, value]) => {
-        if (typeof value !== "string" || !value.trim()) return null
-        const index = Number(field.replace(prefix, ""))
-        return {
-          productId,
-          label: LABELS[productId][Number.isFinite(index) ? index : -1] || "Workbook answer",
-          value: value.trim(),
-        }
-      })
-      .filter((item): item is WorkbookAnswer => Boolean(item))
-  } catch {
-    return []
-  }
-}
-
-function collectWorkbookAnswers() {
-  if (typeof window === "undefined") return []
-  return STORAGE_KEYS.flatMap(item => parseStoredAnswers(item.productId, item.key, item.prefix))
-}
-
 export function VisibilityPlanGenerator() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [answerCount, setAnswerCount] = useState<number | null>(null)
 
   async function generatePlan() {
-    const answers = collectWorkbookAnswers()
-    setAnswerCount(answers.length)
-
-    if (!answers.length) {
-      setStatus("Fill in at least one workbook answer first. Then come back here.")
-      return
-    }
-
     setIsGenerating(true)
     setStatus("Maya is creating your Maya Visibility Plan...")
 
@@ -137,12 +16,13 @@ export function VisibilityPlanGenerator() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({}),
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
         throw new Error(data.error || "Maya could not create your plan right now.")
       }
+      setAnswerCount(data.answerCount ?? null)
       if (data.url) {
         try {
           window.sessionStorage.setItem(
@@ -151,7 +31,7 @@ export function VisibilityPlanGenerator() {
               source: "visibility_suite",
               token: typeof data.token === "string" ? data.token : null,
               url: data.url,
-              answerCount: answers.length,
+              answerCount: data.answerCount ?? null,
               createdAt: new Date().toISOString(),
             })
           )

@@ -27,10 +27,19 @@ const HOME_BRAND_FACT_PREFIXES = [
 export function getMayaHomeBrandContext(legacyContext: string): string {
   if (!legacyContext.trim()) return ""
 
-  return legacyContext
+  const start = legacyContext.indexOf("=== MEMBER WORKBOOK ANSWERS (DATA) ===")
+  const end = legacyContext.indexOf("=== END MEMBER WORKBOOK ANSWERS ===", start)
+  const workbook =
+    start >= 0 && end >= start
+      ? legacyContext.slice(start, end + "=== END MEMBER WORKBOOK ANSWERS ===".length)
+      : legacyContext.includes("Workbook answers could not be loaded for this request.")
+        ? "Workbook answers could not be loaded for this request. Do not claim to have read them. Tell the member if her request depends on them."
+        : ""
+  const facts = legacyContext
     .split("\n")
     .map(line => line.trim())
     .filter(Boolean)
     .filter(line => HOME_BRAND_FACT_PREFIXES.some(prefix => line.startsWith(prefix)))
     .join("\n")
+  return [facts, workbook].filter(Boolean).join("\n\n")
 }

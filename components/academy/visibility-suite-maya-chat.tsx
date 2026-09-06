@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 const QUICK_PROMPTS = [
   "Tell Me Where To Start",
@@ -13,95 +13,6 @@ type Message = {
   role: "user" | "maya"
   text: string
 }
-
-type WorkbookAnswer = {
-  productId: "what_to_say" | "show_up" | "get_paid"
-  label: string
-  value: string
-}
-
-const STORAGE_KEYS = [
-  { productId: "what_to_say" as const, key: "wts_answers", prefix: "field_" },
-  { productId: "show_up" as const, key: "showup_answers", prefix: "su_field_" },
-  { productId: "get_paid" as const, key: "gp_answers", prefix: "gp_field_" },
-]
-
-const LABELS: Record<WorkbookAnswer["productId"], string[]> = {
-  what_to_say: [
-    "Who is your one person?",
-    "What does she tell herself?",
-    "What is the 90-day transformation?",
-    "Why are you the right person?",
-    "Your story",
-    "Your expertise",
-    "Your values",
-    "Your vision",
-    "Your voice",
-    "Who do you help?",
-    "What do you help them do?",
-    "What can they do without?",
-    "Story bucket",
-    "Teach bucket",
-    "Sell bucket",
-    "Connect bucket",
-    "Brand words",
-    "Message test",
-    "Proof",
-    "Content-to-offer bridge",
-  ],
-  show_up: [
-    "4 things you talk about most",
-    "What is happening in your business this month?",
-    "What should people do after 30 days?",
-    "Week 1 theme",
-    "Week 2 theme",
-    "Week 3 theme",
-    "Week 4 theme",
-    "Most natural content type",
-    "Content type you avoid",
-    "Sunday reset time",
-    "What would make this easier?",
-    "Realistic weekly post capacity",
-    "Best content formats right now",
-    "Existing content assets",
-    "Repurposing opportunity",
-  ],
-  get_paid: [
-    "Exact result",
-    "Timeline",
-    "Before and after",
-    "Who do you help?",
-    "What do you help them do?",
-    "How long does it take?",
-    "What does it help them do?",
-    "Who has already paid you?",
-    "What were they struggling with?",
-    "What did they say after?",
-    "Buyer in one sentence",
-    "Most realistic 500 path",
-    "What would you need to sell?",
-    "What is stopping you?",
-    "Offer name",
-    "Offer price",
-    "What they get",
-    "How to buy",
-    "Sales post hook",
-    "Sales post story",
-    "Sales post bridge",
-    "Sales post offer",
-    "Sales post CTA",
-    "DM script",
-    "Caption ask",
-    "Email or voice note",
-    "Buyer urgency",
-    "Willingness to pay signal",
-    "Delivery boundary",
-    "First 10 buyers",
-    "What part of selling feels hardest",
-  ],
-}
-
-const THREAD_STORAGE_KEY = "visibility_suite_maya_thread"
 
 const C = {
   ink: "#0F0D0B",
@@ -128,59 +39,6 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(THREAD_STORAGE_KEY)
-      if (!saved) return
-      const parsed = JSON.parse(saved)
-      if (!Array.isArray(parsed) || !parsed.length) return
-      const restored = parsed.filter(
-        (item): item is Message =>
-          item &&
-          typeof item === "object" &&
-          (item.role === "user" || item.role === "maya") &&
-          typeof item.text === "string"
-      )
-      if (restored.length) setMessages(restored.slice(-16))
-    } catch {
-      // Ignore broken localStorage data.
-    }
-  }, [])
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(THREAD_STORAGE_KEY, JSON.stringify(messages.slice(-16)))
-    } catch {
-      // Ignore private-mode storage failures.
-    }
-  }, [messages])
-
-  function collectWorkbookAnswers() {
-    if (typeof window === "undefined") return []
-
-    return STORAGE_KEYS.flatMap(item => {
-      try {
-        const raw = window.localStorage.getItem(item.key)
-        if (!raw) return []
-        const parsed = JSON.parse(raw) as Record<string, unknown>
-        return Object.entries(parsed)
-          .map(([field, value]) => {
-            if (typeof value !== "string" || !value.trim()) return null
-            const index = Number(field.replace(item.prefix, ""))
-            return {
-              productId: item.productId,
-              label:
-                LABELS[item.productId][Number.isFinite(index) ? index : -1] || "Workbook answer",
-              value: value.trim(),
-            }
-          })
-          .filter((answer): answer is WorkbookAnswer => Boolean(answer))
-      } catch {
-        return []
-      }
-    })
-  }
-
   function renderMarkdown(text: string) {
     const html = text
       .replace(/&/g, "&amp;")
@@ -204,13 +62,12 @@ export default function VisibilitySuiteMayaChat({ ownedProducts }: Props) {
     setQuestion("")
     setIsSending(true)
     setMessages(prev => [...prev, { role: "user", text: cleanQuestion }])
-    const answers = collectWorkbookAnswers()
 
     try {
       const response = await fetch("/api/academy/visibility-suite/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: cleanQuestion, ownedProducts, answers }),
+        body: JSON.stringify({ question: cleanQuestion, ownedProducts }),
       })
       const data = await response.json().catch(() => null)
 
